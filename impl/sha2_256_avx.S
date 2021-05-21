@@ -341,12 +341,12 @@ a = TMP_
 #include "built.S"
 
 ########################################################################
-## void sha256_xform_avx(void *input_data, UINT32 digest[8], UINT64 num_blks)
+## void sha2_256_avx_xform(void *input_data, UINT32 digest[8], UINT64 num_blks)
 ## arg 1 : pointer to digest
 ## arg 2 : pointer to input data
 ## arg 3 : Num blocks
 ########################################################################
-ENTRY(sha256_xform_avx)
+ENTRY(sha2_256_avx_xform)
 	pushq   %rbx
 	pushq   %rbp
 	pushq   %r13
@@ -459,7 +459,7 @@ done_hash:
 	popq    %rbp
 	popq    %rbx
 	ret
-ENDPROC(sha256_xform_avx)
+ENDPROC(sha2_256_avx_xform)
 
 .data
 .align 64

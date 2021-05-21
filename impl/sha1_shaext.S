@@ -94,7 +94,7 @@
 .text
 #include "built.S"
 
-ENTRY(sha1_ni_xform)
+ENTRY(sha1_shaext_xform)
 	mov		%rsp, RSPSAVE
 	sub		$FRAME_SIZE, %rsp
 	and		$~0xF, %rsp
@@ -290,7 +290,7 @@ ENTRY(sha1_ni_xform)
 	mov		RSPSAVE, %rsp
 
 	ret
-ENDPROC(sha1_ni_xform)
+ENDPROC(sha1_shaext_xform)
 
 .section	.rodata.cst16.PSHUFFLE_BYTE_FLIP_MASK, "aM", @progbits, 16
 .align 16

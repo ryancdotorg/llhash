@@ -483,7 +483,7 @@
 	xchg	WK_BUF, PRECALC_BUF
 
 	.align 32
-_loop:
+loop:
 	/*
 	 * code loops through more than one block
 	 * we use K_BASE value as a signal of a last block,
@@ -506,8 +506,8 @@ _begin:
 		.set j, j+2
 	.endr
 
-	jmp _loop0
-_loop0:
+	jmp loop0
+loop0:
 
 	/*
 	 * rounds:
@@ -543,7 +543,7 @@ _loop0:
 	UPDATE_HASH	16(HASH_PTR), E
 
 	test	BLOCKS_CTR, BLOCKS_CTR
-	jz	_loop
+	jz	loop
 
 	mov	TB, B
 
@@ -560,8 +560,8 @@ _loop0:
 		.set j, j+2
 	.endr
 
-	jmp	_loop1
-_loop1:
+	jmp	loop1
+loop1:
 	/*
 	 * rounds
 	 * 20+80,22+80,24+80,26+80,28+80
@@ -572,8 +572,8 @@ _loop1:
 		.set j, j+2
 	.endr
 
-	jmp	_loop2
-_loop2:
+	jmp	loop2
+loop2:
 
 	/*
 	 * rounds
@@ -590,8 +590,8 @@ _loop2:
 	/* Move to the next block only if needed*/
 	ADD_IF_GE BUFFER_PTR2, BLOCKS_CTR, 4, 128
 
-	jmp	_loop3
-_loop3:
+	jmp	loop3
+loop3:
 
 	/*
 	 * rounds
@@ -621,7 +621,7 @@ _loop3:
 
 	xchg	WK_BUF, PRECALC_BUF
 
-	jmp	_loop
+	jmp	loop
 
 	.align 32
 	_end:
@@ -672,7 +672,7 @@ ENTRY(sha1_avx2_xform)
 
 	ret
 
-ENDPROC(sha1_axv2_xform)
+ENDPROC(sha1_avx2_xform)
 
 .section .rodata
 

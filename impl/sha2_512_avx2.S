@@ -561,7 +561,7 @@ frame_size = frame_GPRSAVE + GPRSAVE_SIZE
 #include "built.S"
 
 ########################################################################
-# void sha512_transform_rorx(sha512_state *state, const u8 *data, int blocks)
+# void sha512_transform_avx2(sha512_state *state, const u8 *data, int blocks)
 # Purpose: Updates the SHA512 digest stored at "state" with the message
 # stored in "data".
 # The size of the message pointed to by "data" must be an integer multiple
