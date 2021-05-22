@@ -229,9 +229,7 @@ int main() {
   printf("\n");
 
   BENCH_DATA(SHA1, 64, 20);
-  printf("\n");
   BENCH_DATA(SHA2_256, 64, 32);
-  printf("\n");
   BENCH_DATA(SHA2_512, 128, 64);
 
   return 0;

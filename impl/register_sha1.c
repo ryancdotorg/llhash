@@ -8,14 +8,17 @@
 
 char * SHA1_Describe(int impl) {
   switch (impl > 0 ? impl : 0) {
-    case SHA1_USING_GENERIC:      return SHA1_DESC_GENERIC;
-    case SHA1_USING_NATIVE:       return SHA1_DESC_NATIVE;
-    case SHA1_USING_NAYUKI64:     return SHA1_DESC_NAYUKI64;
-    case SHA1_USING_INTEL_SSSE3:  return SHA1_DESC_INTEL_SSSE3;
-    case SHA1_USING_INTEL_AVX:    return SHA1_DESC_INTEL_AVX;
-    case SHA1_USING_INTEL_AVX2:   return SHA1_DESC_INTEL_AVX2;
-    case SHA1_USING_INTEL_SHAEXT: return SHA1_DESC_INTEL_SHAEXT;
-    default:                      return "Unknown";
+    case SHA1_USING_GENERIC:           return SHA1_DESC_GENERIC;
+    case SHA1_USING_NATIVE:            return SHA1_DESC_NATIVE;
+    case SHA1_USING_NAYUKI64:          return SHA1_DESC_NAYUKI64;
+    case SHA1_USING_INTEL_SSSE3:       return SHA1_DESC_INTEL_SSSE3;
+    case SHA1_USING_INTEL_AVX:         return SHA1_DESC_INTEL_AVX;
+    case SHA1_USING_INTEL_AVX2:        return SHA1_DESC_INTEL_AVX2;
+    case SHA1_USING_INTEL_SHAEXT:      return SHA1_DESC_INTEL_SHAEXT;
+    case SHA1_USING_CRYPTOGAMS_GEN:    return SHA1_DESC_CRYPTOGAMS_GEN;
+    case SHA1_USING_CRYPTOGAMS_SSSE3:  return SHA1_DESC_CRYPTOGAMS_SSSE3;
+    case SHA1_USING_CRYPTOGAMS_SHAEXT: return SHA1_DESC_CRYPTOGAMS_SHAEXT;
+    default:                           return "Unknown";
   }
 }
 
@@ -54,10 +57,13 @@ void (*SHA1_Transform)(uint32_t *, const char *, uint32_t) = sha1_xform_default;
 
 int __attribute__((noinline)) SHA1_Register(int enable) {
   int err = 0;
+  MAYBE_REGISTER(cryptogams_shaext,CRYPTOGAMS_SHAEXT);
   MAYBE_REGISTER(intel_shaext,INTEL_SHAEXT);
   MAYBE_REGISTER(intel_avx2,INTEL_AVX2);
   MAYBE_REGISTER(intel_avx,INTEL_AVX);
+  MAYBE_REGISTER(cryptogams_ssse3,CRYPTOGAMS_SSSE3);
   MAYBE_REGISTER(intel_ssse3,INTEL_SSSE3);
+  MAYBE_REGISTER(cryptogams_gen,CRYPTOGAMS_GEN);
   MAYBE_REGISTER(native,NATIVE);
   MAYBE_REGISTER(nayuki64,NAYUKI64);
   MAYBE_REGISTER(generic,GENERIC);

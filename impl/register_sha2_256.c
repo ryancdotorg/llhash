@@ -65,8 +65,8 @@ int __attribute__((noinline)) SHA2_256_Register(int enable) {
   MAYBE_REGISTER(cryptogams_avx2,CRYPTOGAMS_AVX2);
   MAYBE_REGISTER(intel_avx2,INTEL_AVX2);
   MAYBE_REGISTER(cryptogams_avx,CRYPTOGAMS_AVX);
-  MAYBE_REGISTER(intel_avx,INTEL_AVX);
   MAYBE_REGISTER(cryptogams_ssse3,CRYPTOGAMS_SSSE3);
+  MAYBE_REGISTER(intel_avx,INTEL_AVX);
   MAYBE_REGISTER(intel_ssse3,INTEL_SSSE3);
   MAYBE_REGISTER(cryptogams_gen,CRYPTOGAMS_GEN);
   MAYBE_REGISTER(native,NATIVE);
