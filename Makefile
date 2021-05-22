@@ -20,8 +20,8 @@ override CFLAGS += -O3 -fPIC -funsigned-char \
 	-std=gnu11 -ggdb
 CC := ccache gcc
 COMPILE = $(CC) $(CFLAGS)
-ASSEMBLE = $(CC) -D__RHASHC_GPL_ -O3 -flto -ggdb
-#ASSEMBLE = $(CC) -O3 -flto -ggdb
+ASSEMBLE = $(CC) -D__RHASHC_GPL_ -O3 -ggdb
+#ASSEMBLE = $(CC) -O3 -ggdb
 
 all: $(OBJECTS)
 
@@ -62,7 +62,7 @@ test: test.o openssl.o $(OBJECTS)
 	$(COMPILE) $^ -ldl -o $@
 
 clean:
-	@rm -f chkcpu prcpu can/can_native.c *.o */*.o || /bin/true
+	@rm -f test sha2t chkcpu prcpu can/can_native.c *.o */*.o || /bin/true
 
 .SECONDEXPANSION:
 impl/%.o: $$(subst .S,.o,$$(wildcard impl/$$*_*.S))

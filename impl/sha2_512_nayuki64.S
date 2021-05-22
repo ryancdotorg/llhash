@@ -247,4 +247,4 @@ ny64_ret:
 	popq  %rbx
 	retq
 
-ENDPROC(sha2_256_nayuki64_xform)
+ENDPROC(sha2_512_nayuki64_xform)

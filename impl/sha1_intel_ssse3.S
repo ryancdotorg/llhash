@@ -288,84 +288,116 @@
   .set W,          W_minus_32
 .endm
 
-.macro  W_PRECALC_00_15
-    W_PRECALC_00_15_AVX
+.macro W_PRECALC_00_15
+	W_PRECALC_00_15_SSSE3
 .endm
-.macro  W_PRECALC_16_31
-    W_PRECALC_16_31_AVX
+.macro W_PRECALC_16_31
+	W_PRECALC_16_31_SSSE3
 .endm
-.macro  W_PRECALC_32_79
-    W_PRECALC_32_79_AVX
+.macro W_PRECALC_32_79
+	W_PRECALC_32_79_SSSE3
 .endm
 
-.macro W_PRECALC_00_15_AVX
+/* message scheduling pre-compute for rounds 0-15 */
+.macro W_PRECALC_00_15_SSSE3
   .if ((i & 3) == 0)
-	vmovdqu	(i*4)(BUFFER_PTR), W_TMP1
+	movdqu	(i*4)(BUFFER_PTR), W_TMP1
   .elseif ((i & 3) == 1)
-	vpshufb	XMM_SHUFB_BSWAP, W_TMP1, W
+	pshufb	XMM_SHUFB_BSWAP, W_TMP1
+	movdqa	W_TMP1, W
   .elseif ((i & 3) == 2)
-	vpaddd	(K_BASE), W, W_TMP1
+	paddd	(K_BASE), W_TMP1
   .elseif ((i & 3) == 3)
-	vmovdqa	W_TMP1, WK(i&~3)
+	movdqa  W_TMP1, WK(i&~3)
 	W_PRECALC_ROTATE
   .endif
 .endm
 
-.macro W_PRECALC_16_31_AVX
+/* message scheduling pre-compute for rounds 16-31
+ *
+ * - calculating last 32 w[i] values in 8 XMM registers
+ * - pre-calculate K+w[i] values and store to mem, for later load by ALU add
+ *   instruction
+ *
+ * some "heavy-lifting" vectorization for rounds 16-31 due to w[i]->w[i-3]
+ * dependency, but improves for 32-79
+ */
+.macro W_PRECALC_16_31_SSSE3
+  # blended scheduling of vector and scalar instruction streams, one 4-wide
+  # vector iteration / 4 scalar rounds
   .if ((i & 3) == 0)
-	vpalignr $8, W_minus_16, W_minus_12, W	# w[i-14]
-	vpsrldq	$4, W_minus_04, W_TMP1		# w[i-3]
-	vpxor	W_minus_08, W, W
-	vpxor	W_minus_16, W_TMP1, W_TMP1
+	movdqa	W_minus_12, W
+	palignr	$8, W_minus_16, W	# w[i-14]
+	movdqa	W_minus_04, W_TMP1
+	psrldq	$4, W_TMP1		# w[i-3]
+	pxor	W_minus_08, W
   .elseif ((i & 3) == 1)
-	vpxor	W_TMP1, W, W
-	vpslldq	$12, W, W_TMP2
-	vpslld	$1, W, W_TMP1
+	pxor	W_minus_16, W_TMP1
+	pxor	W_TMP1, W
+	movdqa	W, W_TMP2
+	movdqa	W, W_TMP1
+	pslldq	$12, W_TMP2
   .elseif ((i & 3) == 2)
-	vpsrld	$31, W, W
-	vpor	W, W_TMP1, W_TMP1
-	vpslld	$2, W_TMP2, W
-	vpsrld	$30, W_TMP2, W_TMP2
+	psrld	$31, W
+	pslld	$1, W_TMP1
+	por	W, W_TMP1
+	movdqa	W_TMP2, W
+	psrld	$30, W_TMP2
+	pslld	$2, W
   .elseif ((i & 3) == 3)
-	vpxor	W, W_TMP1, W_TMP1
-	vpxor	W_TMP2, W_TMP1, W
-	vpaddd	K_XMM(K_BASE), W, W_TMP1
-	vmovdqu	W_TMP1, WK(i&~3)
+	pxor	W, W_TMP1
+	pxor	W_TMP2, W_TMP1
+	movdqa	W_TMP1, W
+	paddd	K_XMM(K_BASE), W_TMP1
+	movdqa	W_TMP1, WK(i&~3)
 	W_PRECALC_ROTATE
   .endif
 .endm
 
-.macro W_PRECALC_32_79_AVX
+/* message scheduling pre-compute for rounds 32-79
+ *
+ * in SHA-1 specification: w[i] = (w[i-3] ^ w[i-8]  ^ w[i-14] ^ w[i-16]) rol 1
+ * instead we do equal:    w[i] = (w[i-6] ^ w[i-16] ^ w[i-28] ^ w[i-32]) rol 2
+ * allows more efficient vectorization since w[i]=>w[i-3] dependency is broken
+ */
+.macro W_PRECALC_32_79_SSSE3
   .if ((i & 3) == 0)
-	vpalignr $8, W_minus_08, W_minus_04, W_TMP1
-	vpxor	W_minus_28, W, W		# W is W_minus_32 before xor
+	movdqa	W_minus_04, W_TMP1
+	pxor	W_minus_28, W		# W is W_minus_32 before xor
+	palignr	$8, W_minus_08, W_TMP1
   .elseif ((i & 3) == 1)
-	vpxor	W_minus_16, W_TMP1, W_TMP1
-	vpxor	W_TMP1, W, W
+	pxor	W_minus_16, W
+	pxor	W_TMP1, W
+	movdqa	W, W_TMP1
   .elseif ((i & 3) == 2)
-	vpslld	$2, W, W_TMP1
-	vpsrld	$30, W, W
-	vpor	W, W_TMP1, W
+	psrld	$30, W
+	pslld	$2, W_TMP1
+	por	W, W_TMP1
   .elseif ((i & 3) == 3)
-	vpaddd	K_XMM(K_BASE), W, W_TMP1
-	vmovdqu	W_TMP1, WK(i&~3)
+	movdqa	W_TMP1, W
+	paddd	K_XMM(K_BASE), W_TMP1
+	movdqa	W_TMP1, WK(i&~3)
 	W_PRECALC_ROTATE
   .endif
 .endm
 
 .macro xmm_mov a, b
-	vmovdqu	\a,\b
+	movdqu	\a,\b
 .endm
 
-.text
+.section .text
 #include "built.S"
 
-/* AVX optimized implementation:
- *  extern "C" void sha1_transform_avx(struct sha1_state *state,
- *				       const u8 *data, int blocks);
+/*
+ * SSSE3 optimized implementation:
+ *
+ * extern "C" void sha1_transform_ssse3(struct sha1_state *state,
+ *					const u8 *data, int blocks);
+ *
+ * Note that struct sha1_state is assumed to begin with u32 state[5].
  */
 
-ENTRY(sha1_avx_xform)
+ENTRY(sha1_intel_ssse3_xform)
 
 	push	%rbx
 	push	%r12
@@ -399,7 +431,7 @@ ENTRY(sha1_avx_xform)
 	pop	%rbx
 	ret
 
-ENDPROC(sha1_avx_xform)
+ENDPROC(sha1_intel_ssse3_xform)
 
 #define K1	0x5a827999
 #define K2	0x6ed9eba1

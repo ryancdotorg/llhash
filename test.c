@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dlfcn.h>
 
 #include <time.h>
 #include <x86intrin.h>
@@ -12,6 +13,11 @@
 #include "sha1.h"
 #include "sha2_256.h"
 #include "sha2_512.h"
+
+extern void sha2_512_cryptogams_gen_xform(uint64_t *, void *, uint32_t);
+extern void sha2_512_cryptogams_xop_xform(uint64_t *, void *, uint32_t);
+extern void sha2_512_cryptogams_avx_xform(uint64_t *, void *, uint32_t);
+extern void sha2_512_cryptogams_avx2_xform(uint64_t *, void *, uint32_t);
 
 static uint64_t getns() {
   uint64_t ns;
@@ -136,24 +142,7 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
     int len = BLOCK * n - 20; \
     rc4_prng(scratch, len, "an arbitrary string"); \
     OpenSSL_##NAME (ref, scratch, len); \
-    { \
-      uint64_t cycles; \
-      double best_cycles = 1e40, dtmp; \
-      for (int x = 0; x < repeat; ++x) { \
-        int fail = 0; \
-        cycles = __rdtsc(); \
-        for (int y = 0; y < iter; ++y) OpenSSL_##NAME (hash, scratch, len); \
-        cycles = __rdtsc() - cycles; \
-        dtmp = (double)cycles / (double)iter; \
-        if (dtmp < best_cycles) { best_cycles = dtmp; x = 0; } \
-        for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
-        if (fail) { printf("whoops\n"); } \
-      } \
-      printf(#NAME " %-28s: ", "OpenSSL"); \
-      printf("%8.1f cycles/call ", best_cycles); \
-      printf("%6.1f cycles/block ", best_cycles/(double)n); \
-      printf("(%d block%s)\n", n, n > 1 ? "s" : ""); \
-    } \
+    printf("\n"); \
     int impl; \
     for (int i = 0; i < 32; ++i) { \
       if ((impl = NAME##_Register(1<<i)) != i) continue; \
@@ -161,10 +150,9 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
       double best_cycles = 1e40, dtmp; \
       for (int x = 0; x < repeat; ++x) { \
         int fail = 0; \
-        uint64_t w = NAME##_Pad (scratch, len); \
         cycles = __rdtsc(); \
         for (int y = 0; y < iter; ++y) { \
-          NAME##_Raw(hash, scratch, w); \
+          NAME (hash, scratch, len); \
         } \
         cycles = __rdtsc() - cycles; \
         dtmp = (double)cycles / (double)iter; \
@@ -241,7 +229,9 @@ int main() {
   printf("\n");
 
   BENCH_DATA(SHA1, 64, 20);
+  printf("\n");
   BENCH_DATA(SHA2_256, 64, 32);
+  printf("\n");
   BENCH_DATA(SHA2_512, 128, 64);
 
   return 0;

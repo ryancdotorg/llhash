@@ -10,3 +10,6 @@ int can_ssse3() {
 
   return 0;
 }
+
+int can_intel_ssse3() { return can_ssse3(); }
+int can_cryptogams_ssse3() { return can_ssse3(); }

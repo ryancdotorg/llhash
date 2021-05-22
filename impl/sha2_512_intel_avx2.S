@@ -568,7 +568,7 @@ frame_size = frame_GPRSAVE + GPRSAVE_SIZE
 # of SHA512 message blocks.
 # "blocks" is the message length in SHA512 blocks
 ########################################################################
-ENTRY(sha2_512_avx2_xform)
+ENTRY(sha2_512_intel_avx2_xform)
 	# Allocate Stack Space
 	mov	%rsp, %rax
 	sub	$frame_size, %rsp
@@ -681,7 +681,7 @@ done_hash:
 	# Restore Stack Pointer
 	mov	frame_RSPSAVE(%rsp), %rsp
 	ret
-ENDPROC(sha2_512_avx2_xform)
+ENDPROC(sha2_512_intel_avx2_xform)
 
 ########################################################################
 ### Binary Data

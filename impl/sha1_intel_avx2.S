@@ -631,7 +631,7 @@ loop3:
 .text
 #include "built.S"
 
-ENTRY(sha1_avx2_xform)
+ENTRY(sha1_intel_avx2_xform)
 	push	%rbx
 	push	%r12
 	push	%r13
@@ -672,7 +672,7 @@ ENTRY(sha1_avx2_xform)
 
 	ret
 
-ENDPROC(sha1_avx2_xform)
+ENDPROC(sha1_intel_avx2_xform)
 
 .section .rodata
 

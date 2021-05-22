@@ -89,13 +89,13 @@
  * The indented lines in the loop are instructions related to rounds processing.
  * The non-indented lines are instructions related to the message schedule.
  *
- * void sha2_256_shaext_xform(uint32_t *digest, const void *data, uint32_t numBlocks);
+ * void sha2_256_intel_shaext_xform(uint32_t *digest, const void *data, uint32_t numBlocks);
  * digest : pointer to digest
  * data: pointer to input data
  * numBlocks: Number of blocks to process
  */
 
-ENTRY(sha2_256_shaext_xform)
+ENTRY(sha2_256_intel_shaext_xform)
 
 	shl		$6, NUM_BLKS		/*  convert to bytes */
 	jz		.Ldone_hash
@@ -325,7 +325,7 @@ ENTRY(sha2_256_shaext_xform)
 .Ldone_hash:
 
 	ret
-ENDPROC(sha2_256_shaext_xform)
+ENDPROC(sha2_256_intel_shaext_xform)
 
 .data
 .align 64

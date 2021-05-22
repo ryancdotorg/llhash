@@ -10,3 +10,6 @@ int can_avx() {
 
   return 0;
 }
+
+int can_intel_avx() { return can_avx(); }
+int can_cryptogams_avx() { return can_avx(); }

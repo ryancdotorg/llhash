@@ -11,10 +11,10 @@ char * SHA1_Describe(int impl) {
     case SHA1_USING_GENERIC:      return SHA1_DESC_GENERIC;
     case SHA1_USING_NATIVE:       return SHA1_DESC_NATIVE;
     case SHA1_USING_NAYUKI64:     return SHA1_DESC_NAYUKI64;
-    case SHA1_USING_SSSE3:        return SHA1_DESC_SSSE3;
-    case SHA1_USING_AVX:          return SHA1_DESC_AVX;
-    case SHA1_USING_AVX2:         return SHA1_DESC_AVX2;
-    case SHA1_USING_SHAEXT:       return SHA1_DESC_SHAEXT;
+    case SHA1_USING_INTEL_SSSE3:  return SHA1_DESC_INTEL_SSSE3;
+    case SHA1_USING_INTEL_AVX:    return SHA1_DESC_INTEL_AVX;
+    case SHA1_USING_INTEL_AVX2:   return SHA1_DESC_INTEL_AVX2;
+    case SHA1_USING_INTEL_SHAEXT: return SHA1_DESC_INTEL_SHAEXT;
     default:                      return "Unknown";
   }
 }
@@ -54,12 +54,12 @@ void (*SHA1_Transform)(uint32_t *, const char *, uint32_t) = sha1_xform_default;
 
 int __attribute__((noinline)) SHA1_Register(int enable) {
   int err = 0;
-  MAYBE_REGISTER(shaext,SHAEXT);
-  MAYBE_REGISTER(avx2,AVX2);
-  MAYBE_REGISTER(avx,AVX);
-  MAYBE_REGISTER(ssse3,SSSE3);
-  MAYBE_REGISTER(nayuki64,NAYUKI64);
+  MAYBE_REGISTER(intel_shaext,INTEL_SHAEXT);
+  MAYBE_REGISTER(intel_avx2,INTEL_AVX2);
+  MAYBE_REGISTER(intel_avx,INTEL_AVX);
+  MAYBE_REGISTER(intel_ssse3,INTEL_SSSE3);
   MAYBE_REGISTER(native,NATIVE);
+  MAYBE_REGISTER(nayuki64,NAYUKI64);
   MAYBE_REGISTER(generic,GENERIC);
   return err ? err : RHASHC_ERROR_NOENABLE;
 }

@@ -13,3 +13,6 @@ int can_shaext() {
 
   return 0;
 }
+
+int can_intel_shaext() { return can_shaext(); }
+int can_cryptogams_shaext() { return can_shaext(); }
