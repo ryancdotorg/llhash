@@ -1,5 +1,6 @@
+/* SPDX-License-Identifier: 0BSD or CC0-1.0 or MIT-0 or Unlicense */
 // SHA-1 implemetation, transform only
-// By Ryan Castellucci, public domain
+// Copyright (c) 2021, Ryan Castellucci, No Rights Reserved
 
 #include <stdint.h>
 #include <endian.h>
