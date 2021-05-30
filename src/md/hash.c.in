@@ -1,0 +1,561 @@
+/* c preprocessor template for Merkle–Damgård hash functions */
+#include "../../macros.h"
+
+#ifndef HASH_NAME
+/* this exists to keep the linter happy */
+#define HASH_NAME SHA1
+
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <endian.h>
+#include "../../gen/md/sha1/hmac.h"
+#else
+_H include <stdint.h>
+_H include <stddef.h>
+_H include <string.h>
+_H include <endian.h>
+_H include STR(../../../src/md/HASH_name/param.h)
+_H include "hash.h"
+#endif
+
+/* function names */
+#define HASH_Transform HASH(Transform)
+
+#define HASH_Clone HASH(Clone)
+#define HASH_Init HASH(Init)
+#define HASH_Update HASH(Update)
+#define HASH_Final HASH(Final)
+
+#define HASH_Pad HASH(Pad)
+#define HASH_Raw HASH(Raw)
+
+/* constant names */
+#define HASH_DIGEST_LENGTH HASH(DIGEST_LENGTH)
+#define HASH_BLOCK_LENGTH HASH(BLOCK_LENGTH)
+#define HASH_STATE_WORDS HASH(STATE_WORDS)
+#define HASH_WORD_SIZE HASH(WORD_SIZE)
+
+static const uintWS_t iv[] = HASH(IV);
+
+static inline void __attribute__((always_inline)) serialize(uint8_t hash[], uintWS_t *state);
+
+void HASH_NAME(uint8_t hash[], const uint8_t data[], size_t len) {
+  static uint8_t padding[HASH_BLOCK_LENGTH*2];
+  uint64_t dblk = len / HASH_BLOCK_LENGTH;
+  int remaining_bytes = len & (HASH_BLOCK_LENGTH-1);
+
+  // initialize state
+  uintWS_t state[] = HASH(IV);
+
+  // copy partial block bytes into the padding
+  memcpy(padding, data + (dblk * HASH_BLOCK_LENGTH), remaining_bytes);
+  // set a 1 bit after the data
+  padding[remaining_bytes] = 0x80;
+
+  if (dblk) HASH_Transform(state, data, dblk);
+  // set length
+  if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
+    memset(padding + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
+    ((uint64_t *)padding)[(HASH_WORD_SIZE/4)-1] = htoDe64(len * 8);
+    HASH_Transform(state, padding, 1);
+  } else {
+    memset(padding + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
+    ((uint64_t *)padding)[(HASH_WORD_SIZE/2)-1] = htoDe64(len * 8);
+    HASH_Transform(state, padding, 2);
+  }
+
+  // write out result
+  serialize(hash, state);
+}
+
+void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src) {
+  // relies on .data being first
+  if (src->datalen) {
+    memcpy(dst, src, sizeof(*dst));
+  } else {
+    // don't copy the data if there isn't any
+    memcpy(dst + sizeof(dst->data), src + sizeof(dst->data), sizeof(*dst) - sizeof(dst->data));
+  }
+}
+
+void HASH(Init)(HASH(CTX) *ctx) {
+  ctx->bitlen = 0;
+  ctx->datalen = 0;
+  for (int i = 0; i < HASH(STATE_WORDS); ++i)  ctx->state[i] = iv[i];
+}
+
+void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
+  size_t i = 0;
+
+  uint8_t *input = (uint8_t *)data;
+
+  if (ctx->datalen > 0) {
+    i = HASH_BLOCK_LENGTH - ctx->datalen;
+    if (i > len) {
+      memcpy(ctx->data + ctx->datalen, input, len);
+      ctx->datalen += len;
+      return;
+    } else {
+      memcpy(ctx->data + ctx->datalen, input, i);
+      HASH_Transform(ctx->state, ctx->data, 1);
+      ctx->bitlen += HASH_BLOCK_LENGTH*8;
+      ctx->datalen = 0;
+      input += i;
+      len -= i;
+    }
+  }
+
+  if (len >= HASH_BLOCK_LENGTH) {
+    i = len / HASH_BLOCK_LENGTH;
+    HASH_Transform(ctx->state, input, i);
+    len -= i * HASH_BLOCK_LENGTH;
+    input += i * HASH_BLOCK_LENGTH;
+    ctx->bitlen += i * HASH_BLOCK_LENGTH*8;
+  }
+
+  memcpy(ctx->data, input, len);
+  ctx->datalen = len;
+}
+
+void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
+  uint32_t i = ctx->datalen;
+
+  if (ctx->datalen < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
+    ctx->data[i++] = 0x80;
+    memset(ctx->data + i, 0, (HASH_BLOCK_LENGTH-8) - i);
+  } else {
+    ctx->data[i++] = 0x80;
+    memset(ctx->data + i, 0, HASH_BLOCK_LENGTH - i);
+    HASH_Transform(ctx->state, ctx->data, 1);
+    memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
+  }
+
+  // padding
+  ctx->bitlen += ctx->datalen * 8;
+  ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bitlen);
+
+  HASH_Transform(ctx->state, ctx->data, 1);
+
+  serialize(hash, ctx->state);
+}
+
+// caller responsible for making sure the buffer is big enough
+uint64_t HASH(Pad)(uint8_t data[], size_t len) {
+  uint64_t *bitlen_ptr;
+  uint64_t nblk = len / HASH_BLOCK_LENGTH;
+  int remaining_bytes = len & (HASH_BLOCK_LENGTH-1);
+
+  // set a 1 bit after the data
+  data[len] = 0x80;
+  if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
+    memset(data + len + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
+    nblk += 1;
+  } else {
+    memset(data + len + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
+    nblk += 2;
+  }
+
+  bitlen_ptr = (uint64_t *)(data + (nblk * HASH_BLOCK_LENGTH) - 8);
+  *bitlen_ptr = htoDe64(len * 8);
+
+  return nblk;
+}
+
+// caller is responsible for padding
+void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk) {
+  uintWS_t state[] = HASH(IV);
+
+  HASH_Transform(state, data, nblk);
+
+  serialize(hash, state);
+}
+
+static inline void __attribute__((always_inline)) serialize(uint8_t hash[], uintWS_t *state) {
+  uintWS_t *outW = (uintWS_t *)hash;
+
+#if HASH_STATE_WORDS > 0
+# if HASH_DIGEST_LENGTH >= 1*(HASH_WORD_SIZE/8)
+  outW[0] = htoDeWS(state[0]);
+# elif HASH_DIGEST_LENGTH > 0*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[0]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 0
+  hash[0] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 1
+  hash[1] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 2
+  hash[2] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 3
+  hash[3] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 0
+  hash[0] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 1
+  hash[1] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 2
+  hash[2] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 3
+  hash[3] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 4
+  hash[4] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 5
+  hash[5] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 6
+  hash[6] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 7
+  hash[7] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+#if HASH_STATE_WORDS > 1
+# if HASH_DIGEST_LENGTH >= 2*(HASH_WORD_SIZE/8)
+  outW[1] = htoDeWS(state[1]);
+# elif HASH_DIGEST_LENGTH > 1*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[1]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 4
+  hash[4] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 5
+  hash[5] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 6
+  hash[6] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 7
+  hash[7] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 8
+  hash[8] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 9
+  hash[9] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 10
+  hash[10] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 11
+  hash[11] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 12
+  hash[12] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 13
+  hash[13] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 14
+  hash[14] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 15
+  hash[15] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+#if HASH_STATE_WORDS > 2
+# if HASH_DIGEST_LENGTH >= 3*(HASH_WORD_SIZE/8)
+  outW[2] = htoDeWS(state[2]);
+# elif HASH_DIGEST_LENGTH > 2*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[2]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 8
+  hash[8] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 9
+  hash[9] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 10
+  hash[10] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 11
+  hash[11] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 16
+  hash[16] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 17
+  hash[17] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 18
+  hash[18] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 19
+  hash[19] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 20
+  hash[20] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 21
+  hash[21] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 22
+  hash[22] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 23
+  hash[23] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+#if HASH_STATE_WORDS > 3
+# if HASH_DIGEST_LENGTH >= 4*(HASH_WORD_SIZE/8)
+  outW[3] = htoDeWS(state[3]);
+# elif HASH_DIGEST_LENGTH > 3*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[3]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 12
+  hash[12] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 13
+  hash[13] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 14
+  hash[14] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 15
+  hash[15] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 24
+  hash[24] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 25
+  hash[25] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 26
+  hash[26] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 27
+  hash[27] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 28
+  hash[28] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 29
+  hash[29] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 30
+  hash[30] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 31
+  hash[31] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+#if HASH_STATE_WORDS > 4
+# if HASH_DIGEST_LENGTH >= 5*(HASH_WORD_SIZE/8)
+  outW[4] = htoDeWS(state[4]);
+# elif HASH_DIGEST_LENGTH > 4*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[4]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 16
+  hash[16] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 17
+  hash[17] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 18
+  hash[18] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 19
+  hash[19] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 32
+  hash[32] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 33
+  hash[33] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 34
+  hash[34] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 35
+  hash[35] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 36
+  hash[36] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 37
+  hash[37] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 38
+  hash[38] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 39
+  hash[39] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+#if HASH_STATE_WORDS > 5
+# if HASH_DIGEST_LENGTH >= 6*(HASH_WORD_SIZE/8)
+  outW[5] = htoDeWS(state[5]);
+# elif HASH_DIGEST_LENGTH > 5*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[5]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 20
+  hash[20] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 21
+  hash[21] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 22
+  hash[22] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 23
+  hash[23] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 40
+  hash[40] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 41
+  hash[41] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 42
+  hash[42] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 43
+  hash[43] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 44
+  hash[44] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 45
+  hash[45] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 46
+  hash[46] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 47
+  hash[47] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+#if HASH_STATE_WORDS > 6
+# if HASH_DIGEST_LENGTH >= 7*(HASH_WORD_SIZE/8)
+  outW[6] = htoDeWS(state[6]);
+# elif HASH_DIGEST_LENGTH > 6*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[6]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 24
+  hash[24] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 25
+  hash[25] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 26
+  hash[26] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 27
+  hash[27] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 48
+  hash[48] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 49
+  hash[49] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 50
+  hash[50] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 51
+  hash[51] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 52
+  hash[52] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 53
+  hash[53] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 54
+  hash[54] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 55
+  hash[55] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+#if HASH_STATE_WORDS > 7
+# if HASH_DIGEST_LENGTH >= 8*(HASH_WORD_SIZE/8)
+  outW[7] = htoDeWS(state[7]);
+# elif HASH_DIGEST_LENGTH > 7*(HASH_WORD_SIZE/8)
+  uintWS_t temp = htoDeWS(state[7]);
+#  if HASH_WORD_SIZE == 32
+#   if HASH_DIGEST_LENGTH > 28
+  hash[28] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 29
+  hash[29] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 30
+  hash[30] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 31
+  hash[31] = ((uint8_t *)&temp)[3];
+#   endif
+#  elif HASH_WORD_SIZE == 64
+#   if HASH_DIGEST_LENGTH > 56
+  hash[56] = ((uint8_t *)&temp)[0];
+#   endif
+#   if HASH_DIGEST_LENGTH > 57
+  hash[57] = ((uint8_t *)&temp)[1];
+#   endif
+#   if HASH_DIGEST_LENGTH > 58
+  hash[58] = ((uint8_t *)&temp)[2];
+#   endif
+#   if HASH_DIGEST_LENGTH > 59
+  hash[59] = ((uint8_t *)&temp)[3];
+#   endif
+#   if HASH_DIGEST_LENGTH > 60
+  hash[60] = ((uint8_t *)&temp)[4];
+#   endif
+#   if HASH_DIGEST_LENGTH > 61
+  hash[61] = ((uint8_t *)&temp)[5];
+#   endif
+#   if HASH_DIGEST_LENGTH > 62
+  hash[62] = ((uint8_t *)&temp)[6];
+#   endif
+#   if HASH_DIGEST_LENGTH > 63
+  hash[63] = ((uint8_t *)&temp)[7];
+#   endif
+#  else
+#   error unsupported hash word size
+#  endif
+# endif
+#endif
+}

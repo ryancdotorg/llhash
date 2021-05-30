@@ -1,0 +1,38 @@
+#include "../../macros.h"
+_H pragma once
+
+_H include <stddef.h>
+_H include <stdint.h>
+
+_H ifndef _INDIRECT
+_H define _INDIRECT
+_H endif
+_H include STR(../../../src/md/HASH_name/param.h)
+_H undef _INDIRECT
+
+char * JOIN(HASH_NAME,Describe)(int impl);
+int JOIN(HASH_NAME,Register)(int enable);
+void (*JOIN(HASH_NAME,Transform))(uintWS_t *digest, const void *data, uint32_t nblk);
+
+typedef struct {
+  uint8_t data[HASH_BLOCK_LENGTH];
+  uint64_t bitlen;
+  uintWS_t state[HASH_STATE_WORDS];
+  uint32_t datalen;
+} JOIN(HASH_NAME,CTX);
+
+void JOIN(HASH_NAME,Clone)(JOIN(HASH_NAME,CTX) *dst, const JOIN(HASH_NAME,CTX) *src);
+void JOIN(HASH_NAME,Init)(JOIN(HASH_NAME,CTX) *ctx);
+void JOIN(HASH_NAME,Update)(JOIN(HASH_NAME,CTX) *ctx, const uint8_t data[], size_t len);
+void JOIN(HASH_NAME,Final)(uint8_t hash[], JOIN(HASH_NAME,CTX) *ctx);
+void IDENTITY(HASH_NAME)(uint8_t hash[], const uint8_t data[], size_t len);
+
+uint64_t JOIN(HASH_NAME,Pad)(uint8_t data[], size_t len);
+void JOIN(HASH_NAME,Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
+
+void JOIN(PBKDF2_HMAC,HASH_NAME) (
+  uint8_t dk[], size_t dk_sz,
+  const uint8_t pass[], size_t pass_sz,
+  const uint8_t salt[], size_t salt_sz,
+  int c
+);

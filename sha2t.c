@@ -263,7 +263,7 @@ int main(int argc, char *argv[]) {
     printf("#include <stdint.h>\n\n");
     printf("uint32_t sha2_256_iv[][8] = {\n");
     printf("  { 0, 0, 0, 0, 0, 0, 0, 0 },\n");
-    for (int bits = 8; bits <= 256; bits += 8) {
+    for (int bits = 1; bits < 256; bits += 1) {
       sha256t(iv256, bits);
       printf("  /* SHA256/%u */\n", bits);
       printf("  { 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n", iv256[0], iv256[1], iv256[2], iv256[3]);
@@ -275,7 +275,7 @@ int main(int argc, char *argv[]) {
 
     printf("uint64_t sha2_512_iv[][8] = {\n");
     printf("  { 0, 0, 0, 0, 0, 0, 0, 0 },\n");
-    for (int bits = 8; bits <= 512; bits += 8) {
+    for (int bits = 1; bits < 512; bits += 1) {
       sha512t(iv512, bits);
       printf("  /* SHA512/%u */\n", bits);
       printf("  { 0x%016zx, 0x%016zx,\n", iv512[0], iv512[1]);

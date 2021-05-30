@@ -1,0 +1,105 @@
+/* c preprocessor template for Merkle–Damgård hmac functions */
+#include "../../macros.h"
+
+#ifndef HASH_NAME
+/* this exists to keep the linter happy */
+#define HASH_NAME SHA1
+
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <endian.h>
+#include "sha1/param.h"
+#else
+_H include <stdint.h>
+_H include <stddef.h>
+_H include <string.h>
+_H include <endian.h>
+_H include STR(../../../src/md/HASH_name/param.h)
+_H include "hmac.h"
+#endif
+
+#define HMAC_NAME JOIN(HMAC,HASH_NAME)
+#define HMAC_Clone HMAC(Clone)
+#define HMAC_Init HMAC(Init)
+#define HMAC_Update HMAC(Update)
+#define HMAC_Final HMAC(Final)
+
+#define HMAC_CTX HMAC(CTX)
+
+void HMAC_Clone(HMAC_CTX *dst, const HMAC_CTX *src) {
+  // relies on .data being first
+  if (src->datalen) {
+    memcpy(dst, src, sizeof(*dst));
+  } else {
+    memcpy(dst + sizeof(dst->data), src + sizeof(dst->data), sizeof(*dst) - sizeof(dst->data));
+  }
+}
+
+void HMAC_Init(HMAC_CTX *ctx, const void *key, size_t len) {
+  HASH(Init)((HASH(CTX)*)ctx);
+
+  // populate padded key
+  if (len > HASH_BLOCK_LENGTH) {
+    HASH_NAME(ctx->hmac, key, len);
+    // generate ipad
+    for (size_t i = 0; i < HASH_DIGEST_LENGTH; ++i) ctx->hmac[i] ^= 0x36;
+    memset(ctx->hmac+HASH_DIGEST_LENGTH, 0x36, sizeof(ctx->hmac)-HASH_DIGEST_LENGTH);
+  } else {
+    memcpy(ctx->hmac, key, len);
+    // generate ipad
+    for (size_t i = 0; i < len; ++i) ctx->hmac[i] ^= 0x36;
+    memset(ctx->hmac+len, 0x36, sizeof(ctx->hmac)-len);
+  }
+
+  // load ipad into hash state
+  ctx->bitlen = HASH_DIGEST_LENGTH * 8;
+  HASH(Transform)(ctx->state, ctx->hmac, 1);
+
+  // convert ipad to opad (0x6a == 0x36 ^ 0x5c)
+  for (int i = 0; i < HASH_BLOCK_LENGTH; ++i) ctx->hmac[i] ^= 0x6a;
+
+
+#define ILEN (HASH_BLOCK_LENGTH+HASH_DIGEST_LENGTH)
+#define REMB (ILEN & (HASH_BLOCK_LENGTH-1))
+#define NBLK (ILEN/HASH_BLOCK_LENGTH)
+  // set up padding
+  ctx->hmac[ILEN] = 0x80;
+  const uintWS_t ihlen = htoDeWS(ILEN*8);
+  if (REMB < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
+    memset(ctx->hmac + ILEN + 1, 0, (HASH_BLOCK_LENGTH-8) - (REMB + 1));
+    *((uint64_t *)(ctx->hmac + ((NBLK + 1) * HASH_BLOCK_LENGTH) - 8)) = ihlen;
+  } else {
+    memset(ctx->hmac + ILEN + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (REMB + 1));
+    *((uint64_t *)(ctx->hmac + ((NBLK + 2) * HASH_BLOCK_LENGTH) - 8)) = ihlen;
+  }
+#undef ILEN
+#undef REMB
+#undef NBLK
+}
+
+void HMAC_Update(HMAC_CTX *ctx, const uint8_t data[], size_t len) {
+  HASH(Update)((HASH(CTX)*)ctx, data, len);
+}
+
+void HMAC_Final(uint8_t hash[], HMAC_CTX *ctx) {
+  HASH(Final)(ctx->hmac + HASH_BLOCK_LENGTH, (HASH(CTX)*)ctx);
+#define ILEN (HASH_BLOCK_LENGTH+HASH_DIGEST_LENGTH)
+#define REMB (ILEN & (HASH_BLOCK_LENGTH-1))
+  if (REMB < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
+    HASH(Raw)(hash, ctx->hmac, 2);
+  } else {
+    HASH(Raw)(hash, ctx->hmac, 3);
+  }
+#undef ILEN
+#undef REMB
+#undef NBLK
+}
+
+void HMAC_NAME(uint8_t hash[], const void *key, size_t key_sz, const uint8_t msg[], size_t msg_sz) {
+  HMAC_CTX ctx;
+
+  HMAC_Init(&ctx, key, key_sz);
+  HMAC_Update(&ctx, msg, msg_sz);
+  HMAC_Final(hash, &ctx);
+}

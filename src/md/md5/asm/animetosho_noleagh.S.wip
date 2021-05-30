@@ -1,0 +1,215 @@
+#include "../../../common/built.S"
+#ifdef STUBBED
+STUB(md5_animetosho_noleagh_xform)
+#else
+
+#define RF4(I, i0, i1, i2, i3, k0, k1, k2, k3) \
+	ROUND_F(A, I##B, I##C, I##D, "%[input" STR(i0) "]", k0, 7) \
+	ROUND_F(D, A, I##B, I##C, "%[input" STR(i1) "]", k1, 12) \
+	ROUND_F(C, D, A, I##B, "%[input" STR(i2) "]", k2, 17) \
+	ROUND_F(B, C, D, A, "%[input" STR(i3) "]", k3, 22)
+
+#define RG4(i0, i1, i2, i3, k0, k1, k2, k3) \
+	ROUND_G(A, B, C, D, "%[input" STR(i0) "]", k0, 5) \
+	ROUND_G(D, A, B, C, "%[input" STR(i1) "]", k1, 9) \
+	ROUND_G(C, D, A, B, "%[input" STR(i2) "]", k2, 14) \
+	ROUND_G(B, C, D, A, "%[input" STR(i3) "]", k3, 20)
+
+#define RH4(i0, i1, i2, i3, k0, k1, k2, k3) \
+	ROUND_H(A, B, C, D, "%[input" STR(i0) "]", k0, 4) \
+	ROUND_H(D, A, B, C, "%[input" STR(i1) "]", k1, 11) \
+	ROUND_H(C, D, A, B, "%[input" STR(i2) "]", k2, 16) \
+	ROUND_H(B, C, D, A, "%[input" STR(i3) "]", k3, 23)
+
+#define RI4(i0, i1, i2, i3, k0, k1, k2, k3) \
+	ROUND_I(A, B, C, D, "%[input" STR(i0) "]", k0, 6) \
+	ROUND_I(D, A, B, C, "%[input" STR(i1) "]", k1, 10) \
+	ROUND_I(C, D, A, B, "%[input" STR(i2) "]", k2, 15) \
+	ROUND_I(B, C, D, A, "%[input" STR(i3) "]", k3, 21)
+
+#define ROUND0(a, b, c, d, k, s, t)  \
+	movl  %c, %r10d;        \
+	addl  (k*4)(%rsi), %a;  \
+	xorl  %d, %r10d;        \
+	andl  %b, %r10d;        \
+	xorl  %d, %r10d;        \
+	ADD3(a, r10d, t);       \
+	roll  $s, %a;           \
+	addl  %b, %a;
+
+#define ROUND_F(A, B, C, D, NEXT_IN, K, R) \
+	"xorl %k[" STR(C) "], %k[TMP1]\n" \
+	"addl $" STR(K) ", %k[" STR(A) "]\n" \
+	"andl %k[" STR(B) "], %k[TMP1]\n" \
+	"xorl %k[" STR(D) "], %k[TMP1]\n" \
+	"addl " NEXT_IN ", %k[" STR(D) "]\n" \
+	"addl %k[TMP1], %k[" STR(A) "]\n" \
+	"roll $" STR(R) ", %k[" STR(A) "]\n" \
+	"movl %k[" STR(C) "], %k[TMP1]\n" \
+	"addl %k[" STR(B) "], %k[" STR(A) "]\n"
+
+#define ROUND_G(A, B, C, D, NEXT_IN, K, R) \
+	"notl %k[TMP1]\n" \
+	"addl $" STR(K) ", %k[" STR(A) "]\n" \
+	"andl %k[" STR(C) "], %k[TMP1]\n" \
+	"movl %k[" STR(D) "], %k[TMP2]\n" \
+	"addl " NEXT_IN ", %k[" STR(D) "]\n" \
+	"addl %k[TMP1], %k[" STR(A) "]\n" \
+	"andl %k[" STR(B) "], %k[TMP2]\n" \
+	"addl %k[TMP2], %k[" STR(A) "]\n" \
+	"roll $" STR(R) ", %k[" STR(A) "]\n" \
+	"movl %k[" STR(C) "], %k[TMP1]\n" \
+	"addl %k[" STR(B) "], %k[" STR(A) "]\n"
+
+#define ROUND_H(A, B, C, D, NEXT_IN, K, R) \
+	"addl $" STR(K) ", %k[" STR(A) "]\n" \
+	"xorl %k[" STR(B) "], %k[TMP1]\n" \
+	"addl %k[TMP1], %k[" STR(A) "]\n" \
+	"xorl %k[" STR(D) "], %k[TMP1]\n" \
+	"addl " NEXT_IN ", %k[" STR(D) "]\n" \
+	"roll $" STR(R) ", %k[" STR(A) "]\n" \
+	"addl %k[" STR(B) "], %k[" STR(A) "]\n"
+
+#define ROUND_I(A, B, C, D, NEXT_IN, K, R) \
+	"notl %k[TMP1]\n" \
+	"addl $" STR(K) ", %k[" STR(A) "]\n" \
+	"addl " NEXT_IN ", %k[" STR(D) "]\n" \
+	"orl %k[" STR(B) "], %k[TMP1]\n" \
+	"xorl %k[" STR(C) "], %k[TMP1]\n" \
+	"addl %k[TMP1], %k[" STR(A) "]\n" \
+	"roll $" STR(R) ", %k[" STR(A) "]\n" \
+	"movl %k[" STR(C) "], %k[TMP1]\n" \
+	"addl %k[" STR(B) "], %k[" STR(A) "]\n"
+
+#define ROUND_I_LAST(A, B, C, D, K, R) \
+	"notl %k[TMP1]\n" \
+	"addl $" STR(K) ", %k[" STR(A) "]\n" \
+	"orl %k[" STR(B) "], %k[TMP1]\n" \
+	"xorl %k[" STR(C) "], %k[TMP1]\n" \
+	"addl %k[TMP1], %k[" STR(A) "]\n" \
+	"roll $" STR(R) ", %k[" STR(A) "]\n" \
+	"addl %k[" STR(B) "], %k[" STR(A) "]\n"
+
+#define ROUND1(a, b, c, d, k, s, t)  \
+	movl  %d, %r10d;        \
+	movl  %d, %r11d;        \
+	addl  (k*4)(%rsi), %a;  \
+	notl  %r10d;            \
+	andl  %b, %r11d;        \
+	andl  %c, %r10d;        \
+	orl   %r11d, %r10d;     \
+	ADD3(a, r10d, t);       \
+	roll  $s, %a;           \
+	addl  %b, %a;
+
+#define ROUND2(a, b, c, d, k, s, t)  \
+	movl  %c, %r10d;        \
+	addl  (k*4)(%rsi), %a;  \
+	xorl  %d, %r10d;        \
+	xorl  %b, %r10d;        \
+	ADD3(a, r10d, t);       \
+	roll  $s, %a;           \
+	addl  %b, %a;
+
+#define ROUND3(a, b, c, d, k, s, t)  \
+	movl  %d, %r10d;        \
+	not   %r10d;            \
+	addl  (k*4)(%rsi), %a;  \
+	orl   %b, %r10d;        \
+	xorl  %c, %r10d;        \
+	ADD3(a, r10d, t);       \
+	roll  $s, %a;           \
+	addl  %b, %a;
+
+/* void md5_animetosho_noleagh_xform(uint32_t state[static 4], const uint8_t block[static 64], uint64_t nblk) */
+ENTRY(md5_animetosho_noleagh_xform)
+process:
+	/* Load state */
+	movl     0(%rdi), %eax  /* a */
+	movl     4(%rdi), %ecx  /* b */
+	movl     8(%rdi), %r8d  /* c */
+	movl    12(%rdi), %r9d  /* d */
+
+	/* 64 rounds of hashing */
+	ROUND0(eax, ecx, r8d, r9d,  0,  7, -0x28955B88)
+	ROUND0(r9d, eax, ecx, r8d,  1, 12, -0x173848AA)
+	ROUND0(r8d, r9d, eax, ecx,  2, 17,  0x242070DB)
+	ROUND0(ecx, r8d, r9d, eax,  3, 22, -0x3E423112)
+	ROUND0(eax, ecx, r8d, r9d,  4,  7, -0x0A83F051)
+	ROUND0(r9d, eax, ecx, r8d,  5, 12,  0x4787C62A)
+	ROUND0(r8d, r9d, eax, ecx,  6, 17, -0x57CFB9ED)
+	ROUND0(ecx, r8d, r9d, eax,  7, 22, -0x02B96AFF)
+	ROUND0(eax, ecx, r8d, r9d,  8,  7,  0x698098D8)
+	ROUND0(r9d, eax, ecx, r8d,  9, 12, -0x74BB0851)
+	ROUND0(r8d, r9d, eax, ecx, 10, 17, -0x0000A44F)
+	ROUND0(ecx, r8d, r9d, eax, 11, 22, -0x76A32842)
+	ROUND0(eax, ecx, r8d, r9d, 12,  7,  0x6B901122)
+	ROUND0(r9d, eax, ecx, r8d, 13, 12, -0x02678E6D)
+	ROUND0(r8d, r9d, eax, ecx, 14, 17, -0x5986BC72)
+	ROUND0(ecx, r8d, r9d, eax, 15, 22,  0x49B40821)
+	ROUND1(eax, ecx, r8d, r9d,  1,  5, -0x09E1DA9E)
+	ROUND1(r9d, eax, ecx, r8d,  6,  9, -0x3FBF4CC0)
+	ROUND1(r8d, r9d, eax, ecx, 11, 14,  0x265E5A51)
+	ROUND1(ecx, r8d, r9d, eax,  0, 20, -0x16493856)
+	ROUND1(eax, ecx, r8d, r9d,  5,  5, -0x29D0EFA3)
+	ROUND1(r9d, eax, ecx, r8d, 10,  9,  0x02441453)
+	ROUND1(r8d, r9d, eax, ecx, 15, 14, -0x275E197F)
+	ROUND1(ecx, r8d, r9d, eax,  4, 20, -0x182C0438)
+	ROUND1(eax, ecx, r8d, r9d,  9,  5,  0x21E1CDE6)
+	ROUND1(r9d, eax, ecx, r8d, 14,  9, -0x3CC8F82A)
+	ROUND1(r8d, r9d, eax, ecx,  3, 14, -0x0B2AF279)
+	ROUND1(ecx, r8d, r9d, eax,  8, 20,  0x455A14ED)
+	ROUND1(eax, ecx, r8d, r9d, 13,  5, -0x561C16FB)
+	ROUND1(r9d, eax, ecx, r8d,  2,  9, -0x03105C08)
+	ROUND1(r8d, r9d, eax, ecx,  7, 14,  0x676F02D9)
+	ROUND1(ecx, r8d, r9d, eax, 12, 20, -0x72D5B376)
+	ROUND2(eax, ecx, r8d, r9d,  5,  4, -0x0005C6BE)
+	ROUND2(r9d, eax, ecx, r8d,  8, 11, -0x788E097F)
+	ROUND2(r8d, r9d, eax, ecx, 11, 16,  0x6D9D6122)
+	ROUND2(ecx, r8d, r9d, eax, 14, 23, -0x021AC7F4)
+	ROUND2(eax, ecx, r8d, r9d,  1,  4, -0x5B4115BC)
+	ROUND2(r9d, eax, ecx, r8d,  4, 11,  0x4BDECFA9)
+	ROUND2(r8d, r9d, eax, ecx,  7, 16, -0x0944B4A0)
+	ROUND2(ecx, r8d, r9d, eax, 10, 23, -0x41404390)
+	ROUND2(eax, ecx, r8d, r9d, 13,  4,  0x289B7EC6)
+	ROUND2(r9d, eax, ecx, r8d,  0, 11, -0x155ED806)
+	ROUND2(r8d, r9d, eax, ecx,  3, 16, -0x2B10CF7B)
+	ROUND2(ecx, r8d, r9d, eax,  6, 23,  0x04881D05)
+	ROUND2(eax, ecx, r8d, r9d,  9,  4, -0x262B2FC7)
+	ROUND2(r9d, eax, ecx, r8d, 12, 11, -0x1924661B)
+	ROUND2(r8d, r9d, eax, ecx, 15, 16,  0x1FA27CF8)
+	ROUND2(ecx, r8d, r9d, eax,  2, 23, -0x3B53A99B)
+	ROUND3(eax, ecx, r8d, r9d,  0,  6, -0x0BD6DDBC)
+	ROUND3(r9d, eax, ecx, r8d,  7, 10,  0x432AFF97)
+	ROUND3(r8d, r9d, eax, ecx, 14, 15, -0x546BDC59)
+	ROUND3(ecx, r8d, r9d, eax,  5, 21, -0x036C5FC7)
+	ROUND3(eax, ecx, r8d, r9d, 12,  6,  0x655B59C3)
+	ROUND3(r9d, eax, ecx, r8d,  3, 10, -0x70F3336E)
+	ROUND3(r8d, r9d, eax, ecx, 10, 15, -0x00100B83)
+	ROUND3(ecx, r8d, r9d, eax,  1, 21, -0x7A7BA22F)
+	ROUND3(eax, ecx, r8d, r9d,  8,  6,  0x6FA87E4F)
+	ROUND3(r9d, eax, ecx, r8d, 15, 10, -0x01D31920)
+	ROUND3(r8d, r9d, eax, ecx,  6, 15, -0x5CFEBCEC)
+	ROUND3(ecx, r8d, r9d, eax, 13, 21,  0x4E0811A1)
+	ROUND3(eax, ecx, r8d, r9d,  4,  6, -0x08AC817E)
+	ROUND3(r9d, eax, ecx, r8d, 11, 10, -0x42C50DCB)
+	ROUND3(r8d, r9d, eax, ecx,  2, 15,  0x2AD7D2BB)
+	ROUND3(ecx, r8d, r9d, eax,  9, 21, -0x14792C6F)
+
+	/* Save updated state */
+	addl  %eax,  0(%rdi)
+	addl  %ecx,  4(%rdi)
+	addl  %r8d,  8(%rdi)
+	addl  %r9d, 12(%rdi)
+
+next:
+	/* maybe process another block */
+	dec   %rdx
+	jz    ret
+	addq  $64, %rsi
+	jmp   process
+
+ret:
+	retq
+ENDPROC(md5_animetosho_noleagh_xform)
+#endif

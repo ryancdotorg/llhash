@@ -1,0 +1,70 @@
+// MD5 implemetation, transform only
+
+#include <stdint.h>
+#include <endian.h>
+
+#include "../../../macros.h"
+
+// Mixing functions
+#define F(x, y, z) (z ^ (x & (y ^ z)))
+#define G(x, y, z) (x & y) | (x & z) | (y & z)
+#define H(x, y, z) (x ^ y ^ z)
+
+// Let's make the compiler do a ton of work...
+#define S0(r) ((r&3)==0 ?  3 : ((r&3)==1 ?  7 : ((r&3)==2 ? 11 : 19 )))
+#define S1(r) ((r&3)==0 ?  3 : ((r&3)==1 ?  5 : ((r&3)==2 ?  9 : 13 )))
+#define S2(r) ((r&3)==0 ?  3 : ((r&3)==1 ?  9 : ((r&3)==2 ? 11 : 15 )))
+
+#define R0(a,b,c,d,p,r) a=ROL32(a+F(b,c,d)+W[p]+0x00000000, S0(r));
+#define R1(a,b,c,d,p,r) a=ROL32(a+G(b,c,d)+W[p]+0x5a827999, S1(r));
+#define R2(a,b,c,d,p,r) a=ROL32(a+H(b,c,d)+W[p]+0x6ed9eba1, S2(r));
+
+#define P(a,b,c,d,p,r) do {            \
+  if (r < 16) {      R0(a,b,c,d,p,r) } \
+  else if (r < 32) { R1(a,b,c,d,p,r) } \
+  else {             R2(a,b,c,d,p,r) } \
+} while(0)
+
+#define R(p,r) do {                        \
+  if ((r%4) == 0) {      P(A,B,C,D,p,r); } \
+  else if ((r%4) == 1) { P(D,A,B,C,p,r); } \
+  else if ((r%4) == 1) { P(C,D,A,B,p,r); } \
+  else {                 P(B,C,D,A,p,r); } \
+} while(0)
+
+
+
+int JOIN(md4,c_impl,xform,built)() { return 1; }
+// Process input in chunks of 64 bytes, caller resposible for padding
+void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
+{
+  const uint32_t *input=(uint32_t *)data;
+  uint32_t A, B, C, D, W[16];
+
+  for (;;) {
+    // load input
+    for (int i = 0; i < 16; ++i) W[i] = htole32(input[i]);
+
+    A=digest[0]; B=digest[1]; C=digest[2]; D=digest[3];
+
+    R( 0, 0); R( 1, 1); R( 2, 2); R( 3, 3);
+    R( 4, 4); R( 5, 5); R( 6, 6); R( 7, 7);
+    R( 8, 8); R( 9, 9); R(10,10); R(11,11);
+    R(12,12); R(13,13); R(14,14); R(15,15);
+
+    R( 0,16); R( 4,17); R( 8,18); R(12,19);
+    R( 1,20); R( 5,21); R( 9,22); R(13,23);
+    R( 2,24); R( 6,25); R(10,26); R(14,27);
+    R( 3,28); R( 7,29); R(11,30); R(15,31);
+
+    R( 0,32); R( 8,33); R( 4,34); R(12,35);
+    R( 2,36); R(10,37); R( 6,38); R(14,39);
+    R( 1,40); R( 9,41); R( 5,42); R(13,43);
+    R( 3,44); R(11,45); R( 7,46); R(15,47);
+
+    digest[0]+=A; digest[1]+=B; digest[2]+=C; digest[3]+=D;
+
+    if (--nblk <= 0) return;
+    input += (64 / sizeof(*input));
+  }
+}

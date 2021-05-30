@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <dlfcn.h>
 
@@ -10,15 +11,21 @@
 
 #include "rhashc.h"
 #include "openssl.h"
-#include "sha1.h"
-#include "sha2_256.h"
-#include "sha2_512.h"
 
-extern void sha2_512_cryptogams_gen_xform(uint64_t *, void *, uint32_t);
-extern void sha2_512_cryptogams_xop_xform(uint64_t *, void *, uint32_t);
-extern void sha2_512_cryptogams_avx_xform(uint64_t *, void *, uint32_t);
-extern void sha2_512_cryptogams_avx2_xform(uint64_t *, void *, uint32_t);
+#include "gen/md/md5/hmac.h"
+#include "gen/md/md5/hash.h"
 
+#include "gen/md/sha1/hmac.h"
+#include "gen/md/sha1/hash.h"
+
+#include "gen/md/sha2_256/hash.h"
+#include "gen/md/sha2_256/hmac.h"
+
+#include "gen/md/sha2_512/hmac.h"
+#include "gen/md/sha2_512/hash.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static uint64_t getns() {
   uint64_t ns;
   struct timespec ts;
@@ -27,13 +34,48 @@ static uint64_t getns() {
   ns += ts.tv_sec * 1000000000ULL;
   return ns;
 }
+#pragma GCC diagnostic pop
 
-static void hex(char *out, const void *in, size_t len) {
-  for (size_t i = 0; i < len; ++i) {
-    sprintf(out, "%02x", ((uint8_t *)in)[i]);
-    out += 2;
+static char * rpadf(size_t w, const char *fmt, ...) {
+  static size_t len = 0;
+  static char *str = NULL, *tmp = NULL;
+  char wf[24];
+  size_t n;
+
+  va_list ap;
+  va_start(ap, fmt);
+
+  if (str == NULL && (str = (char *)malloc(len = w + 1)) == NULL) { perror("malloc"); abort(); }
+  if (tmp == NULL && (tmp = (char *)malloc(len)) == NULL) { perror("malloc"); abort(); }
+
+  while ((n = vsnprintf(tmp, len, fmt, ap) + 1) > len) {
+    fprintf(stderr, "realloc %zu %zu\n", len, n);
+    if ((str = (char *)realloc(str, len = n)) == NULL) { perror("realloc"); abort(); }
+    if ((tmp = (char *)realloc(tmp, len)) == NULL) { perror("realloc"); abort(); }
   }
+
+  sprintf(wf, "%%-%zus", w);
+  sprintf(str, wf, tmp);
+
+  return str;
+}
+
+static char * hex(char *out, const void *in, size_t len) {
+  char *ret = out;
+  uint8_t p = 1;
+  for (size_t i = 0; i < len; ++i) {
+    uint8_t c = ((uint8_t *)in)[i];
+    if (c == 0 && p != 0) {
+      out += sprintf(out, "\033[38;5;23m");
+    } else if (c != 0 && p == 0) {
+      out += sprintf(out, "\033[m");
+    }
+    out += sprintf(out, "%02x", ((uint8_t *)in)[i]);
+    p = c;
+  }
+  out += sprintf(out, "\033[m");
   *out = '\0';
+  return ret;
 }
 
 void rc4_prng(uint8_t *out, size_t len, const char *seed) {
@@ -56,10 +98,13 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
   }
 }
 
+/*
+printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
+*/
+
 #define TEST_EMPTY(NAME, SIZE) do { \
   OpenSSL_##NAME (ref, buf, 0); \
-  hex(hexstr, ref, SIZE); \
-  printf("OpenSSL_" #NAME "('') = %s\n", hexstr); \
+  printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
   for (int i = 0; i < 32; ++i) { \
     int impl = NAME##_Register(1<<i); \
     if (impl >= 0) { \
@@ -67,10 +112,9 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
       int fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
-        hex(hexstr, hash, SIZE); \
-        printf("rhashc " #NAME "[%2d]('') = %s FAIL - %s\n", impl, hexstr, NAME##_Describe(impl)); \
-      } else { \
-        printf("rhashc " #NAME "[%2d]('') OKAY - %s\n", impl, NAME##_Describe(impl)); \
+        printf("rhashc %s - FAIL - %s\n", rpadf(17, #NAME "[%2d]('')", impl), NAME##_Describe(impl)); \
+        printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+        printf("ref %s\n", hex(hexstr, ref, SIZE)); \
       } \
     } \
   } \
@@ -88,25 +132,28 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
       fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
-        hex(hexstr, hash, SIZE); \
-        printf("All-in-One " #NAME "[%2d](%s[0:%u]) = %s FAIL - %s\n", impl, desc, N, hexstr, NAME##_Describe(impl)); \
-        hex(hexstr, ref, SIZE); \
-        printf("ref %s\n", hexstr); \
+        printf("All-in-One               %s - FAIL - %s\n", rpadf(26, #NAME "[%2d](%s[0:%u])", impl, desc, N), NAME##_Describe(impl)); \
+        printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+        printf("ref %s\n", hex(hexstr, ref, SIZE)); \
       } \
 \
+      memset(ctx.data, 0xa5, sizeof(ctx.data)); \
       NAME##_Init(&ctx); \
       NAME##_Update(&ctx, buf, N); \
       NAME##_Final(hash, &ctx); \
       fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
-        hex(hexstr, hash, SIZE); \
-        printf("Init/Update/Final " #NAME "[%2d](%s[0:%u]) = %s FAIL - %s\n", impl, desc, N, hexstr, NAME##_Describe(impl)); \
-        hex(hexstr, ref, SIZE); \
-        printf("ref %s\n", hexstr); \
+        printf("Init/Update/Final        %s - FAIL - %s\n", rpadf(26, #NAME "[%2d](%s[0:%u])", impl, desc, N), NAME##_Describe(impl)); \
+        printf("data:    %s\n", hex(hexstr, ctx.data, sizeof(ctx.data))); \
+        printf("bitlen:  %zu\n", ctx.bitlen); \
+        printf("datalen: %u\n", ctx.datalen); \
+        printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+        printf("ref %s\n", hex(hexstr, ref, SIZE)); \
       } \
 \
-      if (N > 0) { \
+      if (!fail && N > 0) { \
+      memset(ctx.data, 0xa5, sizeof(ctx.data)); \
       NAME##_Init(&ctx); \
       NAME##_Update(&ctx, buf, 1); \
       NAME##_Update(&ctx, buf+1, N-1); \
@@ -114,10 +161,12 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
       fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
-        hex(hexstr, hash, SIZE); \
-        printf("Init/Update/Update/Final " #NAME "[%2d](%s[0:%u]) = %s FAIL - %s\n", impl, desc, N, hexstr, NAME##_Describe(impl)); \
-        hex(hexstr, ref, SIZE); \
-        printf("ref %s\n", hexstr); \
+        printf("Init/Update/Update/Final %s - FAIL - %s\n", rpadf(26, #NAME "[%2d](%s[0:%u])", impl, desc, N), NAME##_Describe(impl)); \
+        printf("data:    %s\n", hex(hexstr, ctx.data, sizeof(ctx.data))); \
+        printf("bitlen:  %zu\n", ctx.bitlen); \
+        printf("datalen: %u\n", ctx.datalen); \
+        printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+        printf("ref %s\n", hex(hexstr, ref, SIZE)); \
       } \
       } \
 \
@@ -127,18 +176,18 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
       fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
-        hex(hexstr, hash, SIZE); \
-        printf("Pad/Raw " #NAME "[%2d](%s[0:%u]) = %s FAIL - %s\n", impl, desc, N, hexstr, NAME##_Describe(impl)); \
-        hex(hexstr, ref, SIZE); \
-        printf("ref %s\n", hexstr); \
+        printf("Pad/Raw                  %s - FAIL - %s\n", rpadf(26, #NAME "[%2d](%s[0:%u])", impl, desc, N), NAME##_Describe(impl)); \
+        printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+        printf("ref %s\n", hex(hexstr, ref, SIZE)); \
       } \
     } \
   } \
 } while(0)
 
 #define BENCH_DATA(NAME, BLOCK, SIZE) do { \
-  int repeat = 1000, iter = 1; \
+  int base_repeat = 1024, iter = 1; \
   for (int n = 1; n <= 256; n *= 4) { \
+    int repeat = base_repeat * 256 / n; \
     int len = BLOCK * n - 20; \
     rc4_prng(scratch, len, "an arbitrary string"); \
     OpenSSL_##NAME (ref, scratch, len); \
@@ -167,43 +216,28 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
     } \
   } \
 } while(0)
-/*
-          NAME (hash, scratch, len); \
-          uint64_t w = NAME##_Pad (scratch, len); \
-          NAME##_Raw(hash, scratch, w); \
-*/
 
 int main() {
+  /*
   HMAC_SHA1_CTX *dst = malloc(sizeof(HMAC_SHA1_CTX));
-  printf("sz struct %u\n", sizeof(HMAC_SHA1_CTX));
-  printf("sz pointer %u\n", sizeof(*dst));
-  printf("sz data %u\n", sizeof(dst->data));
+  printf("sz struct %lu\n", sizeof(HMAC_SHA1_CTX));
+  printf("sz pointer %lu\n", sizeof(*dst));
+  printf("sz data %lu\n", sizeof(dst->data));
+  printf("\n");
+  //*/
 
-  char *desc;
-  uint8_t scratch[65536], buf[1024], hexstr[257];
+  char *desc, hexstr[128*(16)+1];
+  uint8_t scratch[65536], buf[512];
   uint8_t ref[64], hash[64];
 
-  /*
-  rc4_prng(hash, 16, "Key");
-  hex(hexstr, hash, 16);
-  printf("rc4_prng('Key') = %s\n", hexstr);
-  */
-
-  printf("\n");
-  printf("Autoselect SHA1:     %s\n", SHA1_Describe(SHA1_Register(-1)));
-  printf("Autoselect SHA2_256: %s\n", SHA2_256_Describe(SHA2_256_Register(-1)));
-  printf("Autoselect SHA2_512: %s\n", SHA2_512_Describe(SHA2_512_Register(-1)));
-  printf("\n");
-
+  TEST_EMPTY(MD5, 16);
   TEST_EMPTY(SHA1, 20);
-  printf("\n");
   TEST_EMPTY(SHA2_256, 32);
-  printf("\n");
   TEST_EMPTY(SHA2_512, 64);
 
   desc = "0x00";
   memset(buf, 0x00, sizeof(buf));
-  for (int n = 0; n < sizeof(buf); ++n) {
+  for (size_t n = 0; n < sizeof(buf); ++n) {
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
     TEST_DATA(SHA2_512, n, 64);
@@ -211,7 +245,7 @@ int main() {
 
   desc = "0xff";
   memset(buf, 0xff, sizeof(buf));
-  for (int n = 0; n < sizeof(buf); ++n) {
+  for (size_t n = 0; n < sizeof(buf); ++n) {
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
     TEST_DATA(SHA2_512, n, 64);
@@ -220,17 +254,25 @@ int main() {
   desc = "prng";
   rc4_prng(buf, sizeof(buf), "an arbitrary string");
 
-  for (int n = 0; n < sizeof(buf); ++n) {
+  //for (int n = 0; n < 3; ++n) {
+  for (size_t n = 0; n < sizeof(buf); ++n) {
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
     TEST_DATA(SHA2_512, n, 64);
   }
 
-  printf("\n");
-
+  BENCH_DATA(MD5, 64, 16);
+  /*
   BENCH_DATA(SHA1, 64, 20);
   BENCH_DATA(SHA2_256, 64, 32);
   BENCH_DATA(SHA2_512, 128, 64);
+  //*/
+
+  printf("\n");
+  printf("Runtime Default MD5:      %s\n", MD5_Describe(MD5_Register(-1)));
+  printf("Runtime Default SHA1:     %s\n", SHA1_Describe(SHA1_Register(-1)));
+  printf("Runtime Default SHA2_256: %s\n", SHA2_256_Describe(SHA2_256_Register(-1)));
+  printf("Runtume Default SHA2_512: %s\n", SHA2_512_Describe(SHA2_512_Register(-1)));
 
   return 0;
 }
