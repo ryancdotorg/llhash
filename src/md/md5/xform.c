@@ -1,4 +1,5 @@
 // MD5 implemetation, transform only
+// By Ryan Castellucci, public domain
 
 #include <stdint.h>
 #include <endian.h>
@@ -39,8 +40,7 @@
 
 int JOIN(md5,c_impl,xform,built)() { return 1; }
 // Process input in chunks of 64 bytes, caller resposible for padding
-void JOIN(md5,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
-{
+void JOIN(md5,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk) {
   const uint32_t *input=(uint32_t *)data;
   uint32_t A, B, C, D, W[16];
 

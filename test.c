@@ -238,6 +238,7 @@ int main() {
   desc = "0x00";
   memset(buf, 0x00, sizeof(buf));
   for (size_t n = 0; n < sizeof(buf); ++n) {
+    TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
     TEST_DATA(SHA2_512, n, 64);
@@ -246,6 +247,7 @@ int main() {
   desc = "0xff";
   memset(buf, 0xff, sizeof(buf));
   for (size_t n = 0; n < sizeof(buf); ++n) {
+    TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
     TEST_DATA(SHA2_512, n, 64);
@@ -254,15 +256,14 @@ int main() {
   desc = "prng";
   rc4_prng(buf, sizeof(buf), "an arbitrary string");
 
-  //for (int n = 0; n < 3; ++n) {
   for (size_t n = 0; n < sizeof(buf); ++n) {
+    TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
     TEST_DATA(SHA2_512, n, 64);
   }
 
   BENCH_DATA(MD5, 64, 16);
-  /*
   BENCH_DATA(SHA1, 64, 20);
   BENCH_DATA(SHA2_256, 64, 32);
   BENCH_DATA(SHA2_512, 128, 64);
