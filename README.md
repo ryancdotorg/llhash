@@ -6,6 +6,7 @@ Currently under development.
 
 ## Supported Hash Functions
 
+* MD4
 * MD5
 * SHA1
 * SHA2-224

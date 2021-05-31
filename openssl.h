@@ -1,5 +1,6 @@
 #pragma once
 
+void OpenSSL_MD4(uint8_t hash[], const uint8_t data[], size_t len);
 void OpenSSL_MD5(uint8_t hash[], const uint8_t data[], size_t len);
 void OpenSSL_RIPEMD160(uint8_t hash[], const uint8_t data[], size_t len);
 void OpenSSL_SHA1(uint8_t hash[], const uint8_t data[], size_t len);

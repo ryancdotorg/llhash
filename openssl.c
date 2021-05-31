@@ -38,6 +38,7 @@ DLFUNC(EVP_Digest, int,
   (a, b, c, d, e, f)
 )
 
+DLFUNC(EVP_md4, const EVP_MD *, (), ())
 DLFUNC(EVP_md5, const EVP_MD *, (), ())
 DLFUNC(EVP_ripemd160, const EVP_MD *, (), ())
 DLFUNC(EVP_sha1, const EVP_MD *, (), ())
@@ -47,10 +48,11 @@ DLFUNC(EVP_sha384, const EVP_MD *, (), ())
 DLFUNC(EVP_sha512, const EVP_MD *, (), ())
 #pragma GCC diagnostic pop
 
-static const EVP_MD *md_md5, *md_ripemd160, *md_sha1;
+static const EVP_MD *md_md4, *md_md5, *md_ripemd160, *md_sha1;
 static const EVP_MD *md_sha224, *md_sha256, *md_sha384, *md_sha512;
 
 static __attribute__((constructor)) void getmd() {
+  md_md4 = _EVP_md4();
   md_md5 = _EVP_md5();
   md_ripemd160 = _EVP_ripemd160();
   md_sha1 = _EVP_sha1();
@@ -65,6 +67,7 @@ void OpenSSL_##NAME (uint8_t hash[], const uint8_t data[], size_t len) { \
   _EVP_Digest(data, len, hash, NULL, md_##name, NULL); \
 }
 
+OPENSSL_DIGEST(MD4, md4)
 OPENSSL_DIGEST(MD5, md5)
 OPENSSL_DIGEST(RIPEMD160, ripemd160)
 OPENSSL_DIGEST(SHA1, sha1)

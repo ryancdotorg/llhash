@@ -7,7 +7,7 @@
 
 // Mixing functions
 #define F(x, y, z) (z ^ (x & (y ^ z)))
-#define G(x, y, z) (x & y) | (x & z) | (y & z)
+#define G(x, y, z) ((x & y) | (x & z) | (y & z))
 #define H(x, y, z) (x ^ y ^ z)
 
 // Let's make the compiler do a ton of work...
@@ -15,24 +15,22 @@
 #define S1(r) ((r&3)==0 ?  3 : ((r&3)==1 ?  5 : ((r&3)==2 ?  9 : 13 )))
 #define S2(r) ((r&3)==0 ?  3 : ((r&3)==1 ?  9 : ((r&3)==2 ? 11 : 15 )))
 
-#define R0(a,b,c,d,p,r) a=ROL32(a+F(b,c,d)+W[p]+0x00000000, S0(r));
-#define R1(a,b,c,d,p,r) a=ROL32(a+G(b,c,d)+W[p]+0x5a827999, S1(r));
-#define R2(a,b,c,d,p,r) a=ROL32(a+H(b,c,d)+W[p]+0x6ed9eba1, S2(r));
+#define R0(r,a,b,c,d,p) a=ROL32(a+F(b,c,d)+W[p]+0x00000000, S0(r));
+#define R1(r,a,b,c,d,p) a=ROL32(a+G(b,c,d)+W[p]+0x5a827999, S1(r));
+#define R2(r,a,b,c,d,p) a=ROL32(a+H(b,c,d)+W[p]+0x6ed9eba1, S2(r));
 
-#define P(a,b,c,d,p,r) do {            \
-  if (r < 16) {      R0(a,b,c,d,p,r) } \
-  else if (r < 32) { R1(a,b,c,d,p,r) } \
-  else {             R2(a,b,c,d,p,r) } \
+#define P(r,a,b,c,d,p) do {            \
+  if (r < 16) {      R0(r,a,b,c,d,p) } \
+  else if (r < 32) { R1(r,a,b,c,d,p) } \
+  else {             R2(r,a,b,c,d,p) } \
 } while(0)
 
-#define R(p,r) do {                        \
-  if ((r%4) == 0) {      P(A,B,C,D,p,r); } \
-  else if ((r%4) == 1) { P(D,A,B,C,p,r); } \
-  else if ((r%4) == 1) { P(C,D,A,B,p,r); } \
-  else {                 P(B,C,D,A,p,r); } \
+#define R(r,p) do {                        \
+  if ((r%4) == 0) {      P(r,A,B,C,D,p); } \
+  else if ((r%4) == 1) { P(r,D,A,B,C,p); } \
+  else if ((r%4) == 2) { P(r,C,D,A,B,p); } \
+  else {                 P(r,B,C,D,A,p); } \
 } while(0)
-
-
 
 int JOIN(md4,c_impl,xform,built)() { return 1; }
 // Process input in chunks of 64 bytes, caller resposible for padding
@@ -52,15 +50,15 @@ void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
     R( 8, 8); R( 9, 9); R(10,10); R(11,11);
     R(12,12); R(13,13); R(14,14); R(15,15);
 
-    R( 0,16); R( 4,17); R( 8,18); R(12,19);
-    R( 1,20); R( 5,21); R( 9,22); R(13,23);
-    R( 2,24); R( 6,25); R(10,26); R(14,27);
-    R( 3,28); R( 7,29); R(11,30); R(15,31);
+    R(16, 0); R(17, 4); R(18, 8); R(19,12);
+    R(20, 1); R(21, 5); R(22, 9); R(23,13);
+    R(24, 2); R(25, 6); R(26,10); R(27,14);
+    R(28, 3); R(29, 7); R(30,11); R(31,15);
 
-    R( 0,32); R( 8,33); R( 4,34); R(12,35);
-    R( 2,36); R(10,37); R( 6,38); R(14,39);
-    R( 1,40); R( 9,41); R( 5,42); R(13,43);
-    R( 3,44); R(11,45); R( 7,46); R(15,47);
+    R(32, 0); R(33, 8); R(34, 4); R(35,12);
+    R(36, 2); R(37,10); R(38, 6); R(39,14);
+    R(40, 1); R(41, 9); R(42, 5); R(43,13);
+    R(44, 3); R(45,11); R(46, 7); R(47,15);
 
     digest[0]+=A; digest[1]+=B; digest[2]+=C; digest[3]+=D;
 

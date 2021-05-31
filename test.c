@@ -12,6 +12,9 @@
 #include "rhashc.h"
 #include "openssl.h"
 
+#include "gen/md/md4/hmac.h"
+#include "gen/md/md4/hash.h"
+
 #include "gen/md/md5/hmac.h"
 #include "gen/md/md5/hash.h"
 
@@ -230,6 +233,7 @@ int main() {
   uint8_t scratch[65536], buf[512];
   uint8_t ref[64], hash[64];
 
+  TEST_EMPTY(MD4, 16);
   TEST_EMPTY(MD5, 16);
   TEST_EMPTY(SHA1, 20);
   TEST_EMPTY(SHA2_256, 32);
@@ -238,6 +242,7 @@ int main() {
   desc = "0x00";
   memset(buf, 0x00, sizeof(buf));
   for (size_t n = 0; n < sizeof(buf); ++n) {
+    TEST_DATA(MD4, n, 16);
     TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
@@ -247,6 +252,7 @@ int main() {
   desc = "0xff";
   memset(buf, 0xff, sizeof(buf));
   for (size_t n = 0; n < sizeof(buf); ++n) {
+    TEST_DATA(MD4, n, 16);
     TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
@@ -257,12 +263,14 @@ int main() {
   rc4_prng(buf, sizeof(buf), "an arbitrary string");
 
   for (size_t n = 0; n < sizeof(buf); ++n) {
+    TEST_DATA(MD4, n, 16);
     TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
     TEST_DATA(SHA2_256, n, 32);
     TEST_DATA(SHA2_512, n, 64);
   }
 
+  BENCH_DATA(MD4, 64, 16);
   BENCH_DATA(MD5, 64, 16);
   BENCH_DATA(SHA1, 64, 20);
   BENCH_DATA(SHA2_256, 64, 32);
@@ -270,6 +278,7 @@ int main() {
   //*/
 
   printf("\n");
+  printf("Runtime Default MD4:      %s\n", MD4_Describe(MD4_Register(-1)));
   printf("Runtime Default MD5:      %s\n", MD5_Describe(MD5_Register(-1)));
   printf("Runtime Default SHA1:     %s\n", SHA1_Describe(SHA1_Register(-1)));
   printf("Runtime Default SHA2_256: %s\n", SHA2_256_Describe(SHA2_256_Register(-1)));

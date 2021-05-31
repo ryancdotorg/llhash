@@ -1,7 +1,7 @@
 MAKEFLAGS += --no-builtin-rules
 
 LICENSES = -DLICENSE_GPL
-HASHES = md/md5 md/sha1 md/sha2_256 md/sha2_512 md/sha2_224 md/sha2_384
+HASHES = md/md4 md/md5 md/sha1 md/sha2_256 md/sha2_512 md/sha2_224 md/sha2_384
 
 # custom functions
 # https://stackoverflow.com/a/18258352
