@@ -7,12 +7,6 @@
 
 #include "../../../macros.h"
 
-// Round constants
-#define K0 0x5A827999
-#define K1 0x6ED9EBA1
-#define K2 0x8F1BBCDC
-#define K3 0xCA62C1D6
-
 // Mixing functions
 #define F0(x,y,z) (z ^ (x & (y ^ z)))
 #define F1(x,y,z) (x ^ y ^ z)
@@ -23,13 +17,13 @@
 #define W(r) (r<16?W[r]:(W[r&15]=ROL32(W[(r+13)&15]^W[(r+8)&15]^W[(r+2)&15]^W[r&15],1)))
 
 // R0, R1, R2, R3 are the different operations used in SHA1
-#define R0(r,a,b,c,d,e) e+=F0(b,c,d)+W(r)+K0+ROL32(a,5);b=ROL32(b,30);
-#define R1(r,a,b,c,d,e) e+=F1(b,c,d)+W(r)+K1+ROL32(a,5);b=ROL32(b,30);
-#define R2(r,a,b,c,d,e) e+=F2(b,c,d)+W(r)+K2+ROL32(a,5);b=ROL32(b,30);
-#define R3(r,a,b,c,d,e) e+=F3(b,c,d)+W(r)+K3+ROL32(a,5);b=ROL32(b,30);
+#define R0(r,a,b,c,d,e) e+=F0(b,c,d)+W(r)+0x5A827999+ROL32(a,5);b=ROL32(b,30);
+#define R1(r,a,b,c,d,e) e+=F1(b,c,d)+W(r)+0x6ED9EBA1+ROL32(a,5);b=ROL32(b,30);
+#define R2(r,a,b,c,d,e) e+=F2(b,c,d)+W(r)+0x8F1BBCDC+ROL32(a,5);b=ROL32(b,30);
+#define R3(r,a,b,c,d,e) e+=F3(b,c,d)+W(r)+0xCA62C1D6+ROL32(a,5);b=ROL32(b,30);
 
 // The conditions should be resolved at compile time
-#define P(a,b,c,d,e,r) {                 \
+#define P(r,a,b,c,d,e) {                 \
   if (r < 20) {      R0(r,a,b,c,d,e); }  \
   else if (r < 40) { R1(r,a,b,c,d,e); }  \
   else if (r < 60) { R2(r,a,b,c,d,e); }  \
@@ -37,11 +31,11 @@
 }
 
 #define R(r) do {                          \
-  if ((r%5) == 0) {      P(A,B,C,D,E,r); } \
-  else if ((r%5) == 1) { P(E,A,B,C,D,r); } \
-  else if ((r%5) == 2) { P(D,E,A,B,C,r); } \
-  else if ((r%5) == 3) { P(C,D,E,A,B,r); } \
-  else {                 P(B,C,D,E,A,r); } \
+  if ((r%5) == 0) {      P(r,A,B,C,D,E); } \
+  else if ((r%5) == 1) { P(r,E,A,B,C,D); } \
+  else if ((r%5) == 2) { P(r,D,E,A,B,C); } \
+  else if ((r%5) == 3) { P(r,C,D,E,A,B); } \
+  else {                 P(r,B,C,D,E,A); } \
 } while(0)
 
 int JOIN(sha1,c_impl,xform,built)() { return 1; }
