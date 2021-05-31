@@ -37,8 +37,8 @@
 #define SHA2_224_ENABLE_CRYPTOGAMS_AVX2   (1<<SHA2_224_USING_CRYPTOGAMS_AVX2)
 #define SHA2_224_ENABLE_CRYPTOGAMS_SHAEXT (1<<SHA2_224_USING_CRYPTOGAMS_SHAEXT)
 
-#define SHA2_224_DESC_GENERIC           "Rhashc (C)"
-#define SHA2_224_DESC_NATIVE            "Rhashc (C, -march=native)"
+#define SHA2_224_DESC_GENERIC           "llhash (C)"
+#define SHA2_224_DESC_NATIVE            "llhash (C, -march=native)"
 #define SHA2_224_DESC_NAYUKI64          "Nayuki (x64 asm)"
 #define SHA2_224_DESC_INTEL_SSSE3       "Intel SSSE3 (x64 asm)"
 #define SHA2_224_DESC_INTEL_AVX         "Intel AVX (x64 asm)"

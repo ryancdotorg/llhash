@@ -32,8 +32,8 @@
 #define SHA1_ENABLE_CRYPTOGAMS_SSSE3  (1<<SHA1_USING_CRYPTOGAMS_SSSE3)
 #define SHA1_ENABLE_CRYPTOGAMS_SHAEXT (1<<SHA1_USING_CRYPTOGAMS_SHAEXT)
 
-#define SHA1_DESC_GENERIC           "Rhashc (C)"
-#define SHA1_DESC_NATIVE            "Rhashc (C, -march=native)"
+#define SHA1_DESC_GENERIC           "llhash (C)"
+#define SHA1_DESC_NATIVE            "llhash (C, -march=native)"
 #define SHA1_DESC_NAYUKI64          "Nayuki (x64 asm)"
 #define SHA1_DESC_INTEL_SSSE3       "Intel SSSE3 (x64 asm)"
 #define SHA1_DESC_INTEL_AVX         "Intel AVX (x64 asm)"

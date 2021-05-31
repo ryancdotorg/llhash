@@ -18,6 +18,6 @@
 #define MD5_ENABLE_NATIVE              (1<<MD5_USING_NATIVE)
 #define MD5_ENABLE_NAYUKI64            (1<<MD5_USING_NAYUKI64)
 
-#define MD5_DESC_GENERIC               "Rhashc (C)"
-#define MD5_DESC_NATIVE                "Rhashc (C, -march=native)"
+#define MD5_DESC_GENERIC               "llhash (C)"
+#define MD5_DESC_NATIVE                "llhash (C, -march=native)"
 #define MD5_DESC_NAYUKI64              "Nayuki (x64 asm)"
