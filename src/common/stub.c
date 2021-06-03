@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <signal.h>
 
-#include "../rhashc.h"
+#include "../llhash.h"
 
 int JOIN(FUNCPFX,built)() { return 0; }
 void JOIN(FUNCPFX,xform)() { raise(SIGILL); }

@@ -27,7 +27,7 @@ STUB(md5_nayuki64_xform)
  * Storage usage:
  *   Bytes  Location  Description
  *       4  eax       MD5 state variable A
- *       4  r8d       MD5 state variable B
+ *       4  ecx       MD5 state variable B
  *       4  r8d       MD5 state variable C
  *       4  r9d       MD5 state variable D
  *       4  r10d      Temporary for calculation per round

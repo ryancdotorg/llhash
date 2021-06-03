@@ -13,11 +13,14 @@
 #define MD5_USING_GENERIC              0
 #define MD5_USING_NATIVE               1
 #define MD5_USING_NAYUKI64             2
+#define MD5_USING_RYANC                3
 
 #define MD5_ENABLE_GENERIC             (1<<MD5_USING_GENERIC)
 #define MD5_ENABLE_NATIVE              (1<<MD5_USING_NATIVE)
 #define MD5_ENABLE_NAYUKI64            (1<<MD5_USING_NAYUKI64)
+#define MD5_ENABLE_RYANC               (1<<MD5_USING_RYANC)
 
 #define MD5_DESC_GENERIC               "llhash (C)"
 #define MD5_DESC_NATIVE                "llhash (C, -march=native)"
 #define MD5_DESC_NAYUKI64              "Nayuki (x64 asm)"
+#define MD5_DESC_RYANC                 "RyanC (x64 asm)"

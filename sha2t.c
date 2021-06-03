@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <fcntl.h>
 
-#include "rhashc.h"
+#include "llhash.h"
 
 #define CH_32(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
 #define MAJ_32(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))

@@ -6,10 +6,11 @@
 #include <stdio.h>
 #include <dlfcn.h>
 
+#include <math.h>
 #include <time.h>
 #include <x86intrin.h>
 
-#include "rhashc.h"
+#include "llhash.h"
 #include "openssl.h"
 
 #include "gen/md/md4/hmac.h"
@@ -21,8 +22,14 @@
 #include "gen/md/sha1/hmac.h"
 #include "gen/md/sha1/hash.h"
 
+#include "gen/md/sha2_224/hash.h"
+#include "gen/md/sha2_224/hmac.h"
+
 #include "gen/md/sha2_256/hash.h"
 #include "gen/md/sha2_256/hmac.h"
+
+#include "gen/md/sha2_384/hmac.h"
+#include "gen/md/sha2_384/hash.h"
 
 #include "gen/md/sha2_512/hmac.h"
 #include "gen/md/sha2_512/hash.h"
@@ -81,7 +88,7 @@ static char * hex(char *out, const void *in, size_t len) {
   return ret;
 }
 
-void rc4_prng(uint8_t *out, size_t len, const char *seed) {
+static void rc4_prng(uint8_t *out, size_t len, const char *seed) {
   size_t seedlen = strlen(seed);
   uint8_t i = 0, j = 0, t, S[256], *end = out + len;
 
@@ -101,11 +108,18 @@ void rc4_prng(uint8_t *out, size_t len, const char *seed) {
   }
 }
 
+static int should(char *list[], const char *str) {
+  const char *item; int i = 0;
+  while ((item = list[i++])) if (strcmp(item, str) == 0) return 1;
+  return 0;
+}
+
 /*
 printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 */
 
 #define TEST_EMPTY(NAME, SIZE) do { \
+  if (!should(hashes, #NAME)) break; \
   OpenSSL_##NAME (ref, buf, 0); \
   printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
   for (int i = 0; i < 32; ++i) { \
@@ -124,6 +138,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 } while(0)
 
 #define TEST_DATA(NAME, N, SIZE) do { \
+  if (!should(hashes, #NAME)) break; \
   OpenSSL_##NAME (ref, buf, N); \
   for (int i = 0; i < 32; ++i) { \
     int impl = NAME##_Register(1<<i); \
@@ -188,7 +203,8 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 } while(0)
 
 #define BENCH_DATA(NAME, BLOCK, SIZE) do { \
-  int base_repeat = 1024, iter = 1; \
+  if (!should(hashes, #NAME)) break; \
+  int base_repeat = 8192, iter = 1; \
   for (int n = 1; n <= 256; n *= 4) { \
     int repeat = base_repeat * 256 / n; \
     int len = BLOCK * n - 20; \
@@ -210,7 +226,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
         dtmp = (double)cycles / (double)iter; \
         if (dtmp < best_cycles) { best_cycles = dtmp; x = 0; } \
         for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
-        if (fail) { printf("whoops\n"); } \
+        if (fail) { best_cycles = NAN; x = repeat; } \
       } \
       printf(#NAME " %-28s: ", NAME##_Describe(impl)); \
       printf("%8.1f cycles/call ", best_cycles); \
@@ -220,7 +236,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
   } \
 } while(0)
 
-int main() {
+int main(int argc, char *argv[]) {
   /*
   HMAC_SHA1_CTX *dst = malloc(sizeof(HMAC_SHA1_CTX));
   printf("sz struct %lu\n", sizeof(HMAC_SHA1_CTX));
@@ -233,10 +249,20 @@ int main() {
   uint8_t scratch[65536], buf[512];
   uint8_t ref[64], hash[64];
 
+  char *_h[] = {
+    "MD2", "MD4", "MD5",
+    "SHA1", "RIPEMD160",
+    "SHA2_224", "SHA2_256",
+    "SHA2_384", "SHA2_512",
+  NULL };
+  char **hashes = argc > 1 ? argv : _h;
+
   TEST_EMPTY(MD4, 16);
   TEST_EMPTY(MD5, 16);
   TEST_EMPTY(SHA1, 20);
+  TEST_EMPTY(SHA2_224, 28);
   TEST_EMPTY(SHA2_256, 32);
+  TEST_EMPTY(SHA2_384, 48);
   TEST_EMPTY(SHA2_512, 64);
 
   desc = "0x00";
@@ -245,7 +271,9 @@ int main() {
     TEST_DATA(MD4, n, 16);
     TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
+    TEST_DATA(SHA2_224, n, 28);
     TEST_DATA(SHA2_256, n, 32);
+    TEST_DATA(SHA2_384, n, 48);
     TEST_DATA(SHA2_512, n, 64);
   }
 
@@ -255,7 +283,9 @@ int main() {
     TEST_DATA(MD4, n, 16);
     TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
+    TEST_DATA(SHA2_224, n, 28);
     TEST_DATA(SHA2_256, n, 32);
+    TEST_DATA(SHA2_384, n, 48);
     TEST_DATA(SHA2_512, n, 64);
   }
 
@@ -266,7 +296,9 @@ int main() {
     TEST_DATA(MD4, n, 16);
     TEST_DATA(MD5, n, 16);
     TEST_DATA(SHA1, n, 20);
+    TEST_DATA(SHA2_224, n, 28);
     TEST_DATA(SHA2_256, n, 32);
+    TEST_DATA(SHA2_384, n, 48);
     TEST_DATA(SHA2_512, n, 64);
   }
 
@@ -275,13 +307,14 @@ int main() {
   BENCH_DATA(SHA1, 64, 20);
   BENCH_DATA(SHA2_256, 64, 32);
   BENCH_DATA(SHA2_512, 128, 64);
-  //*/
 
   printf("\n");
   printf("Runtime Default MD4:      %s\n", MD4_Describe(MD4_Register(-1)));
   printf("Runtime Default MD5:      %s\n", MD5_Describe(MD5_Register(-1)));
   printf("Runtime Default SHA1:     %s\n", SHA1_Describe(SHA1_Register(-1)));
+  printf("Runtime Default SHA2_224: %s\n", SHA2_224_Describe(SHA2_224_Register(-1)));
   printf("Runtime Default SHA2_256: %s\n", SHA2_256_Describe(SHA2_256_Register(-1)));
+  printf("Runtime Default SHA2_384: %s\n", SHA2_384_Describe(SHA2_384_Register(-1)));
   printf("Runtume Default SHA2_512: %s\n", SHA2_512_Describe(SHA2_512_Register(-1)));
 
   return 0;

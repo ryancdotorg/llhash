@@ -3,7 +3,8 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../rhashc.h"
+#include "../../../llhash.h"
+#include "../../../macros.h"
 #include "../../../gen/md/md4/hash.h"
 
 char * MD4_Describe(int impl) {

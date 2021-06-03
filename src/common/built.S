@@ -1,5 +1,6 @@
 #pragma once
 #include "../../macros.h"
+#include "compare_reg.h"
 
 #ifdef STUBBED
 #include <stdint.h>
@@ -19,12 +20,12 @@ void JOIN(name)(void *digest, const char *data, uint32_t nblk) { raise(SIGILL); 
 #define ENDBR64
 #endif
 #if 0
-#define ADD3(ra, rb, ic) \
-	add ic, %ra; \
-	add %rb, %ra
+#define SUM_IRD(ic, ra, rd) \
+	add $ic, rd; \
+	add ra, rd
 #else
-#define ADD3(ra, rb, ic) \
-	lea ic(%rb,%ra), %ra
+#define SUM_IRD(ra, rb, ic) \
+	lea ic(rd,ra), rd
 #endif
 #define ENTRY(name) \
 	.align 32; \

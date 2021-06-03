@@ -2,6 +2,9 @@
 bin/
 obj/
 gen/
+libh/
+!libh/magic.h
+
 sha2_iv.c
 
 # Object files

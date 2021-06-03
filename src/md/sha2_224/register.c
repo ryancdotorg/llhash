@@ -3,7 +3,8 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../rhashc.h"
+#include "../../../llhash.h"
+#include "../../../macros.h"
 #include "../../../gen/md/sha2_224/hash.h"
 
 char * SHA2_224_Describe(int impl) {

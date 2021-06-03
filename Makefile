@@ -1,4 +1,5 @@
 MAKEFLAGS += --no-builtin-rules
+export LANG=c LC_ALL=C
 
 LICENSES = -DLICENSE_GPL
 HASHES = md/md4 md/md5 md/sha1 md/sha2_256 md/sha2_512 md/sha2_224 md/sha2_384
@@ -22,6 +23,7 @@ OBJ_GENERIC = $(patsubst src/%/xform.c,obj/%/xform/generic.o,$(call rwildcard,sr
 OBJ_HASHES = $(patsubst %,obj/%.o,$(HASHES))
 OBJ_CAN = obj/common/cpuinfo.o obj/common/can_native.o $(patsubst src/common/%.c,obj/common/%.o,$(wildcard src/common/can_*.c))
 OBJ_XFORM = $(patsubst src/%/xform.c,obj/%/xform.o,$(call rwildcard,src,*/xform.c))
+LIBH = $(patsubst src/libh/%_h.py,libh/%.h,$(wildcard src/libh/*_h.py))
 
 #ifeq ($(shell uname -m),x86_64)
 #	OBJ_SHA1     += $(patsubst %.S,%.o,$(wildcard impl/sha1_*.S))
@@ -39,16 +41,30 @@ override CFLAGS += -O3 -fPIC \
 CC := ccache gcc
 AS := ccache gcc
 PP := ccache cpp
+LD := ccache ld
 
 COMPILE = $(CC) $(CFLAGS)
 ASSEMBLE = $(AS) $(LICENSES) -O3 -ggdb
 
+.PHONY: all libh asm native generic headers clean
+
 all: obj/rhashc.o
 
+libh: libh/libh.h $(LIBH)
 asm: $(OBJ_ASM)
 native: $(OBJ_NATIVE)
 generic: $(OBJ_GENERIC)
 headers: $(HEADERS)
+
+# preprocessor magic
+libh/libh.h: $(LIBH)
+	@mkdir -p $(@D)
+	awk 'BEGIN{for(;++i<ARGC;)print"#include \""ARGV[i]"\""}' \
+	$(sort $(subst $(@D)/,,$(filter-out $@,$(wildcard $(@D)/*.h)))) > $@
+
+libh/%.h: src/libh/%_h.py src/libh/util.py
+	@mkdir -p $(@D)
+	python3 $< > $@
 
 # generated headers
 gen/md/%/hash.h: src/md/%/param.h src/md/hash.h.in
@@ -83,6 +99,14 @@ obj/md/%/xform/native.o: src/md/%/xform.c
 	@mkdir -p $(@D)
 	$(COMPILE) -march=native -Dc_impl=native -c $< -o $@
 
+obj/md/%/xform/generic.S: src/md/%/xform.c
+	@mkdir -p $(@D)
+	$(COMPILE) -Dc_impl=generic -c $< -S -o $@
+
+obj/md/%/xform/native.S: src/md/%/xform.c
+	@mkdir -p $(@D)
+	$(COMPILE) -march=native -Dc_impl=native -c $< -S -o $@
+
 # core hash drivers
 obj/md/%/hash.o: gen/md/%/hash.c gen/md/%/hash.h
 	@mkdir -p $(@D)
@@ -113,18 +137,18 @@ obj/common/%.o: gen/common/%.c
 
 # cpu functionality checks
 obj/can.o: $(OBJ_CAN)
-	ld -r $^ -o $@
+	$(LD) -r $^ -o $@
 
 # individual hash module
 obj/md/%.o: obj/md/%/hash.o obj/md/%/hmac.o obj/md/%/register.o
-	ld -r $^ -o $@
+	$(LD) -r $^ -o $@
 
 obj/xform.o: $(OBJ_XFORM)
-	ld -r $^ -o $@
+	$(LD) -r $^ -o $@
 
 # everything
 obj/rhashc.o: obj/can.o obj/xform.o $(OBJ_HASHES)
-	ld -r $^ -o $@
+	$(LD) -r $^ -o $@
 
 # fallback build rules
 %.o: %.c %.h
@@ -175,4 +199,4 @@ obj/%.o: $$(subst /xform/,/asm/,src/$$*.S) src/common/built.S
 # transform registration
 obj/%/xform.o: obj/%/xform/generic.o obj/%/xform/native.o \
 $$(subst .S,.o,$$(subst src/$$*/asm/,obj/$$*/xform/,$$(wildcard src/$$*/asm/*.S)))
-	ld -r $^ -o $@
+	$(LD) -r $^ -o $@

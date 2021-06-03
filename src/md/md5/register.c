@@ -3,14 +3,16 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../rhashc.h"
+#include "../../../llhash.h"
+#include "../../../macros.h"
 #include "../../../gen/md/md5/hash.h"
 
 char * MD5_Describe(int impl) {
   switch (impl > 0 ? impl : 0) {
-    case MD5_USING_GENERIC:           return MD5_DESC_GENERIC;
-    case MD5_USING_NATIVE:            return MD5_DESC_NATIVE;
-    case MD5_USING_NAYUKI64:          return MD5_DESC_NAYUKI64;
+    case MD5_USING_GENERIC:            return MD5_DESC_GENERIC;
+    case MD5_USING_NATIVE:             return MD5_DESC_NATIVE;
+    case MD5_USING_NAYUKI64:           return MD5_DESC_NAYUKI64;
+    case MD5_USING_RYANC:              return MD5_DESC_RYANC;
     default:                           return "Unknown";
   }
 }
@@ -50,6 +52,7 @@ void (*MD5_Transform)(uint32_t *, const void *, uint32_t) = md5_xform_default;
 
 int __attribute__((noinline)) MD5_Register(int enable) {
   int err = 0;
+  MAYBE_REGISTER(ryanc,RYANC);
   MAYBE_REGISTER(native,NATIVE);
   MAYBE_REGISTER(generic,GENERIC);
   MAYBE_REGISTER(nayuki64,NAYUKI64);

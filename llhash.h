@@ -1,0 +1,6 @@
+#pragma once
+
+#define RHASHC_ERROR_NOENABLE  -4
+#define RHASHC_ERROR_UNAVAL    -3
+#define RHASHC_ERROR_NOSUPPORT -2
+#define RHASHC_ERROR_NOTBUILT  -1
