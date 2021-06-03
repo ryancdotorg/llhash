@@ -54,7 +54,6 @@ CONCAT(f,r): \
 	IF_NOTEQ(r,15)(mov %c, %RT1;) \
 	add %b, %a;
 
-#if 1
 /* https://github.com/animetosho/md5-optimisation#dependency-shortcut-in-g-function */
 #define ROUND_G(r, a, b, c, d, kn, s, t) \
 CONCAT(g,r): \
@@ -71,22 +70,6 @@ CONCAT(g,r): \
 	IF_NOTEQ(r,31)(mov %c, %RT2;) \
 	rol $s, %a; \
 	add %b, %a;
-#else
-CONCAT(g,r): \
-	IF_EQUAL(r,16)(mov %RXD, %RT1;) \
-	IF_EQUAL(r,16)(mov %RXD, %RT2;) \
-	not %RT1; \
-	and %b, %RT2; \
-	SUM_IRD(t, %RT0, %a); \
-	and %c, %RT1; \
-	mov kn*4(%rsi), %RT0; \
-	or %RT1, %RT2; \
-	IF_NOTEQ(r,31)(mov %c, %RT1;) \
-	add %RT2, %a; \
-	IF_NOTEQ(r,31)(mov %c, %RT2;) \
-	rol $s, %a; \
-	add %b, %a;
-#endif
 
 #define ROUND_H(r, a, b, c, d, kn, s, t) \
 CONCAT(h,r): \
