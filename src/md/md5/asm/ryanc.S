@@ -22,7 +22,7 @@ STUB(md5_ryanc_xform)
 #define RT2 r12d
 #endif
 
-#define END IF_ELSE(SAME_REG(RXD,edx))(r13,rdx)
+#define END IF_ELSE(SAME_REG(RXD,rdx))(r13,rdx)
 
 // rdi  1st arg, Base address of state array argument
 // rsi  2nd arg, Base address of block array argument
@@ -54,7 +54,14 @@ CONCAT(f,r): \
 	IF_NOTEQ(r,15)(mov %c, %RT1;) \
 	add %b, %a;
 
-/* https://github.com/animetosho/md5-optimisation#dependency-shortcut-in-g-function */
+/* https://github.com/animetosho/md5-optimisation#dependency-shortcut-in-g-function
+ * standard version of g is either
+ * a = (c ^ (d & (b ^ c))) + a + rol(a, s) + b
+ * or
+ * a = ((~d & c) | (d & b)) + a + rol(a, s) + b
+ * we instead compute
+ * a = (~d & c) + (d & b) + a + rol(a, s) + b
+ * which allows the CPU to take better advantage of commutative addition */
 #define ROUND_G(r, a, b, c, d, kn, s, t) \
 CONCAT(g,r): \
 	IF_EQUAL(r,16)(mov %RXD, %RT1;) \
@@ -139,6 +146,7 @@ load:
 	ROUND_F(13, RXD, RXA, RXB, RXC, 14, 12, -0x02678E6D)
 	ROUND_F(14, RXC, RXD, RXA, RXB, 15, 17, -0x5986BC72)
 	ROUND_F(15, RXB, RXC, RXD, RXA,  1, 22,  0x49B40821)
+
 	ROUND_G(16, RXA, RXB, RXC, RXD,  6,  5, -0x09E1DA9E)
 	ROUND_G(17, RXD, RXA, RXB, RXC, 11,  9, -0x3FBF4CC0)
 	ROUND_G(18, RXC, RXD, RXA, RXB,  0, 14,  0x265E5A51)
@@ -155,6 +163,7 @@ load:
 	ROUND_G(29, RXD, RXA, RXB, RXC,  7,  9, -0x03105C08)
 	ROUND_G(30, RXC, RXD, RXA, RXB, 12, 14,  0x676F02D9)
 	ROUND_G(31, RXB, RXC, RXD, RXA,  5, 20, -0x72D5B376)
+
 	ROUND_H(32, RXA, RXB, RXC, RXD,  8,  4, -0x0005C6BE)
 	ROUND_H(33, RXD, RXA, RXB, RXC, 11, 11, -0x788E097F)
 	ROUND_H(34, RXC, RXD, RXA, RXB, 14, 16,  0x6D9D6122)
@@ -171,6 +180,7 @@ load:
 	ROUND_H(45, RXD, RXA, RXB, RXC, 15, 11, -0x1924661B)
 	ROUND_H(46, RXC, RXD, RXA, RXB,  2, 16,  0x1FA27CF8)
 	ROUND_H(47, RXB, RXC, RXD, RXA,  0, 23, -0x3B53A99B)
+
 	ROUND_I(48, RXA, RXB, RXC, RXD,  7,  6, -0x0BD6DDBC)
 	ROUND_I(49, RXD, RXA, RXB, RXC, 14, 10,  0x432AFF97)
 	ROUND_I(50, RXC, RXD, RXA, RXB,  5, 15, -0x546BDC59)
@@ -186,7 +196,7 @@ load:
 	ROUND_I(60, RXA, RXB, RXC, RXD, 11,  6, -0x08AC817E)
 	ROUND_I(61, RXD, RXA, RXB, RXC,  2, 10, -0x42C50DCB)
 	ROUND_I(62, RXC, RXD, RXA, RXB,  9, 15,  0x2AD7D2BB)
-	ROUND_I(63, RXB, RXC, RXD, RXA,  0, 21, -0x14792C6F)
+	ROUND_I(63, RXB, RXC, RXD, RXA,  _, 21, -0x14792C6F)
 
 update:
 	/* Save updated state */
