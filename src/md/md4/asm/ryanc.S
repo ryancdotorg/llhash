@@ -40,44 +40,116 @@ STUB(md4_ryanc_xform)
 #define ADD3(ic, ra, rd) \
 	lea ic(rd,ra), rd
 #endif
-
+/* a = rol((d ^ (b & (c ^ d))) + w + a, s)
+ * =
+ * a = a + (d ^ (b & (c ^ d)))
+ * a = rol(a, s)
+ * =
+ * t0 = w
+ * t1 = c
+ * t1 ^= d : (c ^ d)
+ * t1 &= b : (b & (c ^ d))
+ * t1 ^= d : (d ^ (b & (c ^ d)))
+ * t1 += t0 : (d ^ (b & (c ^ d))) + w
+ * a += t1 : (d ^ (b & (c ^ d))) + w + a
+ * a = rol(a, s)
+ */
 #define ROUND_F(r, a, b, c, d, p, s) \
 CONCAT(f,r): \
 	mov p*4(%rsi), %RT0; \
-	mov %RXC, %RT1
-	xor %RXD, %RT1
-	and %RXB, %RT1
-	xor %RXD, %RT1
-	xor %RXD, %RXC
-	and %RXC, %RXB
+	mov %c, %RT1; \
+	xor %d, %RT1; \
+	and %b, %RT1; \
+	xor %d, %RT1; \
+	add %RT0, %RT1; \
+	add %RT1, %a; \
+	rol $s, %a;
 
+#define ROUND4_F(r, a, b, c, d, p0, s0, p1, s1, p2, s2, p3, s3) \
+CONCAT(f4_,r): \
+	mov p*4(%rsi), %RT0; \
+	mov %c, %RT1; \
+	xor %d, %RT1; \
+	and %b, %RT1; \
+	xor %d, %RT1; \
+	add %RT0, %RT1; \
+	add %RT1, %a; \
+	rol $s, %a;
+
+/* a = rol(((b & c) | (b & d) | (c & d)) + a + w + 0x5a827999, s);
+ * t0 = w
+ * t1 = d
+ * t2 = b
+ * t1 &= c : (c & d)
+ * t2 &= d : (b & d)
+ * t1 |= t2 : ((b & d) | (c & d))
+ * t2 = b
+ * t2 &= c : (b & c)
+ * t1 |= t2 : ((b & c) | ((b & d) | (c & d)))
+ * a += 0x5a827999 + t0
+ * a += t1
+ * a = rol(a, s)
+ */
 #define ROUND_G(r, a, b, c, d, p, s) \
 CONCAT(g,r): \
-	IF(MOD0(r,16))(mov %RXD, %RT1;) \
-	IF(MOD0(r,16))(mov %RXD, %RT2;) \
-	not %RT1; \
-	and %b, %RT2; \
-	ADD3(t, %RT0, %a); \
+	mov p*4(%rsi), %RT0; \
+	mov %d, %RT1; \
+	mov %b, %RT2; \
 	and %c, %RT1; \
-	mov kn*4(%rsi), %RT0; \
-	or %RT1, %RT2; \
-	mov %c, %RT1; \
-	add %RT2, %a; \
-	mov %c, %RT2; \
-	rol $s, %a; \
-	add %b, %a;
+	and %d, %RT2; \
+	or %RT2, %RT1; \
+	mov %b, %RT2; \
+	and %c, %RT2; \
+	or %RT2, %RT1; \
+	add $0x5a827999, %a; \
+	add %RT0, %a; \
+	add %RT1, %a; \
+	rol $s, %a;
 
+/*
+ 216:   44 09 fa                or     %r15d,%edx
+ 219:   21 ca                   and    %ecx,%edx
+ 21b:   09 d0                   or     %edx,%eax
+ 21d:   41 8b 52 04             mov    0x4(%r10),%edx
+ 221:   45 8d b4 16 99 79 82    lea    0x5a827999(%r14,%rdx,1),%r14d
+ 228:   5a 
+ 229:   89 ca                   mov    %ecx,%edx
+ 22b:   41 01 c6                add    %eax,%r14d
+ 22e:   89 c8                   mov    %ecx,%eax
+ 230:   21 f2                   and    %esi,%edx
+ 232:   41 c1 c6 03             rol    $0x3,%r14d
+
+ 236:   09 f0                   or     %esi,%eax
+ 238:   44 21 f0                and    %r14d,%eax
+ 23b:   09 c2                   or     %eax,%edx
+ 23d:   41 8b 42 14             mov    0x14(%r10),%eax
+ 241:   41 8d 84 07 99 79 82    lea    0x5a827999(%r15,%rax,1),%eax
+ 248:   5a 
+ 249:   45 89 f7                mov    %r14d,%r15d
+ 24c:   01 c2                   add    %eax,%edx
+ 24e:   41 09 cf                or     %ecx,%r15d
+ 251:   44 89 f0                mov    %r14d,%eax
+ 254:   c1 c2 05                rol    $0x5,%edx
+*/
+
+/* a = rol((b ^ c ^ d)  + a + w + 0x6ed9eba1, s);
+ */
 #define ROUND_H(r, a, b, c, d, p, s) \
 CONCAT(h,r): \
-	IF(MOD0(r,16))(mov %RXC, %RT1;) \
-	ADD3(t, %RT0, %a); \
+	mov p*4(%rsi), %RT0; \
+	mov %b, %RT1; \
+	xor %c, %RT1; \
 	xor %d, %RT1; \
-	mov kn*4(%rsi), %RT0; \
-	xor %b, %RT1; \
+	add $0x6ed9eba1, %a; \
+	add %RT0, %a; \
 	add %RT1, %a; \
-	IF_ELSE(MOD(r,2))(rol $s COMMA() %a;,    mov %b COMMA() %RT1;) \
-	IF_ELSE(MOD(r,2))(mov %b COMMA() %RT1;, rol $s COMMA() %a;) \
-	add %b, %a;
+	rol $s, %a;
+
+#define ROUNDS4(R, r, p0, s0, p1, s1, p2, s2, p3, s3) \
+R(r,             RXA, RXB, RXC, RXD, p0, s0) \
+R(INC(r),        RXD, RXA, RXB, RXC, p1, s1) \
+R(INC(INC(r)),   RXC, RXD, RXA, RXB, p2, s2) \
+R(INC((INC(r))), RXB, RXC, RXD, RXA, p3, s3)
 
 /* void md4_ryanc_xform(uint32_t state[static 4], const uint8_t block[static 64], uint64_t nblk) */
 ENTRY(md4_ryanc_xform)
@@ -120,6 +192,7 @@ load:
 	ROUND_F(13, RXD, RXA, RXB, RXC, 13,  7)
 	ROUND_F(14, RXC, RXD, RXA, RXB, 14, 11)
 	ROUND_F(15, RXB, RXC, RXD, RXA, 15, 19)
+
 	ROUND_G(16, RXA, RXB, RXC, RXD,  0,  3)
 	ROUND_G(17, RXD, RXA, RXB, RXC,  4,  5)
 	ROUND_G(18, RXC, RXD, RXA, RXB,  8,  9)
@@ -136,6 +209,7 @@ load:
 	ROUND_G(29, RXD, RXA, RXB, RXC,  7,  5)
 	ROUND_G(30, RXC, RXD, RXA, RXB, 11,  9)
 	ROUND_G(31, RXB, RXC, RXD, RXA, 15, 13)
+
 	ROUND_H(32, RXA, RXB, RXC, RXD,  0,  3)
 	ROUND_H(33, RXD, RXA, RXB, RXC,  8,  9)
 	ROUND_H(34, RXC, RXD, RXA, RXB,  4, 11)

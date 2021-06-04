@@ -11,6 +11,7 @@ char * MD4_Describe(int impl) {
   switch (impl > 0 ? impl : 0) {
     case MD4_USING_GENERIC:            return MD4_DESC_GENERIC;
     case MD4_USING_NATIVE:             return MD4_DESC_NATIVE;
+    case MD4_USING_RYANC:              return MD4_DESC_RYANC;
     default:                           return "Unknown";
   }
 }
@@ -52,6 +53,7 @@ int __attribute__((noinline)) MD4_Register(int enable) {
   int err = 0;
   MAYBE_REGISTER(native,NATIVE);
   MAYBE_REGISTER(generic,GENERIC);
+  MAYBE_REGISTER(ryanc,RYANC);
   return err ? err : RHASHC_ERROR_NOENABLE;
 }
 

@@ -12,9 +12,12 @@
 
 #define MD4_USING_GENERIC           0
 #define MD4_USING_NATIVE            1
+#define MD4_USING_RYANC             2
 
 #define MD4_ENABLE_GENERIC           (1<<MD4_USING_GENERIC)
 #define MD4_ENABLE_NATIVE            (1<<MD4_USING_NATIVE)
+#define MD4_ENABLE_RYANC             (1<<MD4_USING_RYANC)
 
 #define MD4_DESC_GENERIC           "llhash (C)"
 #define MD4_DESC_NATIVE            "llhash (C, -march=native)"
+#define MD4_DESC_RYANC             "RyanC (asm)"
