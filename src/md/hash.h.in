@@ -30,6 +30,10 @@ void IDENTITY(HASH_NAME)(uint8_t hash[], const uint8_t data[], size_t len);
 uint64_t JOIN(HASH_NAME,Pad)(uint8_t data[], size_t len);
 void JOIN(HASH_NAME,Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
 
+#if HASH_DIGEST_LENGTH == HASH_STATE_WORDS * (HASH_WORD_SIZE / 8)
+void JOIN(HASH_NAME,Extend)(JOIN(HASH_NAME,CTX) *ctx, uint8_t hash[], uint64_t nblk);
+#endif
+
 void JOIN(PBKDF2_HMAC,HASH_NAME) (
   uint8_t dk[], size_t dk_sz,
   const uint8_t pass[], size_t pass_sz,

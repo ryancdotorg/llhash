@@ -33,11 +33,17 @@
 #define HASH_WORD_SIZE HASH(WORD_SIZE)
 #define HASH_ENDIAN HASH(ENDIAN)
 
+#if !__ASSEMBLER__
+#endif
+
 /* type/size/endian definition macros */
 #define uintWS_t CONCAT(uint,HASH_WORD_SIZE,_t)
 #define htoDeWS CONCAT(hto,HASH_ENDIAN,e,HASH_WORD_SIZE)
 #define htoDe32 CONCAT(hto,HASH_ENDIAN,e32)
 #define htoDe64 CONCAT(hto,HASH_ENDIAN,e64)
+#define DeWStoh CONCAT(HASH_ENDIAN,e,HASH_WORD_SIZE,toh)
+#define De32toh CONCAT(HASH_ENDIAN,e32toh)
+#define De64toh CONCAT(HASH_ENDIAN,e64toh)
 
 /* rotate operators */
 #define ROL8(x,n)  __extension__({ uint8_t  _x=(x), _n=(n); (_x << _n) | (_x >> ( 8-_n)); })

@@ -27,6 +27,9 @@
 
 #define CAT(a, ...) a ## __VA_ARGS__
 #define CAT3(a, b, ...) a ## b ## __VA_ARGS__
+#define CAT4(a, b, c, ...) a ## b ## c ## __VA_ARGS__
+
+#define APPLY(fn, ...) fn(__VA_ARGS__)
 
 #define FIRST(a, ...) a
 #define SECOND(a, b, ...) b
@@ -40,15 +43,15 @@
 #define NOT(x) IS_PROBE(CAT(_NOT_, x))
 #define _NOT_0 PROBE()
 
-#define BOOL(x) NOT(NOT(x))
+#define COMPL(x) CAT(_COMPL_, x)
+#define _COMPL_0 1
+#define _COMPL_1 0
+
+#define BOOL(x) COMPL(NOT(x))
 
 #define BITAND(x) CAT(_BITAND_, x)
 #define _BITAND_0(x) 0
 #define _BITAND_1(x) x
-
-#define COMPL(x) CAT(_COMPL_, x)
-#define _COMPL_0 1
-#define _COMPL_1 0
 
 #define OR(a,b) CAT3(_OR_, a, b)
 #define _OR_00 0
@@ -71,11 +74,15 @@
 #define NAND(a,b) COMPL(AND(a,b))
 #define NOR(a,b) COMPL(OR(a,b))
 
-// need to define e.g. COMPARE_foo
+// need to define e.g. COMPARE_foo(x) x
 #define COMPARABLE(x) IS_PAREN(CAT(COMPARE_,x)(()))
 #define _COMPARE(a, b) COMPL(IS_PAREN(COMPARE_##a(COMPARE_##b)(())))
 #define EQUAL(x, y) BITAND(BITAND(COMPARABLE(x))(COMPARABLE(y)))(_COMPARE(x,y))
 #define NOT_EQUAL(x, y) COMPL(EQUAL(x, y))
+
+// need to define e.g. FOO() value, ()
+#define GETTABLE(x) IS_PAREN(APPLY(SECOND, x(), ~))
+#define GET(x, d) IF_ELSE(GETTABLE(x))(APPLY(FIRST, x()), d)
 
 #define IF_EQUAL(a, b) IF(EQUAL(a, b))
 #define IF_NOTEQ(a, b) IF(COMPL(EQUAL(a, b)))

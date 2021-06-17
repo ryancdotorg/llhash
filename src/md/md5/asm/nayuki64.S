@@ -43,7 +43,7 @@ STUB(md5_nayuki64_xform)
 	xorl  %d, %r10d;        \
 	andl  %b, %r10d;        \
 	xorl  %d, %r10d;        \
-	ADD3(a, r10d, t);       \
+	SUM_IRD(t, %r10d, %a);  \
 	roll  $s, %a;           \
 	addl  %b, %a;
 
@@ -55,7 +55,7 @@ STUB(md5_nayuki64_xform)
 	andl  %b, %r11d;        \
 	andl  %c, %r10d;        \
 	orl   %r11d, %r10d;     \
-	ADD3(a, r10d, t);       \
+	SUM_IRD(t, %r10d, %a);  \
 	roll  $s, %a;           \
 	addl  %b, %a;
 
@@ -64,7 +64,7 @@ STUB(md5_nayuki64_xform)
 	addl  (k*4)(%rsi), %a;  \
 	xorl  %d, %r10d;        \
 	xorl  %b, %r10d;        \
-	ADD3(a, r10d, t);       \
+	SUM_IRD(t, %r10d, %a);  \
 	roll  $s, %a;           \
 	addl  %b, %a;
 
@@ -74,7 +74,7 @@ STUB(md5_nayuki64_xform)
 	addl  (k*4)(%rsi), %a;  \
 	orl   %b, %r10d;        \
 	xorl  %c, %r10d;        \
-	ADD3(a, r10d, t);       \
+	SUM_IRD(t, %r10d, %a);  \
 	roll  $s, %a;           \
 	addl  %b, %a;
 

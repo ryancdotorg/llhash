@@ -42,7 +42,7 @@ void JOIN(sha2_256,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nb
   uint32_t temp, W[16];
   uint32_t A, B, C, D, E, F, G, H;
 
-  for (;;) {
+  for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
     // Load input
     for (int i = 0; i < 16; ++i) W[i] = htobe32(input[i]);
 
@@ -68,8 +68,5 @@ void JOIN(sha2_256,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nb
 
     digest[0] += A; digest[1] += B; digest[2] += C; digest[3] += D;
     digest[4] += E; digest[5] += F; digest[6] += G; digest[7] += H;
-
-    if (--nblk <= 0) return;
-    input += (64 / sizeof(*input));
   }
 }

@@ -2,10 +2,14 @@
 bin/
 obj/
 gen/
-libh/
-!libh/magic.h
+libh/*.h
+src/libh/__pycache__/
 
 sha2_iv.c
+
+# exceptions
+!libh/magic.h
+!src/libh/*.py
 
 # Object files
 *.o

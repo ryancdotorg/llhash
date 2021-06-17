@@ -2,12 +2,17 @@
 A permissively licensed, low-level, high-performance cryptographic hash
 library for hackers.
 
+The code makes extensive use of
+[metaprogramming](https://en.wikipedia.org/wiki/Metaprogramming)
+techniques in order to reduce repetition and shift work to compile time.
+
 Currently under development.
 
 ## Supported Hash Functions
 
 * MD4
 * MD5
+* RIPEMD160
 * SHA1
 * SHA2-224
 * SHA2-256
@@ -34,6 +39,7 @@ license (BSD/MIT/Public Domain/etc).
       (SHA1, SHA2)
     * [Project Nayuki](https://www.nayuki.io/category/x86)
       (MD5, SHA1, SHA2))
+    * [Ryan Castellucci](https://github.com/ryancdotorg) (MD4)
 
 ## Wrapper Code
 

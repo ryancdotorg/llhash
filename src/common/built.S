@@ -1,8 +1,7 @@
 #pragma once
 #include "../../macros.h"
-#include "compare_reg.h"
 
-#ifdef STUBBED
+#if (defined(STUBBED) && !__ASSEMBLER__)
 #include <stdint.h>
 #include <stddef.h>
 #include <signal.h>
@@ -13,7 +12,7 @@
 int JOIN(name,built)() { return 0; } \
 void JOIN(name)(void *digest, const char *data, uint32_t nblk) { raise(SIGILL); }
 #pragma GCC diagnostic pop
-#else
+#elif __ASSEMBLER__
 #ifdef __CET__
 #define ENDBR64 .byte 0xf3,0x0f,0x1e,0xfa;
 #else
@@ -24,7 +23,7 @@ void JOIN(name)(void *digest, const char *data, uint32_t nblk) { raise(SIGILL); 
 	add $ic, rd; \
 	add ra, rd
 #else
-#define SUM_IRD(ra, rb, ic) \
+#define SUM_IRD(ic, ra, rd) \
 	lea ic(rd,ra), rd
 #endif
 #define ENTRY(name) \
@@ -44,5 +43,15 @@ void JOIN(name)(void *digest, const char *data, uint32_t nblk) { raise(SIGILL); 
 	ENDBR64
 
 #define ENDPROC(name) \
-	.size name,.-##name;
+	JOIN(name,end):; \
+	.size name,.-##name; \
+	.data; \
+	.align 8; \
+	.globl JOIN(name,size); \
+	JOIN(name,size):; \
+	.2byte JOIN(name,end)-name; \
+	.size JOIN(name,size),2
+
+#else
+#error bad build options
 #endif

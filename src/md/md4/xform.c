@@ -6,9 +6,9 @@
 #include "../../../macros.h"
 
 // Mixing functions
-#define F(x, y, z) (z ^ (x & (y ^ z)))
-#define G(x, y, z) ((x & y) | (x & z) | (y & z))
-#define H(x, y, z) (x ^ y ^ z)
+#define F(b, c, d) (d ^ (b & (c ^ d)))
+#define G(b, c, d) ((b & c) | (b & d) | (c & d))
+#define H(b, c, d) (b ^ c ^ d)
 
 // Let's make the compiler do a ton of work...
 #define S0(r) ((r&3)==0 ?  3 : ((r&3)==1 ?  7 : ((r&3)==2 ? 11 : 19 )))
@@ -20,9 +20,9 @@
 #define R2(r,a,b,c,d,p) a=ROL32(a+H(b,c,d)+W[p]+0x6ed9eba1, S2(r));
 
 #define P(r,a,b,c,d,p) do {            \
-  if (r < 16) {      R0(r,a,b,c,d,p) } \
-  else if (r < 32) { R1(r,a,b,c,d,p) } \
-  else {             R2(r,a,b,c,d,p) } \
+  if (r < 16) {      asm(STR(CONCAT(md4_,c_impl,_f,PAD02(r))) ":\n"); R0(r,a,b,c,d,p) } \
+  else if (r < 32) { asm(STR(CONCAT(md4_,c_impl,_g,PAD02(r))) ":\n"); R1(r,a,b,c,d,p) } \
+  else {             asm(STR(CONCAT(md4_,c_impl,_h,PAD02(r))) ":\n"); R2(r,a,b,c,d,p) } \
 } while(0)
 
 #define R(r,p) do {                        \
@@ -37,11 +37,17 @@ int JOIN(md4,c_impl,xform,built)() { return 1; }
 void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
 {
   const uint32_t *input=(uint32_t *)data;
-  uint32_t A, B, C, D, W[16];
+  uint32_t A, B, C, D;
 
-  for (;;) {
+  for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
     // load input
+    asm("load:\n");
+#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+    uint32_t W[16];
     for (int i = 0; i < 16; ++i) W[i] = htole32(input[i]);
+#else
+    const uint32_t *W = input;
+#endif
 
     A=digest[0]; B=digest[1]; C=digest[2]; D=digest[3];
 
@@ -61,8 +67,5 @@ void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
     R(44, 3); R(45,11); R(46, 7); R(47,15);
 
     digest[0]+=A; digest[1]+=B; digest[2]+=C; digest[3]+=D;
-
-    if (--nblk <= 0) return;
-    input += (64 / sizeof(*input));
   }
 }

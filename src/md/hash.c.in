@@ -19,6 +19,12 @@ _H include STR(../../../src/md/HASH_name/param.h)
 _H include "hash.h"
 #endif
 
+/* constant names */
+#define HASH_DIGEST_LENGTH HASH(DIGEST_LENGTH)
+#define HASH_BLOCK_LENGTH HASH(BLOCK_LENGTH)
+#define HASH_STATE_WORDS HASH(STATE_WORDS)
+#define HASH_WORD_SIZE HASH(WORD_SIZE)
+
 /* function names */
 #define HASH_Transform HASH(Transform)
 
@@ -30,11 +36,7 @@ _H include "hash.h"
 #define HASH_Pad HASH(Pad)
 #define HASH_Raw HASH(Raw)
 
-/* constant names */
-#define HASH_DIGEST_LENGTH HASH(DIGEST_LENGTH)
-#define HASH_BLOCK_LENGTH HASH(BLOCK_LENGTH)
-#define HASH_STATE_WORDS HASH(STATE_WORDS)
-#define HASH_WORD_SIZE HASH(WORD_SIZE)
+#define HASH_Extend HASH(Extend)
 
 static const uintWS_t iv[] = HASH(IV);
 
@@ -170,6 +172,16 @@ void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk) {
 
   serialize(hash, state);
 }
+
+#if HASH_DIGEST_LENGTH == HASH_STATE_WORDS * (HASH_WORD_SIZE / 8)
+void HASH(Extend)(HASH(CTX) *ctx, uint8_t hash[], uint64_t nblk) {
+  const uintWS_t *digest = (uintWS_t*)hash;
+  for (int i = 0; i < HASH_STATE_WORDS; ++i) {
+    ctx->state[i] = DeWStoh(digest[i]);
+  }
+  ctx->bitlen = 8 * HASH_BLOCK_LENGTH * nblk;
+}
+#endif
 
 static inline void __attribute__((always_inline)) serialize(uint8_t hash[], uintWS_t *state) {
   uintWS_t *outW = (uintWS_t *)hash;

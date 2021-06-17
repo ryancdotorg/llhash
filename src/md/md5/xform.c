@@ -43,11 +43,16 @@ int JOIN(md5,c_impl,xform,built)() { return 1; }
 // Process input in chunks of 64 bytes, caller resposible for padding
 void JOIN(md5,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk) {
   const uint32_t *input=(uint32_t *)data;
-  uint32_t A, B, C, D, W[16];
+  uint32_t A, B, C, D;
 
-  for (;;) {
+  for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
     // load input
+#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+    uint32_t W[16];
     for (int i = 0; i < 16; ++i) W[i] = htole32(input[i]);
+#else
+    const uint32_t *W = input;
+#endif
 
     A=digest[0]; B=digest[1]; C=digest[2]; D=digest[3];
 
@@ -69,8 +74,5 @@ void JOIN(md5,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk) {
     R(60,0xf7537e82); R(61,0xbd3af235); R(62,0x2ad7d2bb); R(63,0xeb86d391);
 
     digest[0]+=A; digest[1]+=B; digest[2]+=C; digest[3]+=D;
-
-    if (--nblk <= 0) return;
-    input += (64 / sizeof(*input));
   }
 }

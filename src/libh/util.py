@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import io
+import sys
 
 from functools import reduce
 from collections.abc import Iterable
@@ -29,6 +30,8 @@ def __getattr__(name):
         _header()
         _header = lambda: None
         return _header
+    elif name == 'MAX':
+        return int(sys.argv[1]) if len(sys.argv) > 1 else 256
 
 def _header():
     print('#pragma once\n')
@@ -45,3 +48,11 @@ def AND(*args):
         args = iter(args[0])
 
     return reduce(lambda a,b: f'AND({a},{b})', args)
+
+def ELIF(*args):
+    if len(args) == 1 and isinstance(args[0], Iterable):
+        args = iter(args[0])
+
+    args = list(reversed(list(args)))
+    args[0] = 'IF({})({})'.format(*args[0])
+    return reduce(lambda a,b: f'IF_ELSE({b[0]})({b[1]}, {a})', args)

@@ -86,8 +86,8 @@ CONCAT(h,r): \
 	mov kn*4(%rsi), %RT0; \
 	xor %b, %RT1; \
 	add %RT1, %a; \
-	IF_ELSE(MOD(r,2))(rol $s COMMA() %a;, IF_NOTEQ(r,47)(mov %b COMMA() %RT1;)) \
-	IF_ELSE(MOD(r,2))(IF_NOTEQ(r,47)(mov %b COMMA() %RT1;), rol $s COMMA() %a;) \
+	IF_ELSE(ODD(r))(rol $s COMMA() %a;, IF_NOTEQ(r,47)(mov %b COMMA() %RT1;)) \
+	IF_ELSE(ODD(r))(IF_NOTEQ(r,47)(mov %b COMMA() %RT1;), rol $s COMMA() %a;) \
 	add %b, %a;
 
 #define ROUND_I(r, a, b, c, d, kn, s, t) \
@@ -103,6 +103,14 @@ CONCAT(i,r): \
 	rol $s, %a; \
 	IF_NOTEQ(r,63)(xor %c, %RT1;) \
 	add %b, %a;
+
+#define R2A(R, r, k0, s0, t0, k1, s1, t1) \
+R(r,      RXA, RXB, RXC, RXD, k0, s0, t0) \
+R(INC(r), RXD, RXA, RXB, RXC, k1, s1, t1)
+
+#define R2B(R, r, k0, s0, t0, k1, s1, t1) \
+R(r,      RXC, RXD, RXA, RXB, k0, s0, t0) \
+R(INC(r), RXB, RXC, RXD, RXA, k1, s1, t1)
 
 /* void md5_ryanc_xform(uint32_t state[static 4], const uint8_t block[static 64], uint64_t nblk) */
 ENTRY(md5_ryanc_xform)
@@ -130,22 +138,14 @@ load:
 	mov  0(%rsi), %RT0  /* first word of block */
 
 	/* 64 rounds of hashing */
-	ROUND_F( 0, RXA, RXB, RXC, RXD,  1,  7, -0x28955B88)
-	ROUND_F( 1, RXD, RXA, RXB, RXC,  2, 12, -0x173848AA)
-	ROUND_F( 2, RXC, RXD, RXA, RXB,  3, 17,  0x242070DB)
-	ROUND_F( 3, RXB, RXC, RXD, RXA,  4, 22, -0x3E423112)
-	ROUND_F( 4, RXA, RXB, RXC, RXD,  5,  7, -0x0A83F051)
-	ROUND_F( 5, RXD, RXA, RXB, RXC,  6, 12,  0x4787C62A)
-	ROUND_F( 6, RXC, RXD, RXA, RXB,  7, 17, -0x57CFB9ED)
-	ROUND_F( 7, RXB, RXC, RXD, RXA,  8, 22, -0x02B96AFF)
-	ROUND_F( 8, RXA, RXB, RXC, RXD,  9,  7,  0x698098D8)
-	ROUND_F( 9, RXD, RXA, RXB, RXC, 10, 12, -0x74BB0851)
-	ROUND_F(10, RXC, RXD, RXA, RXB, 11, 17, -0x0000A44F)
-	ROUND_F(11, RXB, RXC, RXD, RXA, 12, 22, -0x76A32842)
-	ROUND_F(12, RXA, RXB, RXC, RXD, 13,  7,  0x6B901122)
-	ROUND_F(13, RXD, RXA, RXB, RXC, 14, 12, -0x02678E6D)
-	ROUND_F(14, RXC, RXD, RXA, RXB, 15, 17, -0x5986BC72)
-	ROUND_F(15, RXB, RXC, RXD, RXA,  1, 22,  0x49B40821)
+	R2A(ROUND_F,  0,  1,  7, -0x28955B88,  2, 12, -0x173848AA)
+	R2B(ROUND_F,  2,  3, 17,  0x242070DB,  4, 22, -0x3E423112)
+	R2A(ROUND_F,  4,  5,  7, -0x0A83F051,  6, 12,  0x4787C62A)
+	R2B(ROUND_F,  6,  7, 17, -0x57CFB9ED,  8, 22, -0x02B96AFF)
+	R2A(ROUND_F,  8,  9,  7,  0x698098D8, 10, 12, -0x74BB0851)
+	R2B(ROUND_F, 10, 11, 17, -0x0000A44F, 12, 22, -0x76A32842)
+	R2A(ROUND_F, 12, 13,  7,  0x6B901122, 14, 12, -0x02678E6D)
+	R2B(ROUND_F, 14, 15, 17, -0x5986BC72,  1, 22,  0x49B40821)
 
 	ROUND_G(16, RXA, RXB, RXC, RXD,  6,  5, -0x09E1DA9E)
 	ROUND_G(17, RXD, RXA, RXB, RXC, 11,  9, -0x3FBF4CC0)
