@@ -44,10 +44,26 @@ license (BSD/MIT/Public Domain/etc).
 ## Wrapper Code
 
 The wrapper API has functions that are mostly compatible with OpenSSL’s legacy
-hash APIs, though the CTX structures.
+hash APIs, though the CTX structures. There are also a number of additional
+functions for advanced usage.
 
 Where `HASH` is the name of a supported hash, the following functions are
 available:
+
+`int HASH_Register(int enable)`
+
+Selects an implementation for the hash algorithm based on the `enable`
+bitmask. Returns the id of the implementation chosen. See header file for the
+hash in question for available options.
+
+`char * HASH_Describe(int impl)`
+
+Returns a pointer to a text description of the implementation with the id
+value passed as `impl`.
+
+`void HASH_Transform(uintWS_t *digest, const void *data, uint32_t nblk)`
+
+The actual hash transform implementation. This is probably not what you want.
 
 `uint8_t * HASH(const uint8_t data[], size_t len, uint8_t hash[])`
 
@@ -67,7 +83,7 @@ incrementally process an arbitrarily large message.
 `void HASH_Final(uint8_t hash[], HASH_CTX *ctx)`
 
 Computes the final hash value for the context `ctx` and writes it to `hash[]`.
-Note that unlike OpenSSL’s `*_Final` functions, this one *does not* clear the
+Note that unlike OpenSSL’s `*_Final` functions, this *does not* clear the
 context.
 
 `void HASH_Clear(HASH_CTX *ctx)`
