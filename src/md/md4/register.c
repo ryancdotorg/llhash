@@ -3,8 +3,8 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../llhash.h"
 #include "../../../macros.h"
+#include "../../../llhash.h"
 #include "../../../gen/md/md4/hash.h"
 
 char * MD4_Describe(int impl) {
@@ -58,4 +58,3 @@ int __attribute__((noinline)) MD4_Register(int enable) {
   MAYBE_REGISTER(ryanc_naive,RYANC_NAIVE);
   return err ? err : RHASHC_ERROR_NOENABLE;
 }
-

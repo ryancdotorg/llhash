@@ -72,7 +72,7 @@ libh/%.h: src/libh/%_h.py src/libh/util.py
 # generated headers
 gen/md/%/hash.h: src/md/%/param.h src/md/hash.h.in | libh/libh.h
 	@mkdir -p $(@D)
-	$(PP) -C -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -P -C -D_INDIRECT=_INDIRECT -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/hash.h.in | \
 	sed -En 's/^\s*#\s+/#/;/pragma once/,$$p' > $@
 
@@ -160,8 +160,11 @@ obj/llhash.o: obj/can.o obj/xform.o $(OBJ_HASHES)
 %.o: %.c | headers
 	$(COMPILE) -c $< -o $@
 
-%.so: %.o
+lib%.so: %.o
 	$(COMPILE) -shared $< -o $@
+
+lib%.a: %.o
+	$(AR) rcs $@ $<
 
 # check whether the native compile target matches the runtime cpu
 obj/common/can_native.o: bin/helper/prcpu

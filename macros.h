@@ -10,21 +10,13 @@
 #define _H #
 #define DIRECTIVE(S) _H S
 
-#define _GET_VA4(_1, _2, _3, _4, NAME, ...) NAME
-
-#define _JOIN2(A,B) A##_##B
-#define _JOIN3(A,B,C) A##_##B##_##C
-#define _JOIN4(A,B,C,D) A##_##B##_##C##_##D
-#define JOIN(...) _GET_VA4(__VA_ARGS__, _JOIN4, _JOIN3, _JOIN2, IDENTITY)(__VA_ARGS__)
-
-#define _CONCAT2(A,B) A##B
-#define _CONCAT3(A,B,C) A##B##C
-#define _CONCAT4(A,B,C,D) A##B##C##D
-#define CONCAT(...) _GET_VA4(__VA_ARGS__, _CONCAT4, _CONCAT3, _CONCAT2, IDENTITY)(__VA_ARGS__)
-
 /* help keep things short */
 #define HASH(A) JOIN(HASH_NAME,A)
 #define HMAC(A) JOIN(HMAC,HASH_NAME,A)
+
+#define HASH_ALIASED IF_ELSE(GETTABLE(JOIN(HASH_NAME,ALIAS)))(1,0)
+#define HASH_ALIAS GET(JOIN(HASH_NAME,ALIAS))
+#define ALIAS(A) JOIN(HASH_ALIAS,A)
 
 /* constant names */
 #define HASH_DIGEST_LENGTH HASH(DIGEST_LENGTH)
@@ -32,9 +24,6 @@
 #define HASH_STATE_WORDS HASH(STATE_WORDS)
 #define HASH_WORD_SIZE HASH(WORD_SIZE)
 #define HASH_ENDIAN HASH(ENDIAN)
-
-#if !__ASSEMBLER__
-#endif
 
 /* type/size/endian definition macros */
 #define uintWS_t CONCAT(uint,HASH_WORD_SIZE,_t)

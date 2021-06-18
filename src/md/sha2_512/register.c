@@ -3,10 +3,11 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../llhash.h"
 #include "../../../macros.h"
+#include "../../../llhash.h"
 #include "../../../gen/md/sha2_512/hash.h"
 
+char * SHA512_Describe(int impl) __attribute__((alias("SHA2_512_Describe")));
 char * SHA2_512_Describe(int impl) {
   switch (impl > 0 ? impl : 0) {
     case SHA2_512_USING_GENERIC:         return SHA2_512_DESC_GENERIC;
@@ -38,6 +39,7 @@ static void sha2_512_xform_default(uint64_t *a, const void *b, uint32_t c) {
   SHA2_512_Transform(a, b, c);
 }
 
+void SHA512_Transform(uint64_t *a, const void *b, uint32_t c) { SHA2_512_Transform(a, b, c); }
 void (*SHA2_512_Transform)(uint64_t *, const void *, uint32_t) = sha2_512_xform_default;
 
 #define MAYBE_REGISTER(impl,IMPL) \
@@ -56,6 +58,7 @@ void (*SHA2_512_Transform)(uint64_t *, const void *, uint32_t) = sha2_512_xform_
     } \
   }
 
+int SHA512_Register(int enable) __attribute__((alias("SHA2_512_Register")));
 int __attribute__((noinline)) SHA2_512_Register(int enable) {
   int err = 0;
   MAYBE_REGISTER(cryptogams_avx2,CRYPTOGAMS_AVX2);
@@ -70,4 +73,3 @@ int __attribute__((noinline)) SHA2_512_Register(int enable) {
   MAYBE_REGISTER(generic,GENERIC);
   return err ? err : RHASHC_ERROR_NOENABLE;
 }
-

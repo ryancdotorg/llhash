@@ -142,7 +142,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
   for (int i = 0; i < 32; ++i) { \
     int impl = NAME##_Register(1<<i); \
     if (impl >= 0) { \
-      NAME (hash, buf, 0); \
+      NAME (buf, 0, hash); \
       int fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
@@ -163,7 +163,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
       int fail, blocks; \
       NAME##_CTX ctx; \
 \
-      NAME (hash, buf, N); \
+      NAME (buf, N, hash); \
       fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
@@ -236,7 +236,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
       for (int x = 1; (x & 0xff) || getns() < t_end; ++x) { \
         cycles = __rdtsc(); \
         for (int y = 0; y < iter; ++y) { \
-          NAME (hash, scratch, len); \
+          NAME (scratch, len, hash); \
         } \
         cycles = __rdtsc() - cycles; \
         int fail = 0; \

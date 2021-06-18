@@ -10,28 +10,54 @@ _H endif
 _H include STR(../../../src/md/HASH_name/param.h)
 _H undef _INDIRECT
 
-char * JOIN(HASH_NAME,Describe)(int impl);
-int JOIN(HASH_NAME,Register)(int enable);
-void (*JOIN(HASH_NAME,Transform))(uintWS_t *digest, const void *data, uint32_t nblk);
+char * HASH(Describe)(int impl);
+int HASH(Register)(int enable);
+void (*HASH(Transform))(uintWS_t *digest, const void *data, uint32_t nblk);
+
+#if HASH_ALIASED
+char * ALIAS(Describe)(int impl);
+int ALIAS(Register)(int enable);
+void ALIAS(Transform)(uintWS_t *digest, const void *data, uint32_t nblk);
+#endif
 
 typedef struct {
   uint8_t data[HASH_BLOCK_LENGTH];
   uint64_t bitlen;
   uintWS_t state[HASH_STATE_WORDS];
   uint32_t datalen;
-} JOIN(HASH_NAME,CTX);
+} HASH(CTX);
 
-void JOIN(HASH_NAME,Clone)(JOIN(HASH_NAME,CTX) *dst, const JOIN(HASH_NAME,CTX) *src);
-void JOIN(HASH_NAME,Init)(JOIN(HASH_NAME,CTX) *ctx);
-void JOIN(HASH_NAME,Update)(JOIN(HASH_NAME,CTX) *ctx, const uint8_t data[], size_t len);
-void JOIN(HASH_NAME,Final)(uint8_t hash[], JOIN(HASH_NAME,CTX) *ctx);
-void IDENTITY(HASH_NAME)(uint8_t hash[], const uint8_t data[], size_t len);
+#if HASH_ALIASED
+typedef HASH(CTX) ALIAS(CTX);
+#endif
 
-uint64_t JOIN(HASH_NAME,Pad)(uint8_t data[], size_t len);
-void JOIN(HASH_NAME,Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
+void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src);
+void HASH(Init)(HASH(CTX) *ctx);
+void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len);
+void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx);
+uint8_t * IDENTITY(HASH_NAME)(const uint8_t data[], size_t len, uint8_t hash[]);
+
+#if HASH_ALIASED
+void ALIAS(Clone)(ALIAS(CTX) *dst, const ALIAS(CTX) *src);
+void ALIAS(Init)(ALIAS(CTX) *ctx);
+void ALIAS(Update)(ALIAS(CTX) *ctx, const uint8_t data[], size_t len);
+void ALIAS(Final)(uint8_t hash[], ALIAS(CTX) *ctx);
+uint8_t * IDENTITY(HASH_ALIAS)(const uint8_t data[], size_t len, uint8_t hash[]);
+#endif
+
+uint64_t HASH(Pad)(uint8_t data[], size_t len);
+void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
+
+#if HASH_ALIASED
+uint64_t ALIAS(Pad)(uint8_t data[], size_t len);
+void ALIAS(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
+#endif
 
 #if HASH_DIGEST_LENGTH == HASH_STATE_WORDS * (HASH_WORD_SIZE / 8)
-void JOIN(HASH_NAME,Extend)(JOIN(HASH_NAME,CTX) *ctx, uint8_t hash[], uint64_t nblk);
+void HASH(Extend)(HASH(CTX) *ctx, uint8_t hash[], uint64_t nblk);
+#if HASH_ALIASED
+void ALIAS(Extend)(ALIAS(CTX) *ctx, uint8_t hash[], uint64_t nblk);
+#endif
 #endif
 
 void JOIN(PBKDF2_HMAC,HASH_NAME) (

@@ -37,6 +37,19 @@ def _header():
     print('#pragma once\n')
     print('/* automatically generated */\n')
 
+def irange(a, b=None, i=1):
+    if b is None:
+        b = a
+        a = 0
+
+    if a > b:
+        i = -i
+
+    return range(a, b + i, i)
+
+def placeholders(pfx, a, b=None, i=1):
+    return map(lambda x: f'{pfx}{x}', irange(a, b, i))
+
 def OR(*args):
     if len(args) == 1 and isinstance(args[0], Iterable):
         args = iter(args[0])

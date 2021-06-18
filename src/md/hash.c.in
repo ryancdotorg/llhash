@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <endian.h>
-#include "../../gen/md/sha1/hmac.h"
+#include "../../gen/md/sha1/hash.h"
 #else
 _H include <stdint.h>
 _H include <stddef.h>
@@ -19,30 +19,16 @@ _H include STR(../../../src/md/HASH_name/param.h)
 _H include "hash.h"
 #endif
 
-/* constant names */
-#define HASH_DIGEST_LENGTH HASH(DIGEST_LENGTH)
-#define HASH_BLOCK_LENGTH HASH(BLOCK_LENGTH)
-#define HASH_STATE_WORDS HASH(STATE_WORDS)
-#define HASH_WORD_SIZE HASH(WORD_SIZE)
-
-/* function names */
-#define HASH_Transform HASH(Transform)
-
-#define HASH_Clone HASH(Clone)
-#define HASH_Init HASH(Init)
-#define HASH_Update HASH(Update)
-#define HASH_Final HASH(Final)
-
-#define HASH_Pad HASH(Pad)
-#define HASH_Raw HASH(Raw)
-
-#define HASH_Extend HASH(Extend)
-
 static const uintWS_t iv[] = HASH(IV);
+static uint8_t output[HASH_DIGEST_LENGTH];
 
 static inline void __attribute__((always_inline)) serialize(uint8_t hash[], uintWS_t *state);
 
-void HASH_NAME(uint8_t hash[], const uint8_t data[], size_t len) {
+#if HASH_ALIASED
+uint8_t * HASH_ALIAS(const uint8_t data[], size_t len, uint8_t hash[])
+__attribute__((alias(STR(HASH_NAME))));
+#endif
+uint8_t * HASH_NAME(const uint8_t data[], size_t len, uint8_t hash[]) {
   static uint8_t padding[HASH_BLOCK_LENGTH*2];
   uint64_t dblk = len / HASH_BLOCK_LENGTH;
   int remaining_bytes = len & (HASH_BLOCK_LENGTH-1);
@@ -55,22 +41,28 @@ void HASH_NAME(uint8_t hash[], const uint8_t data[], size_t len) {
   // set a 1 bit after the data
   padding[remaining_bytes] = 0x80;
 
-  if (dblk) HASH_Transform(state, data, dblk);
+  if (dblk) HASH(Transform)(state, data, dblk);
   // set length
   if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
     memset(padding + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
     ((uint64_t *)padding)[(HASH_WORD_SIZE/4)-1] = htoDe64(len * 8);
-    HASH_Transform(state, padding, 1);
+    HASH(Transform)(state, padding, 1);
   } else {
     memset(padding + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
     ((uint64_t *)padding)[(HASH_WORD_SIZE/2)-1] = htoDe64(len * 8);
-    HASH_Transform(state, padding, 2);
+    HASH(Transform)(state, padding, 2);
   }
 
   // write out result
+  hash = hash != NULL ? hash : output;
   serialize(hash, state);
+  return hash;
 }
 
+#if HASH_ALIASED
+void ALIAS(Clone)(ALIAS(CTX) *dst, const ALIAS(CTX) *src)
+__attribute__((alias(STR(HASH(Clone)))));
+#endif
 void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src) {
   // relies on .data being first
   if (src->datalen) {
@@ -81,12 +73,19 @@ void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src) {
   }
 }
 
+#if HASH_ALIASED
+void ALIAS(Init)(ALIAS(CTX) *ctx)
+__attribute__((alias(STR(HASH(Init)))));
+#endif
 void HASH(Init)(HASH(CTX) *ctx) {
-  ctx->bitlen = 0;
-  ctx->datalen = 0;
-  for (int i = 0; i < HASH(STATE_WORDS); ++i)  ctx->state[i] = iv[i];
+  ctx->bitlen = ctx->datalen = 0;
+  for (int i = 0; i < HASH(STATE_WORDS); ++i) ctx->state[i] = iv[i];
 }
 
+#if HASH_ALIASED
+void ALIAS(Update)(ALIAS(CTX) *ctx, const uint8_t data[], size_t len)
+__attribute__((alias(STR(HASH(Update)))));
+#endif
 void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
   size_t i = 0;
 
@@ -100,7 +99,7 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
       return;
     } else {
       memcpy(ctx->data + ctx->datalen, input, i);
-      HASH_Transform(ctx->state, ctx->data, 1);
+      HASH(Transform)(ctx->state, ctx->data, 1);
       ctx->bitlen += HASH_BLOCK_LENGTH*8;
       ctx->datalen = 0;
       input += i;
@@ -110,7 +109,7 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
 
   if (len >= HASH_BLOCK_LENGTH) {
     i = len / HASH_BLOCK_LENGTH;
-    HASH_Transform(ctx->state, input, i);
+    HASH(Transform)(ctx->state, input, i);
     len -= i * HASH_BLOCK_LENGTH;
     input += i * HASH_BLOCK_LENGTH;
     ctx->bitlen += i * HASH_BLOCK_LENGTH*8;
@@ -120,6 +119,10 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
   ctx->datalen = len;
 }
 
+#if HASH_ALIASED
+void ALIAS(Final)(uint8_t hash[], ALIAS(CTX) *ctx)
+__attribute__((alias(STR(HASH(Final)))));
+#endif
 void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
   uint32_t i = ctx->datalen;
 
@@ -129,7 +132,7 @@ void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
   } else {
     ctx->data[i++] = 0x80;
     memset(ctx->data + i, 0, HASH_BLOCK_LENGTH - i);
-    HASH_Transform(ctx->state, ctx->data, 1);
+    HASH(Transform)(ctx->state, ctx->data, 1);
     memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
   }
 
@@ -137,12 +140,26 @@ void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
   ctx->bitlen += ctx->datalen * 8;
   ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bitlen);
 
-  HASH_Transform(ctx->state, ctx->data, 1);
+  HASH(Transform)(ctx->state, ctx->data, 1);
 
   serialize(hash, ctx->state);
 }
 
+#if HASH_ALIASED
+void ALIAS(Clear)(ALIAS(CTX) *ctx)
+__attribute__((alias(STR(HASH(Clear)))));
+#endif
+void HASH(Clear)(HASH(CTX) *ctx) {
+  ctx->bitlen = ctx->datalen = 0;
+  for (int i = 0; i < HASH(STATE_WORDS); ++i) ctx->state[i] = 0;
+}
+
+
 // caller responsible for making sure the buffer is big enough
+#if HASH_ALIASED
+uint64_t ALIAS(Pad)(uint8_t data[], size_t len)
+__attribute__((alias(STR(HASH(Pad)))));
+#endif
 uint64_t HASH(Pad)(uint8_t data[], size_t len) {
   uint64_t *bitlen_ptr;
   uint64_t nblk = len / HASH_BLOCK_LENGTH;
@@ -165,15 +182,23 @@ uint64_t HASH(Pad)(uint8_t data[], size_t len) {
 }
 
 // caller is responsible for padding
+#if HASH_ALIASED
+void ALIAS(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk)
+__attribute__((alias(STR(HASH(Raw)))));
+#endif
 void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk) {
   uintWS_t state[] = HASH(IV);
 
-  HASH_Transform(state, data, nblk);
+  HASH(Transform)(state, data, nblk);
 
   serialize(hash, state);
 }
 
 #if HASH_DIGEST_LENGTH == HASH_STATE_WORDS * (HASH_WORD_SIZE / 8)
+#if HASH_ALIASED
+void ALIAS(Extend)(ALIAS(CTX) *ctx, uint8_t hash[], uint64_t nblk)
+__attribute__((alias(STR(HASH(Extend)))));
+#endif
 void HASH(Extend)(HASH(CTX) *ctx, uint8_t hash[], uint64_t nblk) {
   const uintWS_t *digest = (uintWS_t*)hash;
   for (int i = 0; i < HASH_STATE_WORDS; ++i) {

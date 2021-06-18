@@ -3,8 +3,8 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../llhash.h"
 #include "../../../macros.h"
+#include "../../../llhash.h"
 #include "../../../gen/md/md5/hash.h"
 
 char * MD5_Describe(int impl) {
@@ -58,4 +58,3 @@ int __attribute__((noinline)) MD5_Register(int enable) {
   MAYBE_REGISTER(nayuki64,NAYUKI64);
   return err ? err : RHASHC_ERROR_NOENABLE;
 }
-

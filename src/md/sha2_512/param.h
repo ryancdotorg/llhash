@@ -1,4 +1,7 @@
 #pragma once
+
+#define SHA2_512_ALIAS() SHA512, ()
+
 #define SHA2_512_DIGEST_LENGTH 64
 #define SHA2_512_BLOCK_LENGTH 128
 #define SHA2_512_WORD_SIZE 64

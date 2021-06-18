@@ -3,10 +3,11 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../llhash.h"
 #include "../../../macros.h"
+#include "../../../llhash.h"
 #include "../../../gen/md/sha2_224/hash.h"
 
+char * SHA224_Describe(int impl) __attribute__((alias("SHA2_224_Describe")));
 char * SHA2_224_Describe(int impl) {
   switch (impl > 0 ? impl : 0) {
     case SHA2_224_USING_GENERIC:           return SHA2_224_DESC_GENERIC;
@@ -41,6 +42,7 @@ static void sha2_224_xform_default(uint32_t *a, const void *b, uint32_t c) {
   SHA2_224_Transform(a, b, c);
 }
 
+void SHA224_Transform(uint32_t *a, const void *b, uint32_t c) { SHA2_224_Transform(a, b, c); }
 void (*SHA2_224_Transform)(uint32_t *, const void *, uint32_t) = sha2_224_xform_default;
 
 #define MAYBE_REGISTER(impl,IMPL) \
@@ -59,6 +61,7 @@ void (*SHA2_224_Transform)(uint32_t *, const void *, uint32_t) = sha2_224_xform_
     } \
   }
 
+int SHA224_Register(int enable) __attribute__((alias("SHA2_224_Register")));
 int __attribute__((noinline)) SHA2_224_Register(int enable) {
   int err = 0;
   MAYBE_REGISTER(cryptogams_shaext,CRYPTOGAMS_SHAEXT);

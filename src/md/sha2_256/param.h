@@ -1,5 +1,7 @@
 #pragma once
 
+#define SHA2_256_ALIAS() SHA256, ()
+
 #define SHA2_256_DIGEST_LENGTH 32
 #define SHA2_256_BLOCK_LENGTH 64
 #define SHA2_256_WORD_SIZE 32

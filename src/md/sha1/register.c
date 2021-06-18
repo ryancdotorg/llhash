@@ -3,8 +3,8 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../llhash.h"
 #include "../../../macros.h"
+#include "../../../llhash.h"
 #include "../../../gen/md/sha1/hash.h"
 
 char * SHA1_Describe(int impl) {
@@ -70,4 +70,3 @@ int __attribute__((noinline)) SHA1_Register(int enable) {
   MAYBE_REGISTER(generic,GENERIC);
   return err ? err : RHASHC_ERROR_NOENABLE;
 }
-

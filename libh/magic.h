@@ -1,8 +1,9 @@
 #pragma once
 #include "arith.h"
-
-/* magic shit */
-// https://github.com/18sg/uSHET/blob/master/lib/cpp_magic.h
+/* arcane macro magic, based in part on tricks from
+ * https://github.com/18sg/uSHET/blob/master/lib/cpp_magic.h and
+ * https://github.com/pfultz2/Cloak/wiki/C-Preprocessor-tricks,-tips,-and-idioms
+ */
 
 #define EVAL(...) EVAL1024(__VA_ARGS__)
 #define EVAL1024(...) EVAL512(EVAL512(__VA_ARGS__))
@@ -82,7 +83,7 @@
 
 // need to define e.g. FOO() value, ()
 #define GETTABLE(x) IS_PAREN(APPLY(SECOND, x(), ~))
-#define GET(x, d) IF_ELSE(GETTABLE(x))(APPLY(FIRST, x()), d)
+#define GET(x, ...) IF_ELSE(GETTABLE(x))(APPLY(FIRST, x()), __VA_ARGS__)
 
 #define IF_EQUAL(a, b) IF(EQUAL(a, b))
 #define IF_NOTEQ(a, b) IF(COMPL(EQUAL(a, b)))

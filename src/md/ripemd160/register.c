@@ -3,8 +3,8 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "../../../llhash.h"
 #include "../../../macros.h"
+#include "../../../llhash.h"
 #include "../../../gen/md/ripemd160/hash.h"
 
 char * RIPEMD160_Describe(int impl) {
@@ -54,4 +54,3 @@ int __attribute__((noinline)) RIPEMD160_Register(int enable) {
   MAYBE_REGISTER(generic,GENERIC);
   return err ? err : RHASHC_ERROR_NOENABLE;
 }
-
