@@ -70,6 +70,10 @@ libh/%.h: src/libh/%_h.py src/libh/util.py
 	python3 $< > $@
 
 # generated headers
+gen/test_vectors.h: scripts/vector.py
+	@mkdir -p $(@D)
+	./$< h > $@
+
 gen/md/%/hash.h: src/md/%/param.h src/md/hash.h.in | libh/libh.h
 	@mkdir -p $(@D)
 	$(PP) -P -C -D_INDIRECT=_INDIRECT -include $< \
@@ -126,6 +130,10 @@ obj/md/%/register.o: src/md/%/register.c gen/md/%/hash.h | libh
 	$(COMPILE) -c $< -o $@
 
 # misc
+obj/test_vectors.o: scripts/vector.py
+	@mkdir -p $(@D)
+	./$< c | $(CC) -fPIC -Os -x c -c - -o $@
+
 obj/common/%.o: src/common/%.c src/common/%.h | libh
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
@@ -186,6 +194,9 @@ gen/sha2_iv.c: bin/helper/sha2t
 bin/helper/sha2t: sha2t.o
 	@mkdir -p $(@D)
 	$(COMPILE) $^ -ldl -o $@
+
+vectors: vectors.o obj/test_vectors.o obj/llhash.o | gen/test_vectors.h
+	$(COMPILE) $^ -o $@
 
 test: test.o openssl.o obj/llhash.o
 	$(COMPILE) $^ -ldl -o $@

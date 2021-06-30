@@ -263,7 +263,7 @@ int main(int argc, char *argv[]) {
   //*/
 
   char *desc, hexstr[128*(16)+1];
-  uint8_t scratch[65536], buf[64];
+  uint8_t scratch[65536], buf[256];
   uint8_t ref[64], hash[64];
 
   char *_h[] = {

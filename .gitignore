@@ -7,6 +7,9 @@ src/libh/__pycache__/
 
 sha2_iv.c
 
+out
+.*
+
 # exceptions
 !libh/magic.h
 !src/libh/*.py
@@ -27,3 +30,4 @@ sha2_iv.c
 
 # Executables
 test
+vectors
