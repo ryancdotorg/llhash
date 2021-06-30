@@ -26,4 +26,4 @@ for n in irange(2, MAX_ARGS):
 cargs = ', '.join(placeholders('_CONCAT', MAX_ARGS, 2))
 h.concat(f'#define CONCAT(...) _VA_SELECT(__VA_ARGS__, {cargs}, IDENTITY)(__VA_ARGS__)')
 
-print(h.all())
+h.print_all()

@@ -41,4 +41,4 @@ for i in range(MAX):
         h.mod(f'#define _MOD_{i}_{j} {i%j}')
         h.idiv(f'#define _IDIV_{i}_{j} {i//j}')
 
-print(h.all())
+h.print_all()

@@ -20,4 +20,4 @@ for w in range(2, W_MAX+1):
             # neat, nested formatting works
             h.pad(f'#define _PAD0{w}_{i}() {i:0{w}d}, ()')
 
-print(h.all())
+h.print_all()

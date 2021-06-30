@@ -7,6 +7,33 @@ from functools import reduce
 from collections.abc import Iterable
 from collections import OrderedDict
 
+__all__ = ['LineWrapper', 'Appender', 'irange', 'placeholders']
+
+class LineWrapper:
+    def __init__(self, length=78, continuation='\\'):
+        self._f = io.StringIO('')
+        self._line = ''
+        self.line_length = length
+        self.continuation = continuation
+
+    def __call__(self, *args):
+        for s in args:
+            if len(self._line) + len(s) > self.line_length:
+                self.linebreak()
+            self._line += s
+
+    def __str__(self):
+        self._f.write(self._line)
+        s = self._f.getvalue()
+        self._f = None
+        return s
+
+    def linebreak(self):
+        if self._line[-1] != ' ':
+            self._line += ' '
+        self._f.write(self._line + self.continuation + '\n')
+        self._line = ''
+
 class Appender:
     def __init__(self):
         self._f = io.StringIO('')
@@ -21,8 +48,14 @@ class Appender:
     def __str__(self):
         return self._f.getvalue()
 
+    def print(self):
+        print(str(self).strip('\n'))
+
     def all(self):
         return str(self) + ''.join(map(str, self._d.values()))
+
+    def print_all(self):
+        print(self.all().strip('\n'))
 
 def __getattr__(name):
     global _header
