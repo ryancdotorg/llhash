@@ -98,7 +98,7 @@ static char * hex(char *out, const void *in, size_t len, int color) {
       } \
     } \
  \
-    HMAC_##H(x, k, k_sz, m, m_sz); \
+    HMAC_##H(k, k_sz, m, m_sz, x); \
     if (memcmp(d, x, d_sz) != 0) { \
       ++fail; \
       printf("{\"algo\": \"" #H "\", \"id\": %d, ", id); \
@@ -111,8 +111,8 @@ static char * hex(char *out, const void *in, size_t len, int color) {
   } \
   fprintf(stderr, "HMAC vectors for " #H ": %d/%d\n", total - fail, total); \
 
-int main(int argc, char *argv[]) {
-  unsigned char buf[65536];
+int main() {
+  char buf[65536];
   unsigned char k[1024], m[1024], d[1024], x[1024];
   size_t k_sz, m_sz, d_sz;
 
