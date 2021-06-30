@@ -44,28 +44,27 @@ void HMAC_Init(HMAC_CTX *ctx, const void *key, size_t len) {
     HASH_NAME(key, len, ctx->hmac);
     // generate ipad
     for (size_t i = 0; i < HASH_DIGEST_LENGTH; ++i) ctx->hmac[i] ^= 0x36;
-    memset(ctx->hmac+HASH_DIGEST_LENGTH, 0x36, sizeof(ctx->hmac)-HASH_DIGEST_LENGTH);
+    memset(ctx->hmac+HASH_DIGEST_LENGTH, 0x36, HASH_BLOCK_LENGTH-HASH_DIGEST_LENGTH);
   } else {
     memcpy(ctx->hmac, key, len);
     // generate ipad
     for (size_t i = 0; i < len; ++i) ctx->hmac[i] ^= 0x36;
-    memset(ctx->hmac+len, 0x36, sizeof(ctx->hmac)-len);
+    memset(ctx->hmac+len, 0x36, HASH_BLOCK_LENGTH-len);
   }
 
   // load ipad into hash state
-  ctx->bitlen = HASH_DIGEST_LENGTH * 8;
+  ctx->bitlen = HASH_BLOCK_LENGTH * 8;
   HASH(Transform)(ctx->state, ctx->hmac, 1);
 
   // convert ipad to opad (0x6a == 0x36 ^ 0x5c)
   for (int i = 0; i < HASH_BLOCK_LENGTH; ++i) ctx->hmac[i] ^= 0x6a;
-
 
 #define ILEN (HASH_BLOCK_LENGTH+HASH_DIGEST_LENGTH)
 #define REMB (ILEN & (HASH_BLOCK_LENGTH-1))
 #define NBLK (ILEN/HASH_BLOCK_LENGTH)
   // set up padding
   ctx->hmac[ILEN] = 0x80;
-  const uintWS_t ihlen = htoDeWS(ILEN*8);
+  const uint64_t ihlen = htoDe64(ILEN*8);
   if (REMB < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
     memset(ctx->hmac + ILEN + 1, 0, (HASH_BLOCK_LENGTH-8) - (REMB + 1));
     *((uint64_t *)(ctx->hmac + ((NBLK + 1) * HASH_BLOCK_LENGTH) - 8)) = ihlen;
