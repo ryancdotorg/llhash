@@ -11,8 +11,10 @@
 #define DIRECTIVE(S) _H S
 
 /* help keep things short */
-#define HASH(A) JOIN(HASH_NAME,A)
-#define HMAC(A) JOIN(HMAC,HASH_NAME,A)
+#define HASH(A)   JOIN(HASH_NAME,A)
+#define HMAC(A)   JOIN(HMAC,HASH(A))
+#define HKDF(A)   JOIN(HKDF,HASH(A))
+#define PBKDF2(A) JOIN(PBKDF2,HMAC(A))
 
 #define HASH_ALIASED IF_ELSE(GETTABLE(JOIN(HASH_NAME,ALIAS)))(1,0)
 #define HASH_ALIAS GET(JOIN(HASH_NAME,ALIAS))
@@ -23,16 +25,40 @@
 #define HASH_BLOCK_LENGTH HASH(BLOCK_LENGTH)
 #define HASH_STATE_WORDS HASH(STATE_WORDS)
 #define HASH_WORD_SIZE HASH(WORD_SIZE)
+#define HASH_WORD_BITS HASH_WORD_SIZE
 #define HASH_ENDIAN HASH(ENDIAN)
 
-/* type/size/endian definition macros */
-#define uintWS_t CONCAT(uint,HASH_WORD_SIZE,_t)
-#define htoDeWS CONCAT(hto,HASH_ENDIAN,e,HASH_WORD_SIZE)
-#define htoDe32 CONCAT(hto,HASH_ENDIAN,e32)
-#define htoDe64 CONCAT(hto,HASH_ENDIAN,e64)
-#define DeWStoh CONCAT(HASH_ENDIAN,e,HASH_WORD_SIZE,toh)
-#define De32toh CONCAT(HASH_ENDIAN,e32toh)
-#define De64toh CONCAT(HASH_ENDIAN,e64toh)
+/* bytes */
+#if HASH_WORD_BITS == 64
+#define HASH_WORD_BYTES 8
+#elif HASH_WORD_BITS == 32
+#define HASH_WORD_BYTES 4
+#elif HASH_WORD_BITS == 16
+#define HASH_WORD_BYTES 2
+#elif HASH_WORD_BITS == 8
+#define HASH_WORD_BYTES 1
+#else
+#define HASH_WORD_BYTES (HASH_WORD_BITS/8)
+#endif
+
+/* type/size definition macro */
+#define uintWS_t CONCAT(uint,HASH_WORD_BITS,_t)
+/* type/endian definition macros */
+#if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
+#define htoDeWS CONCAT(htobe,HASH_WORD_BITS)
+#define htoDe32 htobe32
+#define htoDe64 htobe64
+#define DeWStoh CONCAT(be,HASH_WORD_BITS,toh)
+#define De32toh be32toh
+#define De64toh be64toh
+#elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
+#define htoDeWS CONCAT(htole,HASH_WORD_BITS)
+#define htoDe32 htole32
+#define htoDe64 htole64
+#define DeWStoh CONCAT(le,HASH_WORD_BITS,toh)
+#define De32toh le32toh
+#define De64toh le64toh
+#endif
 
 /* rotate operators */
 #define ROL8(x,n)  __extension__({ uint8_t  _x=(x), _n=(n); (_x << _n) | (_x >> ( 8-_n)); })
