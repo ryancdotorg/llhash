@@ -32,6 +32,7 @@ LIBH = $(patsubst src/libh/%_h.py,libh/%.h,$(wildcard src/libh/*_h.py))
 
 HEADERS := $(foreach h,$(HASHES),$(patsubst %,gen/%/hash.h,$h))
 HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/hmac.h,$h))
+HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/ext.h,$h))
 
 BINARIES = test sha2t
 #override CFLAGS += -O3 -flto -fPIC -funsigned-char \
@@ -70,10 +71,6 @@ libh/%.h: src/libh/%_h.py src/libh/util.py
 	python3 $< > $@
 
 # generated headers
-gen/test_vectors.h: scripts/vector.py
-	@mkdir -p $(@D)
-	./$< h > $@
-
 gen/md/%/hash.h: src/md/%/param.h src/md/hash.h.in | libh/libh.h
 	@mkdir -p $(@D)
 	$(PP) -P -C -D_INDIRECT=_INDIRECT -include $< \
@@ -86,6 +83,12 @@ gen/md/%/hmac.h: src/md/%/param.h src/md/hmac.h.in | libh/libh.h
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/hmac.h.in | \
 	sed -En 's/^\s*#\s+/#/;/pragma once/,$$p' > $@
 
+gen/md/%/ext.h: src/md/%/param.h src/md/ext.h.in | libh/libh.h
+	@mkdir -p $(@D)
+	$(PP) -C -D_INDIRECT=_INDIRECT -include $< \
+	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/ext.h.in | \
+	sed -En 's/^\s*#\s+/#/;/pragma once/,$$p' > $@
+
 # generated c hash driver
 gen/md/%/hash.c: src/md/%/param.h src/md/hash.h.in src/md/hash.c.in | libh
 	@mkdir -p $(@D)
@@ -96,6 +99,11 @@ gen/md/%/hmac.c: src/md/%/param.h src/md/hmac.h.in src/md/hmac.c.in | libh
 	@mkdir -p $(@D)
 	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/hmac.c.in > $@
+
+gen/md/%/ext.c: src/md/%/param.h src/md/ext.h.in src/md/ext.c.in | libh
+	@mkdir -p $(@D)
+	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
+	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/ext.c.in > $@
 
 # c transform implementations
 obj/md/%/xform/generic.o: src/md/%/xform.c | libh
@@ -124,16 +132,16 @@ obj/md/%/hmac.o: gen/md/%/hmac.c gen/md/%/hmac.h gen/md/%/hash.h
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
+obj/md/%/ext.o: gen/md/%/ext.c gen/md/%/ext.h gen/md/%/hmac.h gen/md/%/hash.h
+	@mkdir -p $(@D)
+	$(COMPILE) -c $< -o $@
+
 # impl registration
 obj/md/%/register.o: src/md/%/register.c gen/md/%/hash.h | libh
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
 # misc
-obj/test_vectors.o: scripts/vector.py
-	@mkdir -p $(@D)
-	./$< c | $(CC) -fPIC -Os -x c -c - -o $@
-
 obj/common/%.o: src/common/%.c src/common/%.h | libh
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
@@ -151,7 +159,7 @@ obj/can.o: $(OBJ_CAN)
 	$(LD) -r $^ -o $@
 
 # individual hash module
-obj/md/%.o: obj/md/%/hash.o obj/md/%/hmac.o obj/md/%/register.o
+obj/md/%.o: obj/md/%/hash.o obj/md/%/hmac.o obj/md/%/ext.o obj/md/%/register.o
 	$(LD) -r $^ -o $@
 
 obj/xform.o: $(OBJ_XFORM)
@@ -195,11 +203,25 @@ bin/helper/sha2t: sha2t.o
 	@mkdir -p $(@D)
 	$(COMPILE) $^ -ldl -o $@
 
-vectors: vectors.o obj/test_vectors.o obj/llhash.o | gen/test_vectors.h
-	$(COMPILE) $^ -o $@
-
 test: test.o openssl.o obj/llhash.o
 	$(COMPILE) $^ -ldl -o $@
+
+# test vector suite
+obj/test_vectors.o: scripts/vector.py
+	@mkdir -p gen/ $(@D)
+	python3 $< c > gen/test_vectors.c
+	$(CC) -fPIC -Os -c gen/test_vectors.c -o obj/test_vectors.o
+	rm gen/test_vectors.c
+
+gen/test_vectors.h: scripts/vector.py
+	@mkdir -p $(@D)
+	python3 $< h > $@
+
+vectors.o: vectors.c | headers gen/test_vectors.h
+	$(COMPILE) -c $< -o $@
+
+vectors: vectors.o obj/test_vectors.o obj/llhash.o
+	$(COMPILE) $^ -o $@
 
 #@awk '/_clean:/{f=1;next}/^([^\t]|$$)/{f=0}f&&sub(/\t/,"")' $(MAKEFILE_LIST)
 # hack to force clean to run first *to completion* even for parallel builds

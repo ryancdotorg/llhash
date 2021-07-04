@@ -31,9 +31,9 @@ algos = {
     'sha384': 'SHA2_384', 'sha512': 'SHA2_512',
 }
 
-cx00 = bytearray([0x00] * 256)
-cxff = bytearray([0xff] * 256)
-rand = rc4_prng(256, b'an arbitrary string')
+cx00 = tuple([0x00] * 256)
+cxff = tuple([0xff] * 256)
+rand = tuple(rc4_prng(256, b'an arbitrary string'))
 
 def uchar_literal(b):
     return '{{{}}}'.format(', '.join(map(lambda c: f'0x{c:02x}', b)))
@@ -56,7 +56,12 @@ if sys.argv[1] == 'h':
     for algo, s in algos.items():
         print(f'int {s}_hmac_vector({fn_args("k", "m", "d")}, int i);')
 elif sys.argv[1] == 'c':
+    dmap = {cx00: '_d_0x00', cxff: '_d_0xff', rand: '_d_rand'}
     print('#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n')
+    print(f'static unsigned char {dmap[cx00]}[] = {uchar_literal(cx00)};')
+    print(f'static unsigned char {dmap[cxff]}[] = {uchar_literal(cxff)};')
+    print(f'static unsigned char {dmap[rand]}[] = {uchar_literal(rand)};')
+    print()
 
     sizes = (
         0, 1, 2, 3, 4, 5, 6, 7, 8,
@@ -79,23 +84,21 @@ elif sys.argv[1] == 'c':
             for n in sizes:
                 if n == 0 and b != cx00:
                     continue
-                m = b[0:n]
+                m = bytearray(b[0:n])
                 h = hashlib.new(algo, m).digest()
-                mesg = uchar_literal(m)
                 dgst = uchar_literal(h)
                 print(f'    case {vector_id}:')
                 print('      {')
-                print(f'        unsigned char m[] = {mesg};')
-                print('        if (*mesg_sz >= sizeof(m)) {')
-                print('          *mesg_sz = sizeof(m);')
-                print('          memcpy(mesg, m, sizeof(m));')
+                print(f'        if (*mesg_sz >= {n}) {{')
+                print(f'          *mesg_sz = {n};')
+                print(f'          memcpy(mesg, {dmap[b]}, {n});')
                 print('        } else {')
                 print('          return -1;')
                 print('        }')
                 print(f'        unsigned char d[] = {dgst};')
-                print('        if (*dgst_sz >= sizeof(d)) {')
-                print('          *dgst_sz = sizeof(d);')
-                print('          memcpy(dgst, d, sizeof(d));')
+                print(f'        if (*dgst_sz >= {len(h)}) {{')
+                print(f'          *dgst_sz = {len(h)};')
+                print(f'          memcpy(dgst, d, {len(h)});')
                 print('        } else {')
                 print('          return -2;')
                 print('        }')
@@ -116,31 +119,27 @@ elif sys.argv[1] == 'c':
         for b1 in (cx00, rand):
             for n1 in sizes:
                 for n2 in sizes:
-                    k, m = b1[0:n1], rand[0:n2]
+                    k, m = bytearray(b1[0:n1]), bytearray(rand[0:n2])
                     h = hmac.new(k, m, algo).digest()
-                    key = uchar_literal(k)
-                    mesg = uchar_literal(m)
                     dgst = uchar_literal(h)
                     print(f'    case {vector_id}:')
                     print('      {')
-                    print(f'        unsigned char k[] = {key};')
-                    print('        if (*key_sz >= sizeof(k)) {')
-                    print('          *key_sz = sizeof(k);')
-                    print('          memcpy(key, k, sizeof(k));')
+                    print(f'        if (*key_sz >= {n1}) {{')
+                    print(f'          *key_sz = {n1};')
+                    print(f'          memcpy(key, {dmap[b1]}, {n1});')
                     print('        } else {')
                     print('          return -1;')
                     print('        }')
-                    print(f'        unsigned char m[] = {mesg};')
-                    print('        if (*mesg_sz >= sizeof(m)) {')
-                    print('          *mesg_sz = sizeof(m);')
-                    print('          memcpy(mesg, m, sizeof(m));')
+                    print(f'        if (*mesg_sz >= {n2}) {{')
+                    print(f'          *mesg_sz = {n2};')
+                    print(f'          memcpy(mesg, {dmap[rand]}, {n2});')
                     print('        } else {')
                     print('          return -2;')
                     print('        }')
                     print(f'        unsigned char d[] = {dgst};')
-                    print('        if (*dgst_sz >= sizeof(d)) {')
-                    print('          *dgst_sz = sizeof(d);')
-                    print('          memcpy(dgst, d, sizeof(d));')
+                    print(f'        if (*dgst_sz >= {len(h)}) {{')
+                    print(f'          *dgst_sz = {len(h)};')
+                    print(f'          memcpy(dgst, d, {len(h)});')
                     print('        } else {')
                     print('          return -3;')
                     print('        }')
