@@ -1,99 +1,72 @@
-#include <stdlib.h>
+#include "../../macros.h"
+
+#ifndef HASH_NAME
+/* this exists to keep the linter happy */
+#define HASH_NAME SHA1
+
 #include <stdint.h>
+#include <stddef.h>
 #include <string.h>
-#include <unistd.h>
 #include <endian.h>
-#include <stdio.h>
+#include "sha1/param.h"
+#include "../../util.h"
+#include "../../gen/md/sha1/ext.h"
+#else
+_H include <stdint.h>
+_H include <stddef.h>
+_H include <string.h>
+_H include <endian.h>
+_H include STR(../../../src/md/HASH_name/param.h)
+_H include STR(../../../util.h)
+_H include STR(ext.h)
+#endif
 
-#include "sha256.h"
+#define PBKDF2_NAME JOIN(PBKDF2,HASH_NAME)
 
-static unsigned char pad768[] = {
-  0x80, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,
-  /* length 768 bits, big endian uint64_t */
-  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x03, 0x00
-};
-
-void HMAC_SHA2_256_Clone(HMAC_SHA2_256_CTX *dst, const HMAC_SHA2_256_CTX *src) {
-  // relies on .data being first
-  if (src->datalen) {
-    memcpy(dst, src, sizeof(dst));
-  } else {
-    memcpy(dst + sizeof(dst->data), src + sizeof(dst->data), sizeof(dst) - sizeof(dst->data));
-  }
-}
-
-void HMAC_SHA2_256_Init(HMAC_SHA2_256_CTX *ctx, const void *key, size_t len) {
-  uint8_t *hash = ctx->hmac + 64;
-
-  SHA2_256_Init((SHA2_256_CTX*)ctx);
-  memset(ctx->hmac, 0, sizeof(ctx->hmac));
-
-  if (len > 64) {
-    SHA2_256(hash, key, len);
-  } else {
-    memcpy(hash, key, len);
-  }
-
-  for (int i = 0; i < 64; ++i) {
-    ctx->hmac[i] = 0x5c ^ hash[i]; // opad
-    hash[i] ^= 0x36;               // ipad
-  }
-
-  ctx->bitlen = 512;
-  SHA2_256_Transform(ctx->state, hash, 1);
-  memcpy(ctx->hmac + 96, pad768, 32);
-}
-
-void HMAC_SHA2_256_Update(HMAC_SHA2_256_CTX *ctx, const uint8_t data[], size_t len) {
-  SHA2_256_Update((SHA2_256_CTX*)ctx, data, len);
-}
-
-void HMAC_SHA2_256_Final(uint8_t hash[], HMAC_SHA2_256_CTX *ctx) {
-  SHA2_256_Final(ctx->hmac + 64, (SHA2_256_CTX*)ctx);
-  SHA2_256_Raw(hash, ctx->hmac, 2);
-}
-
-void HMAC_SHA2_256(uint8_t hash[], const uint8_t key[], size_t key_sz, const uint8_t msg[], size_t msg_sz) {
-  HMAC_SHA2_256_CTX ctx;
-
-  HMAC_SHA2_256_Init(&ctx, key, key_sz);
-  HMAC_SHA2_256_Update(&ctx, msg, msg_sz);
-  HMAC_SHA2_256_Final(hash, &ctx);
-}
-
-void PBKDF2_HMAC_SHA2_256(
+void PBKDF2_NAME(
 uint8_t dk[], size_t dk_sz,
 const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz,
-int c) {
-  HMAC_SHA2_256_CTX ctx, pctx;
+uint32_t c) {
+  HMAC(CTX) ictx, octx;
+  HMAC(Init)(&ictx, pass, pass_sz);
+  HMAC(Clone)(&octx, &ictx);
+  HMAC(Update)(&octx, salt, salt_sz);
 
-  HMAC_SHA2_256_Init(&pctx, pass, pass_sz);
+  size_t nout = 0, block = 1;
+  uintWS_t T[HASH_STATE_WORDS], U[HASH_STATE_WORDS];
 
-  int i, j, nout = 0, block = 1;
-  uint8_t T[32];
-  uint8_t U[32];
-
-  uint8_t I_BE[4];
+  uint8_t otail[HASH_BLOCK_LENGTH*2], itail[HASH_BLOCK_LENGTH*3];
+  memcpy(otail, octx.data, octx.datalen);
+  memcpy(itail, ictx.data, ictx.datalen);
+  uint8_t otail_blks = HASH(Tail)(otail, (octx.bitlen >> 3) + octx.datalen + 4);
+  uint8_t itail_blks = HASH(Tail)(itail, (ictx.bitlen >> 3) + ictx.datalen + HASH_DIGEST_LENGTH);
 
   while (nout < dk_sz) {
-    *((uint32_t*)I_BE) = be32toh(block);
-    HMAC_SHA2_256_Clone(&ctx, &pctx);
-    HMAC_SHA2_256_Update(&ctx, salt, salt_sz);
-    HMAC_SHA2_256_Update(&ctx, I_BE, sizeof(I_BE));
-    HMAC_SHA2_256_Final(U, &ctx);
-    memcpy(T, U, sizeof(T));
-    for (i = 1; i < c; ++i) {
-      HMAC_SHA2_256_Clone(&ctx, &pctx);
-      HMAC_SHA2_256_Update(&ctx, U, sizeof(U));
-      HMAC_SHA2_256_Final(U, &ctx);
-      for (j = 0; j < sizeof(T); ++j) { T[j] ^= U[j]; }
+    memcpy(T, octx.state, sizeof(octx.state));
+    otail[octx.datalen+0] = (block >> 24) & 0xff;
+    otail[octx.datalen+1] = (block >> 16) & 0xff;
+    otail[octx.datalen+2] = (block >>  8) & 0xff;
+    otail[octx.datalen+3] = (block >>  0) & 0xff;
+    HASH(Transform)(T, otail, otail_blks);
+    for (size_t i = 1; i < c; ++i) {
+      memcpy(U, ictx.state, sizeof(ictx.state));
+      HASH(Serialize)(itail + ictx.datalen, T);
+      HASH(Transform)(U, itail, itail_blks);
+      for (size_t j = 0; j < HASH_STATE_WORDS; ++j) { T[j] ^= U[j]; }
     }
-    for (i = 0; nout < dk_sz && i < sizeof(T); ++i, ++nout) {
-      dk[nout] = T[i];
+
+    if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
+      HASH(Serialize)(dk + nout, T);
+      nout += HASH_DIGEST_LENGTH;
+    } else {
+      HASH(Partial)(dk + nout, T, dk_sz - nout);
     }
     ++block;
   }
+
+  wipe(&octx, sizeof(octx));
+  wipe(&ictx, sizeof(ictx));
+  wipe(T);
+  wipe(U);
 }

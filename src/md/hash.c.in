@@ -22,7 +22,7 @@ _H include "hash.h"
 static const uintWS_t iv[] = HASH(IV);
 static uint8_t output[HASH_DIGEST_LENGTH];
 
-static inline void __attribute__((always_inline)) serialize(uint8_t hash[], uintWS_t *state);
+static inline void __attribute__((always_inline)) serialize(uint8_t hash[], const uintWS_t *state);
 
 #if HASH_ALIASED
 uint8_t * HASH_ALIAS(const uint8_t data[], size_t len, uint8_t hash[])
@@ -181,6 +181,27 @@ uint64_t HASH(Pad)(uint8_t data[], size_t len) {
   return nblk;
 }
 
+// caller responsible for making sure the buffer is big enough
+#if HASH_ALIASED
+uint8_t ALIAS(Tail)(uint8_t last_data_block[], size_t len)
+__attribute__((alias(STR(HASH(Tail)))));
+#endif
+uint8_t HASH(Tail)(uint8_t last_data_block[], size_t len) {
+  int remaining_bytes = len & (HASH_BLOCK_LENGTH-1);
+
+  // set a 1 bit after the data
+  last_data_block[remaining_bytes] = 0x80;
+  if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
+    memset(last_data_block + len + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
+    *((uint64_t *)(last_data_block + HASH_BLOCK_LENGTH - 8)) = htoDe64(len * 8);
+    return 1;
+  } else {
+    memset(last_data_block + len + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
+    *((uint64_t *)(last_data_block + (HASH_BLOCK_LENGTH*2) - 8)) = htoDe64(len * 8);
+    return 2;
+  }
+}
+
 // caller is responsible for padding
 #if HASH_ALIASED
 void ALIAS(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk)
@@ -192,6 +213,64 @@ void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk) {
   HASH(Transform)(state, data, nblk);
 
   serialize(hash, state);
+}
+
+#if HASH_ALIASED
+void ALIAS(Serialize)(uint8_t hash[], const uintWS_t state[])
+__attribute__((alias(STR(HASH(Serialize)))));
+#endif
+void HASH(Serialize)(uint8_t hash[], const uintWS_t state[]) {
+  serialize(hash, state);
+}
+
+#if HASH_ALIASED
+void ALIAS(Partial)(uint8_t out[], const uintWS_t state[], size_t len)
+__attribute__((alias(STR(HASH(Partial)))));
+#endif
+void HASH(Partial)(uint8_t *restrict out, const uintWS_t *restrict state, size_t len) {
+#if HASH_ENDIAN == __BYTE_ORDER__
+  memcpy(out, state, len);
+#else
+  size_t pos = 0;
+  do {
+    size_t rem = len - pos;
+    if (rem >= HASH_WORD_BYTES) {
+# if HASH_WORD_BITS == 32
+#  if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
+      *out++ = (*state >> 24) & 0xff; *out++ = (*state >> 16) & 0xff;
+      *out++ = (*state >>  8) & 0xff; *out++ = (*state >>  0) & 0xff;
+#  elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
+      *out++ = (*state >>  0) & 0xff; *out++ = (*state >>  8) & 0xff;
+      *out++ = (*state >> 16) & 0xff; *out++ = (*state >> 24) & 0xff;
+#  else
+#  error "bad endian"
+#  endif
+    } else {
+      for (unsigned int i = 24; rem; i -= 8, --rem) *out++ = (*state >> i) & 0xff;
+# elif HASH_WORD_BITS == 64
+#  if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
+      *out++ = (*state >> 56) & 0xff; *out++ = (*state >> 48) & 0xff;
+      *out++ = (*state >> 40) & 0xff; *out++ = (*state >> 32) & 0xff;
+      *out++ = (*state >> 24) & 0xff; *out++ = (*state >> 16) & 0xff;
+      *out++ = (*state >>  8) & 0xff; *out++ = (*state >>  0) & 0xff;
+#  elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
+      *out++ = (*state >>  0) & 0xff; *out++ = (*state >>  8) & 0xff;
+      *out++ = (*state >> 16) & 0xff; *out++ = (*state >> 24) & 0xff;
+      *out++ = (*state >> 32) & 0xff; *out++ = (*state >> 40) & 0xff;
+      *out++ = (*state >> 48) & 0xff; *out++ = (*state >> 56) & 0xff;
+#  else
+#  error "bad endian"
+#  endif
+    } else {
+      for (unsigned int i = 56; rem; i -= 8, --rem) *out++ = (*state >> i) & 0xff;
+# else
+# error "unhandled word size"
+# endif
+    }
+    pos += HASH_WORD_BYTES;
+    state += 1;
+  } while (pos < len);
+#endif
 }
 
 #if HASH_DIGEST_LENGTH == HASH_STATE_WORDS * (HASH_WORD_SIZE / 8)
@@ -208,7 +287,7 @@ void HASH(Extend)(HASH(CTX) *ctx, uint8_t hash[], uint64_t nblk) {
 }
 #endif
 
-static inline void __attribute__((always_inline)) serialize(uint8_t hash[], uintWS_t *state) {
+static inline void __attribute__((always_inline)) serialize(uint8_t hash[], const uintWS_t *state) {
   uintWS_t *outW = (uintWS_t *)hash;
 
 #if HASH_STATE_WORDS > 0

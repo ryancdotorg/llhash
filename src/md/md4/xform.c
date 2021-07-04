@@ -41,7 +41,7 @@ void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
 
   for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
     // load input
-    asm("load:\n");
+    asm(STR(JOIN(md4,c_impl,load)) ":\n");
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
     uint32_t W[16];
     for (int i = 0; i < 16; ++i) W[i] = htole32(input[i]);

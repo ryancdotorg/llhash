@@ -4,7 +4,7 @@
 #define SHA1_BLOCK_LENGTH 64
 #define SHA1_WORD_SIZE 32
 #define SHA1_STATE_WORDS 5
-#define SHA1_ENDIAN b
+#define SHA1_ENDIAN __ORDER_BIG_ENDIAN__
 
 #define SHA1_IV { \
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 \

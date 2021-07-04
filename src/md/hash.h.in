@@ -4,11 +4,7 @@ _H pragma once
 _H include <stddef.h>
 _H include <stdint.h>
 
-_H ifndef _INDIRECT
-_H define _INDIRECT
-_H endif
 _H include STR(../../../src/md/HASH_name/param.h)
-_H undef _INDIRECT
 
 char * HASH(Describe)(int impl);
 int HASH(Register)(int enable);
@@ -46,11 +42,17 @@ uint8_t * IDENTITY(HASH_ALIAS)(const uint8_t data[], size_t len, uint8_t hash[])
 #endif
 
 uint64_t HASH(Pad)(uint8_t data[], size_t len);
+uint8_t HASH(Tail)(uint8_t last_data_block[], size_t len);
 void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
+void HASH(Serialize)(uint8_t hash[], const uintWS_t state[]);
+void HASH(Partial)(uint8_t hash[], const uintWS_t state[], size_t len);
 
 #if HASH_ALIASED
 uint64_t ALIAS(Pad)(uint8_t data[], size_t len);
+uint8_t ALIAS(Tail)(uint8_t last_data_block[], size_t len);
 void ALIAS(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
+void ALIAS(Serialize)(uint8_t hash[], const uintWS_t state[]);
+void ALIAS(Partial)(uint8_t hash[], const uintWS_t state[], size_t len);
 #endif
 
 #if HASH_DIGEST_LENGTH == HASH_STATE_WORDS * (HASH_WORD_SIZE / 8)
@@ -59,10 +61,3 @@ void HASH(Extend)(HASH(CTX) *ctx, uint8_t hash[], uint64_t nblk);
 void ALIAS(Extend)(ALIAS(CTX) *ctx, uint8_t hash[], uint64_t nblk);
 #endif
 #endif
-
-void JOIN(PBKDF2_HMAC,HASH_NAME) (
-  uint8_t dk[], size_t dk_sz,
-  const uint8_t pass[], size_t pass_sz,
-  const uint8_t salt[], size_t salt_sz,
-  int c
-);

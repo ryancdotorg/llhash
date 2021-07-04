@@ -6,7 +6,7 @@
 #define SHA2_256_BLOCK_LENGTH 64
 #define SHA2_256_WORD_SIZE 32
 #define SHA2_256_STATE_WORDS 8
-#define SHA2_256_ENDIAN b
+#define SHA2_256_ENDIAN __ORDER_BIG_ENDIAN__
 
 #define SHA2_256_IV { \
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, \

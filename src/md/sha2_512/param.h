@@ -6,7 +6,7 @@
 #define SHA2_512_BLOCK_LENGTH 128
 #define SHA2_512_WORD_SIZE 64
 #define SHA2_512_STATE_WORDS 8
-#define SHA2_512_ENDIAN b
+#define SHA2_512_ENDIAN __ORDER_BIG_ENDIAN__
 
 #define SHA2_512_IV { \
   0x6a09e667f3bcc908, 0xbb67ae8584caa73b, \

@@ -4,7 +4,7 @@
 #define MD5_BLOCK_LENGTH 64
 #define MD5_WORD_SIZE 32
 #define MD5_STATE_WORDS 4
-#define MD5_ENDIAN l
+#define MD5_ENDIAN __ORDER_LITTLE_ENDIAN__
 
 #define MD5_IV { \
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 \

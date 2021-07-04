@@ -1,6 +1,8 @@
 MAKEFLAGS += --no-builtin-rules
 export LANG=c LC_ALL=C
 
+TMPDIR ?= /dev/shm
+
 LICENSES = -DLICENSE_GPL
 HASHES = md/md4 md/md5 md/ripemd160 md/sha1 md/sha2_256 md/sha2_512 md/sha2_224 md/sha2_384
 

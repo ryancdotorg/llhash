@@ -1,0 +1,12 @@
+#include "../../macros.h"
+_H pragma once
+_H include "hmac.h"
+
+_H include STR(../../../src/md/HASH_name/param.h)
+
+void JOIN(PBKDF2,HMAC,HASH_NAME)(
+  uint8_t dk[], size_t dk_sz,
+  const uint8_t pass[], size_t pass_sz,
+  const uint8_t salt[], size_t salt_sz,
+  int32_t c
+);

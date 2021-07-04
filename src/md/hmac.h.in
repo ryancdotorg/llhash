@@ -2,18 +2,15 @@
 _H pragma once
 _H include "hash.h"
 
-_H ifndef _INDIRECT
-_H define _INDIRECT
-_H endif
 _H include STR(../../../src/md/HASH_name/param.h)
-_H undef _INDIRECT
 
 typedef struct {
   uint8_t data[HASH_BLOCK_LENGTH];
   uint64_t bitlen;
   uintWS_t state[HASH_STATE_WORDS];
   uint32_t datalen;
-  uint8_t hmac[768]; // big enough for three 2048 bit blocks
+  // big enough for two blocks - assumes padded output fits in a single block
+  uint8_t hmac[HASH_BLOCK_LENGTH*2];
 } JOIN(HMAC,HASH_NAME,CTX);
 
 void JOIN(HMAC,HASH_NAME,Clone)(JOIN(HMAC,HASH_NAME,CTX) *dst, const JOIN(HMAC,HASH_NAME,CTX) *src);
