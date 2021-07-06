@@ -98,7 +98,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	pshufd	$0xb1,%xmm1,%xmm1
 	pshufd	$0x1b,%xmm2,%xmm2
 	movdqa	%xmm7,%xmm8
-.byte	102,15,58,15,202,8
+	palignr	-ex8,%xmm2,%xmm1
 	punpcklqdq	%xmm0,%xmm2
 	jmp	.Loop_shaext
 
@@ -114,169 +114,169 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	paddd	%xmm3,%xmm0
 	pshufb	%xmm7,%xmm4
 	movdqa	%xmm2,%xmm10
-.byte	15,56,203,209
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	nop
 	movdqa	%xmm1,%xmm9
-.byte	15,56,203,202
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 
 	movdqa	32-128(%rcx),%xmm0
 	paddd	%xmm4,%xmm0
 	pshufb	%xmm7,%xmm5
-.byte	15,56,203,209
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	leaq	64(%rsi),%rsi
-.byte	15,56,204,220
-.byte	15,56,203,202
+	sha256msg1	%xmm4,%xmm3
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 
 	movdqa	64-128(%rcx),%xmm0
 	paddd	%xmm5,%xmm0
 	pshufb	%xmm7,%xmm6
-.byte	15,56,203,209
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7
-.byte	102,15,58,15,253,4
+	palignr	-ex4,%xmm5,%xmm7
 	nop
 	paddd	%xmm7,%xmm3
-.byte	15,56,204,229
-.byte	15,56,203,202
+	sha256msg1	%xmm5,%xmm4
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 
 	movdqa	96-128(%rcx),%xmm0
 	paddd	%xmm6,%xmm0
-.byte	15,56,205,222
-.byte	15,56,203,209
+	sha256msg2	%xmm6,%xmm3
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm3,%xmm7
-.byte	102,15,58,15,254,4
+	palignr	-ex4,%xmm6,%xmm7
 	nop
 	paddd	%xmm7,%xmm4
-.byte	15,56,204,238
-.byte	15,56,203,202
+	sha256msg1	%xmm6,%xmm5
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	128-128(%rcx),%xmm0
 	paddd	%xmm3,%xmm0
-.byte	15,56,205,227
-.byte	15,56,203,209
+	sha256msg2	%xmm3,%xmm4
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm4,%xmm7
-.byte	102,15,58,15,251,4
+	palignr	-ex4,%xmm3,%xmm7
 	nop
 	paddd	%xmm7,%xmm5
-.byte	15,56,204,243
-.byte	15,56,203,202
+	sha256msg1	%xmm3,%xmm6
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	160-128(%rcx),%xmm0
 	paddd	%xmm4,%xmm0
-.byte	15,56,205,236
-.byte	15,56,203,209
+	sha256msg2	%xmm4,%xmm5
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm5,%xmm7
-.byte	102,15,58,15,252,4
+	palignr	-ex4,%xmm4,%xmm7
 	nop
 	paddd	%xmm7,%xmm6
-.byte	15,56,204,220
-.byte	15,56,203,202
+	sha256msg1	%xmm4,%xmm3
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	192-128(%rcx),%xmm0
 	paddd	%xmm5,%xmm0
-.byte	15,56,205,245
-.byte	15,56,203,209
+	sha256msg2	%xmm5,%xmm6
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7
-.byte	102,15,58,15,253,4
+	palignr	-ex4,%xmm5,%xmm7
 	nop
 	paddd	%xmm7,%xmm3
-.byte	15,56,204,229
-.byte	15,56,203,202
+	sha256msg1	%xmm5,%xmm4
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	224-128(%rcx),%xmm0
 	paddd	%xmm6,%xmm0
-.byte	15,56,205,222
-.byte	15,56,203,209
+	sha256msg2	%xmm6,%xmm3
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm3,%xmm7
-.byte	102,15,58,15,254,4
+	palignr	-ex4,%xmm6,%xmm7
 	nop
 	paddd	%xmm7,%xmm4
-.byte	15,56,204,238
-.byte	15,56,203,202
+	sha256msg1	%xmm6,%xmm5
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	256-128(%rcx),%xmm0
 	paddd	%xmm3,%xmm0
-.byte	15,56,205,227
-.byte	15,56,203,209
+	sha256msg2	%xmm3,%xmm4
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm4,%xmm7
-.byte	102,15,58,15,251,4
+	palignr	-ex4,%xmm3,%xmm7
 	nop
 	paddd	%xmm7,%xmm5
-.byte	15,56,204,243
-.byte	15,56,203,202
+	sha256msg1	%xmm3,%xmm6
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	288-128(%rcx),%xmm0
 	paddd	%xmm4,%xmm0
-.byte	15,56,205,236
-.byte	15,56,203,209
+	sha256msg2	%xmm4,%xmm5
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm5,%xmm7
-.byte	102,15,58,15,252,4
+	palignr	-ex4,%xmm4,%xmm7
 	nop
 	paddd	%xmm7,%xmm6
-.byte	15,56,204,220
-.byte	15,56,203,202
+	sha256msg1	%xmm4,%xmm3
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	320-128(%rcx),%xmm0
 	paddd	%xmm5,%xmm0
-.byte	15,56,205,245
-.byte	15,56,203,209
+	sha256msg2	%xmm5,%xmm6
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7
-.byte	102,15,58,15,253,4
+	palignr	-ex4,%xmm5,%xmm7
 	nop
 	paddd	%xmm7,%xmm3
-.byte	15,56,204,229
-.byte	15,56,203,202
+	sha256msg1	%xmm5,%xmm4
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	352-128(%rcx),%xmm0
 	paddd	%xmm6,%xmm0
-.byte	15,56,205,222
-.byte	15,56,203,209
+	sha256msg2	%xmm6,%xmm3
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm3,%xmm7
-.byte	102,15,58,15,254,4
+	palignr	-ex4,%xmm6,%xmm7
 	nop
 	paddd	%xmm7,%xmm4
-.byte	15,56,204,238
-.byte	15,56,203,202
+	sha256msg1	%xmm6,%xmm5
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	384-128(%rcx),%xmm0
 	paddd	%xmm3,%xmm0
-.byte	15,56,205,227
-.byte	15,56,203,209
+	sha256msg2	%xmm3,%xmm4
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm4,%xmm7
-.byte	102,15,58,15,251,4
+	palignr	-ex4,%xmm3,%xmm7
 	nop
 	paddd	%xmm7,%xmm5
-.byte	15,56,204,243
-.byte	15,56,203,202
+	sha256msg1	%xmm3,%xmm6
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	movdqa	416-128(%rcx),%xmm0
 	paddd	%xmm4,%xmm0
-.byte	15,56,205,236
-.byte	15,56,203,209
+	sha256msg2	%xmm4,%xmm5
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm5,%xmm7
-.byte	102,15,58,15,252,4
-.byte	15,56,203,202
+	palignr	-ex4,%xmm4,%xmm7
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 	paddd	%xmm7,%xmm6
 
 	movdqa	448-128(%rcx),%xmm0
 	paddd	%xmm5,%xmm0
-.byte	15,56,203,209
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
-.byte	15,56,205,245
+	sha256msg2	%xmm5,%xmm6
 	movdqa	%xmm8,%xmm7
-.byte	15,56,203,202
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 
 	movdqa	480-128(%rcx),%xmm0
 	paddd	%xmm6,%xmm0
 	nop
-.byte	15,56,203,209
+	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	decq	%rdx
 	nop
-.byte	15,56,203,202
+	sha256rnds2	%xmm0,%xmm2,%xmm1
 
 	paddd	%xmm10,%xmm2
 	paddd	%xmm9,%xmm1
@@ -286,7 +286,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	pshufd	$0x1b,%xmm1,%xmm7
 	pshufd	$0xb1,%xmm1,%xmm1
 	punpckhqdq	%xmm2,%xmm1
-.byte	102,15,58,15,215,8
+	palignr	-ex8,%xmm7,%xmm2
 
 	movdqu	%xmm1,(%rdi)
 	movdqu	%xmm2,16(%rdi)

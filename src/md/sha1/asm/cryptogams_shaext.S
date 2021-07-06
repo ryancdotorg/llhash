@@ -85,132 +85,132 @@ ENTRY(sha1_cryptogams_shaext_xform)
 	paddd	%xmm4,%xmm1
 	cmovneq	%r8,%rsi
 	movdqa	%xmm0,%xmm8
-.byte	15,56,201,229
+	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,0
-.byte	15,56,200,213
+	sha1rnds4	-ex0,%xmm1,%xmm0
+	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
-.byte	15,56,201,238
-.byte	15,56,202,231
+	sha1msg1	%xmm6,%xmm5
+	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,0
-.byte	15,56,200,206
+	sha1rnds4	-ex0,%xmm2,%xmm0
+	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
-.byte	15,56,202,236
-.byte	15,56,201,247
+	sha1msg2	%xmm4,%xmm5
+	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,0
-.byte	15,56,200,215
+	sha1rnds4	-ex0,%xmm1,%xmm0
+	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
-.byte	15,56,201,252
-.byte	15,56,202,245
+	sha1msg1	%xmm4,%xmm7
+	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,0
-.byte	15,56,200,204
+	sha1rnds4	-ex0,%xmm2,%xmm0
+	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
-.byte	15,56,202,254
-.byte	15,56,201,229
+	sha1msg2	%xmm6,%xmm7
+	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,0
-.byte	15,56,200,213
+	sha1rnds4	-ex0,%xmm1,%xmm0
+	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
-.byte	15,56,201,238
-.byte	15,56,202,231
+	sha1msg1	%xmm6,%xmm5
+	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,1
-.byte	15,56,200,206
+	sha1rnds4	-ex1,%xmm2,%xmm0
+	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
-.byte	15,56,202,236
-.byte	15,56,201,247
+	sha1msg2	%xmm4,%xmm5
+	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,1
-.byte	15,56,200,215
+	sha1rnds4	-ex1,%xmm1,%xmm0
+	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
-.byte	15,56,201,252
-.byte	15,56,202,245
+	sha1msg1	%xmm4,%xmm7
+	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,1
-.byte	15,56,200,204
+	sha1rnds4	-ex1,%xmm2,%xmm0
+	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
-.byte	15,56,202,254
-.byte	15,56,201,229
+	sha1msg2	%xmm6,%xmm7
+	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,1
-.byte	15,56,200,213
+	sha1rnds4	-ex1,%xmm1,%xmm0
+	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
-.byte	15,56,201,238
-.byte	15,56,202,231
+	sha1msg1	%xmm6,%xmm5
+	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,1
-.byte	15,56,200,206
+	sha1rnds4	-ex1,%xmm2,%xmm0
+	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
-.byte	15,56,202,236
-.byte	15,56,201,247
+	sha1msg2	%xmm4,%xmm5
+	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,2
-.byte	15,56,200,215
+	sha1rnds4	-ex2,%xmm1,%xmm0
+	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
-.byte	15,56,201,252
-.byte	15,56,202,245
+	sha1msg1	%xmm4,%xmm7
+	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,2
-.byte	15,56,200,204
+	sha1rnds4	-ex2,%xmm2,%xmm0
+	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
-.byte	15,56,202,254
-.byte	15,56,201,229
+	sha1msg2	%xmm6,%xmm7
+	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,2
-.byte	15,56,200,213
+	sha1rnds4	-ex2,%xmm1,%xmm0
+	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
-.byte	15,56,201,238
-.byte	15,56,202,231
+	sha1msg1	%xmm6,%xmm5
+	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,2
-.byte	15,56,200,206
+	sha1rnds4	-ex2,%xmm2,%xmm0
+	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
-.byte	15,56,202,236
-.byte	15,56,201,247
+	sha1msg2	%xmm4,%xmm5
+	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,2
-.byte	15,56,200,215
+	sha1rnds4	-ex2,%xmm1,%xmm0
+	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
-.byte	15,56,201,252
-.byte	15,56,202,245
+	sha1msg1	%xmm4,%xmm7
+	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,3
-.byte	15,56,200,204
+	sha1rnds4	-ex3,%xmm2,%xmm0
+	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
-.byte	15,56,202,254
+	sha1msg2	%xmm6,%xmm7
 	movdqu	(%rsi),%xmm4
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,3
-.byte	15,56,200,213
+	sha1rnds4	-ex3,%xmm1,%xmm0
+	sha1nexte	%xmm5,%xmm2
 	movdqu	16(%rsi),%xmm5
 	pshufb	%xmm3,%xmm4
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,3
-.byte	15,56,200,206
+	sha1rnds4	-ex3,%xmm2,%xmm0
+	sha1nexte	%xmm6,%xmm1
 	movdqu	32(%rsi),%xmm6
 	pshufb	%xmm3,%xmm5
 
 	movdqa	%xmm0,%xmm2
-.byte	15,58,204,193,3
-.byte	15,56,200,215
+	sha1rnds4	-ex3,%xmm1,%xmm0
+	sha1nexte	%xmm7,%xmm2
 	movdqu	48(%rsi),%xmm7
 	pshufb	%xmm3,%xmm6
 
 	movdqa	%xmm0,%xmm1
-.byte	15,58,204,194,3
-.byte	65,15,56,200,201
+	sha1rnds4	-ex3,%xmm2,%xmm0
+	sha1nexte	%xmm9,%xmm1
 	pshufb	%xmm3,%xmm7
 
 	paddd	%xmm8,%xmm0
