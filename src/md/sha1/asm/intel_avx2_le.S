@@ -209,7 +209,7 @@ STUB(sha1_intel_avx2_xform_le)
 		vinsertf128 $1, ((i-1) * 2)(BUFFER_PTR2),\
 			 WY_TMP, WY_TMP
 	.elseif ((i & 7) == 2)
-		/*  vpshufb YMM_SHUFB_BSWAP, WY_TMP, WY */
+		vmovdqa WY_TMP, WY
 	.elseif ((i & 7) == 4)
 		vpaddd  K_XMM + K_XMM_AR(%rip), WY, WY_TMP
 	.elseif ((i & 7) == 7)

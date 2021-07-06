@@ -176,7 +176,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	0(%rsi),%r12
 	movq	%r8,%r13
 	movq	%rax,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r9,%r15
 
@@ -217,7 +216,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	8(%rsi),%r12
 	movq	%rdx,%r13
 	movq	%r11,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r8,%rdi
 
@@ -258,7 +256,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	16(%rsi),%r12
 	movq	%rcx,%r13
 	movq	%r10,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rdx,%r15
 
@@ -299,7 +296,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	24(%rsi),%r12
 	movq	%rbx,%r13
 	movq	%r9,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rcx,%rdi
 
@@ -340,7 +336,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	32(%rsi),%r12
 	movq	%rax,%r13
 	movq	%r8,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rbx,%r15
 
@@ -381,7 +376,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	40(%rsi),%r12
 	movq	%r11,%r13
 	movq	%rdx,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rax,%rdi
 
@@ -422,7 +416,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	48(%rsi),%r12
 	movq	%r10,%r13
 	movq	%rcx,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r11,%r15
 
@@ -463,7 +456,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	56(%rsi),%r12
 	movq	%r9,%r13
 	movq	%rbx,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r10,%rdi
 
@@ -504,7 +496,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	64(%rsi),%r12
 	movq	%r8,%r13
 	movq	%rax,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r9,%r15
 
@@ -545,7 +536,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	72(%rsi),%r12
 	movq	%rdx,%r13
 	movq	%r11,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r8,%rdi
 
@@ -586,7 +576,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	80(%rsi),%r12
 	movq	%rcx,%r13
 	movq	%r10,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rdx,%r15
 
@@ -627,7 +616,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	88(%rsi),%r12
 	movq	%rbx,%r13
 	movq	%r9,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rcx,%rdi
 
@@ -668,7 +656,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	96(%rsi),%r12
 	movq	%rax,%r13
 	movq	%r8,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rbx,%r15
 
@@ -709,7 +696,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	104(%rsi),%r12
 	movq	%r11,%r13
 	movq	%rdx,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%rax,%rdi
 
@@ -750,7 +736,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	112(%rsi),%r12
 	movq	%r10,%r13
 	movq	%rcx,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r11,%r15
 
@@ -791,7 +776,6 @@ ENTRY(sha2_512_cryptogams_gen_xform_le)
 	movq	120(%rsi),%r12
 	movq	%r9,%r13
 	movq	%rbx,%r14
-	bswapq	%r12
 	rorq	$23,%r13
 	movq	%r10,%rdi
 

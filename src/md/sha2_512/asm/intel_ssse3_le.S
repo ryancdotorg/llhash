@@ -315,17 +315,14 @@ updateblock:
 	# (80 rounds) / (2 rounds/iteration) + (1 iteration)
 	# +1 iteration because the scheduler leads hashing by 1 iteration
 		.if t < 2
-			# BSWAP 2 QWORDS
-			movdqa	XMM_QWORD_BSWAP(%rip), %xmm1
+			# copy 2 QWORDS
 			movdqu	MSG(t), %xmm0
-			pshufb	%xmm1, %xmm0	# BSWAP
 			movdqa	%xmm0, W_t(t)	# Store Scheduled Pair
 			paddq	K_t(t), %xmm0	# Compute W[t]+K[t]
 			movdqa	%xmm0, WK_2(t)	# Store into WK for rounds
 		.elseif t < 16
-			# BSWAP 2 QWORDS# Compute 2 Rounds
+			# copy 2 QWORDS# Compute 2 Rounds
 			movdqu	MSG(t), %xmm0
-			pshufb	%xmm1, %xmm0	# BSWAP
 			SHA512_Round t-2	# Round t-2
 			movdqa	%xmm0, W_t(t)	# Store Scheduled Pair
 			paddq	K_t(t), %xmm0	# Compute W[t]+K[t]
@@ -373,12 +370,6 @@ ENDPROC(sha2_512_intel_ssse3_xform_le)
 
 ########################################################################
 ### Binary Data
-
-.section	.rodata.cst16.XMM_QWORD_BSWAP, "aM", @progbits, 16
-.align 16
-# Mask for byte-swapping a couple of qwords in an XMM register using (v)pshufb.
-XMM_QWORD_BSWAP:
-	.octa 0x08090a0b0c0d0e0f0001020304050607
 
 # Mergeable 640-byte rodata section. This allows linker to merge the table
 # with other, exactly the same 640-byte fragment of another rodata section

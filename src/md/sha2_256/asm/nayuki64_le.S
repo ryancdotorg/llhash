@@ -49,7 +49,6 @@ STUB(sha2_256_nayuki64_xform_le)
 
 #define ROUNDa(i, a, b, c, d, e, f, g, h, k)  \
 	movl    (i*4)(%rsi), %ebx;  \
-	bswapl  %ebx;               \
 	movl    %ebx, SCHED(i);     \
 	ROUNDTAIL(a, b, c, d, e, f, g, h, k)
 

@@ -72,8 +72,6 @@ STUB(sha2_256_intel_shaext_xform_le)
 #define MSGTMP3		%xmm6
 #define MSGTMP4		%xmm7
 
-#define SHUF_MASK	%xmm8
-
 #define ABEF_SAVE	%xmm9
 #define CDGH_SAVE	%xmm10
 
@@ -118,7 +116,6 @@ ENTRY(sha2_256_intel_shaext_xform_le)
 	palignr		$8, STATE1,  STATE0		/* ABEF */
 	pblendw		$0xF0, MSGTMP4, STATE1		/* CDGH */
 
-	movdqa		PSHUFFLE_BYTE_FLIP_MASK(%rip), SHUF_MASK
 	lea		K256(%rip), SHA256CONSTANTS
 
 .Lloop0:
@@ -128,7 +125,6 @@ ENTRY(sha2_256_intel_shaext_xform_le)
 
 	/* Rounds 0-3 */
 	movdqu		0*16(DATA_PTR), MSG
-	pshufb		SHUF_MASK, MSG
 	movdqa		MSG, MSGTMP0
 		paddd		0*16(SHA256CONSTANTS), MSG
 		sha256rnds2	STATE0, STATE1
@@ -137,7 +133,6 @@ ENTRY(sha2_256_intel_shaext_xform_le)
 
 	/* Rounds 4-7 */
 	movdqu		1*16(DATA_PTR), MSG
-	pshufb		SHUF_MASK, MSG
 	movdqa		MSG, MSGTMP1
 		paddd		1*16(SHA256CONSTANTS), MSG
 		sha256rnds2	STATE0, STATE1
@@ -147,7 +142,6 @@ ENTRY(sha2_256_intel_shaext_xform_le)
 
 	/* Rounds 8-11 */
 	movdqu		2*16(DATA_PTR), MSG
-	pshufb		SHUF_MASK, MSG
 	movdqa		MSG, MSGTMP2
 		paddd		2*16(SHA256CONSTANTS), MSG
 		sha256rnds2	STATE0, STATE1
@@ -157,7 +151,6 @@ ENTRY(sha2_256_intel_shaext_xform_le)
 
 	/* Rounds 12-15 */
 	movdqu		3*16(DATA_PTR), MSG
-	pshufb		SHUF_MASK, MSG
 	movdqa		MSG, MSGTMP3
 		paddd		3*16(SHA256CONSTANTS), MSG
 		sha256rnds2	STATE0, STATE1
@@ -350,6 +343,4 @@ K256:
 	.long	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
 	.long	0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 
-PSHUFFLE_BYTE_FLIP_MASK:
-	.octa 0x0c0d0e0f08090a0b0405060700010203
 #endif

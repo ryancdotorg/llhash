@@ -170,26 +170,17 @@ ENTRY(sha2_512_cryptogams_avx_xform_le)
 	jmp	.Lloop_avx
 .align	16
 .Lloop_avx:
-	vmovdqa	K512+1280(%rip),%xmm11
 	vmovdqu	0(%rsi),%xmm0
 	leaq	K512+128(%rip),%rbp
 	vmovdqu	16(%rsi),%xmm1
 	vmovdqu	32(%rsi),%xmm2
-	vpshufb	%xmm11,%xmm0,%xmm0
 	vmovdqu	48(%rsi),%xmm3
-	vpshufb	%xmm11,%xmm1,%xmm1
 	vmovdqu	64(%rsi),%xmm4
-	vpshufb	%xmm11,%xmm2,%xmm2
 	vmovdqu	80(%rsi),%xmm5
-	vpshufb	%xmm11,%xmm3,%xmm3
 	vmovdqu	96(%rsi),%xmm6
-	vpshufb	%xmm11,%xmm4,%xmm4
 	vmovdqu	112(%rsi),%xmm7
-	vpshufb	%xmm11,%xmm5,%xmm5
 	vpaddq	-128(%rbp),%xmm0,%xmm8
-	vpshufb	%xmm11,%xmm6,%xmm6
 	vpaddq	-96(%rbp),%xmm1,%xmm9
-	vpshufb	%xmm11,%xmm7,%xmm7
 	vpaddq	-64(%rbp),%xmm2,%xmm10
 	vpaddq	-32(%rbp),%xmm3,%xmm11
 	vmovdqa	%xmm8,0(%rsp)

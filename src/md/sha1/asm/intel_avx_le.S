@@ -304,7 +304,7 @@ STUB(sha1_intel_avx_xform_le)
   .if ((i & 3) == 0)
 	vmovdqu	(i*4)(BUFFER_PTR), W_TMP1
   .elseif ((i & 3) == 1)
-	/* vpshufb	XMM_SHUFB_BSWAP, W_TMP1, W */
+	vmovdqa W_TMP1, W
   .elseif ((i & 3) == 2)
 	vpaddd	(K_BASE), W, W_TMP1
   .elseif ((i & 3) == 3)

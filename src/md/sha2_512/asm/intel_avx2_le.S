@@ -124,13 +124,6 @@ frame_size = frame_GPRSAVE + GPRSAVE_SIZE
 	mov	\p2, \p1
 .endm
 
-
-# COPY_YMM_AND_BSWAP ymm, [mem], byte_flip_mask
-# Load ymm with mem and byte swap each dword
-.macro COPY_YMM_AND_BSWAP p1 p2 p3
-	VMOVDQ \p2, \p1
-	vpshufb \p3, \p1, \p1
-.endm
 # rotate_Ys
 # Rotate values of symbols Y0...Y3
 .macro rotate_Ys
@@ -603,16 +596,14 @@ ENTRY(sha2_512_intel_avx2_xform_le)
 	# save %rdi (CTX) before it gets clobbered
 	mov	%rdi, frame_CTX(%rsp)
 
-	vmovdqa	PSHUFFLE_BYTE_FLIP_MASK(%rip), BYTE_FLIP_MASK
-
 loop0:
 	lea	K512(%rip), TBL
 
-	## byte swap first 16 dwords
-	COPY_YMM_AND_BSWAP	Y_0, (INP), BYTE_FLIP_MASK
-	COPY_YMM_AND_BSWAP	Y_1, 1*32(INP), BYTE_FLIP_MASK
-	COPY_YMM_AND_BSWAP	Y_2, 2*32(INP), BYTE_FLIP_MASK
-	COPY_YMM_AND_BSWAP	Y_3, 3*32(INP), BYTE_FLIP_MASK
+	## copy first 16 dwords
+	VMOVDQ 0*32(INP), Y_0
+	VMOVDQ 1*32(INP), Y_1
+	VMOVDQ 2*32(INP), Y_2
+	VMOVDQ 3*32(INP), Y_3
 
 	mov	INP, frame_INP(%rsp)
 
@@ -737,13 +728,6 @@ K512:
 	.quad	0x3c9ebe0a15c9bebc,0x431d67c49c100d4c
 	.quad	0x4cc5d4becb3e42b6,0x597f299cfc657e2a
 	.quad	0x5fcb6fab3ad6faec,0x6c44198c4a475817
-
-.section	.rodata.cst32.PSHUFFLE_BYTE_FLIP_MASK, "aM", @progbits, 32
-.align 32
-# Mask for byte-swapping a couple of qwords in an XMM register using (v)pshufb.
-PSHUFFLE_BYTE_FLIP_MASK:
-	.octa 0x08090a0b0c0d0e0f0001020304050607
-	.octa 0x18191a1b1c1d1e1f1011121314151617
 
 .section	.rodata.cst32.MASK_YMM_LO, "aM", @progbits, 32
 .align 32

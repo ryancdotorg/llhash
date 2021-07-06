@@ -132,7 +132,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	0(%rsi),%r12d
 	movl	%r8d,%r13d
 	movl	%eax,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r9d,%r15d
 
@@ -173,7 +172,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	4(%rsi),%r12d
 	movl	%edx,%r13d
 	movl	%r11d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r8d,%edi
 
@@ -214,7 +212,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	8(%rsi),%r12d
 	movl	%ecx,%r13d
 	movl	%r10d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%edx,%r15d
 
@@ -255,7 +252,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	12(%rsi),%r12d
 	movl	%ebx,%r13d
 	movl	%r9d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%ecx,%edi
 
@@ -296,7 +292,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	16(%rsi),%r12d
 	movl	%eax,%r13d
 	movl	%r8d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%ebx,%r15d
 
@@ -337,7 +332,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	20(%rsi),%r12d
 	movl	%r11d,%r13d
 	movl	%edx,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%eax,%edi
 
@@ -378,7 +372,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	24(%rsi),%r12d
 	movl	%r10d,%r13d
 	movl	%ecx,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r11d,%r15d
 
@@ -419,7 +412,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	28(%rsi),%r12d
 	movl	%r9d,%r13d
 	movl	%ebx,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r10d,%edi
 
@@ -460,7 +452,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	32(%rsi),%r12d
 	movl	%r8d,%r13d
 	movl	%eax,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r9d,%r15d
 
@@ -501,7 +492,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	36(%rsi),%r12d
 	movl	%edx,%r13d
 	movl	%r11d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r8d,%edi
 
@@ -542,7 +532,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	40(%rsi),%r12d
 	movl	%ecx,%r13d
 	movl	%r10d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%edx,%r15d
 
@@ -583,7 +572,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	44(%rsi),%r12d
 	movl	%ebx,%r13d
 	movl	%r9d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%ecx,%edi
 
@@ -624,7 +612,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	48(%rsi),%r12d
 	movl	%eax,%r13d
 	movl	%r8d,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%ebx,%r15d
 
@@ -665,7 +652,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	52(%rsi),%r12d
 	movl	%r11d,%r13d
 	movl	%edx,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%eax,%edi
 
@@ -706,7 +692,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	56(%rsi),%r12d
 	movl	%r10d,%r13d
 	movl	%ecx,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r11d,%r15d
 
@@ -747,7 +732,6 @@ ENTRY(sha2_256_cryptogams_gen_xform_le)
 	movl	60(%rsi),%r12d
 	movl	%r9d,%r13d
 	movl	%ebx,%r14d
-	bswapl	%r12d
 	rorl	$14,%r13d
 	movl	%r10d,%edi
 

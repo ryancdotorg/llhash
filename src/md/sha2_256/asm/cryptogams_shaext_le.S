@@ -92,12 +92,10 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 	leaq	K256+128(%rip),%rcx
 	movdqu	(%rdi),%xmm1
 	movdqu	16(%rdi),%xmm2
-	movdqa	512-128(%rcx),%xmm7
 
 	pshufd	$0x1b,%xmm1,%xmm0
 	pshufd	$0xb1,%xmm1,%xmm1
 	pshufd	$0x1b,%xmm2,%xmm2
-	movdqa	%xmm7,%xmm8
 	palignr	-ex8,%xmm2,%xmm1
 	punpcklqdq	%xmm0,%xmm2
 	jmp	.Loop_shaext
@@ -107,12 +105,10 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 	movdqu	(%rsi),%xmm3
 	movdqu	16(%rsi),%xmm4
 	movdqu	32(%rsi),%xmm5
-	pshufb	%xmm7,%xmm3
 	movdqu	48(%rsi),%xmm6
 
 	movdqa	0-128(%rcx),%xmm0
 	paddd	%xmm3,%xmm0
-	pshufb	%xmm7,%xmm4
 	movdqa	%xmm2,%xmm10
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
@@ -122,7 +118,6 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 
 	movdqa	32-128(%rcx),%xmm0
 	paddd	%xmm4,%xmm0
-	pshufb	%xmm7,%xmm5
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	leaq	64(%rsi),%rsi
@@ -131,7 +126,6 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 
 	movdqa	64-128(%rcx),%xmm0
 	paddd	%xmm5,%xmm0
-	pshufb	%xmm7,%xmm6
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7
@@ -266,7 +260,6 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	sha256msg2	%xmm5,%xmm6
-	movdqa	%xmm8,%xmm7
 	sha256rnds2	%xmm0,%xmm2,%xmm1
 
 	movdqa	480-128(%rcx),%xmm0

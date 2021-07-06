@@ -64,15 +64,6 @@ STUB(sha2_256_intel_ssse3_xform_le)
 
 ################################
 
-# COPY_XMM_AND_BSWAP xmm, [mem], byte_flip_mask
-# Load xmm with mem and byte swap each dword
-.macro COPY_XMM_AND_BSWAP p1 p2 p3
-        MOVDQ \p2, \p1
-        pshufb \p3, \p1
-.endm
-
-################################
-
 X0 = %xmm4
 X1 = %xmm5
 X2 = %xmm6
@@ -84,10 +75,6 @@ XTMP2 = %xmm2
 XTMP3 = %xmm3
 XTMP4 = %xmm8
 XFER = %xmm9
-
-SHUF_00BA = %xmm10      # shuffle xBxA -> 00BA
-SHUF_DC00 = %xmm11      # shuffle xDxC -> DC00
-BYTE_FLIP_MASK = %xmm12
 
 NUM_BLKS = %rdx   # 3rd arg
 INP = %rsi        # 2nd arg
@@ -259,7 +246,6 @@ a = TMP_
 	mov     a, y0                   # y0 = a
 	add     y2, h                   # h = h + S1 + CH + k + w
 	mov     a, y2                   # y2 = a
-	pshufb  SHUF_00BA, XTMP4        # XTMP4 = s1 {00BA}
 	or      c, y0                   # y0 = a|c
 	add     h, d                    # d = d + h + S1 + CH + k + w
 	and     c, y2                   # y2 = a&c
@@ -300,7 +286,6 @@ a = TMP_
 	mov     a, y0                   # y0 = a
 	add     y2, h                   # h = h + S1 + CH + k + w
 	mov     a, y2                   # y2 = a
-	pshufb  SHUF_DC00, X0           # X0 = s1 {DC00}
 	or      c, y0                   # y0 = a|c
 	add     h, d                    # d = d + h + S1 + CH + k + w
 	and     c, y2                   # y2 = a&c
@@ -383,18 +368,14 @@ ENTRY(sha2_256_intel_ssse3_xform_le)
 	mov     4*6(CTX), g
 	mov     4*7(CTX), h
 
-	movdqa  PSHUFFLE_BYTE_FLIP_MASK(%rip), BYTE_FLIP_MASK
-	movdqa  _SHUF_00BA(%rip), SHUF_00BA
-	movdqa  _SHUF_DC00(%rip), SHUF_DC00
-
 loop0:
 	lea     K256(%rip), TBL
 
-	## byte swap first 16 dwords
-	COPY_XMM_AND_BSWAP      X0, 0*16(INP), BYTE_FLIP_MASK
-	COPY_XMM_AND_BSWAP      X1, 1*16(INP), BYTE_FLIP_MASK
-	COPY_XMM_AND_BSWAP      X2, 2*16(INP), BYTE_FLIP_MASK
-	COPY_XMM_AND_BSWAP      X3, 3*16(INP), BYTE_FLIP_MASK
+	## copy first 16 dwords
+	MOVDQ 0*16(INP), X0
+	MOVDQ 1*16(INP), X1
+	MOVDQ 2*16(INP), X2
+	MOVDQ 3*16(INP), X3
 
 	mov     INP, _INP(%rsp)
 
@@ -496,14 +477,4 @@ K256:
         .long 0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
         .long 0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 
-PSHUFFLE_BYTE_FLIP_MASK:
-	.octa 0x0c0d0e0f08090a0b0405060700010203
-
-# shuffle xBxA -> 00BA
-_SHUF_00BA:
-	.octa 0xFFFFFFFFFFFFFFFF0b0a090803020100
-
-# shuffle xDxC -> DC00
-_SHUF_DC00:
-	.octa 0x0b0a090803020100FFFFFFFFFFFFFFFF
 #endif

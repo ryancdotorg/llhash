@@ -63,19 +63,14 @@ ENTRY(sha1_cryptogams_shaext_xform_le)
 .cfi_startproc
 	movdqu	(%rdi),%xmm0
 	movd	16(%rdi),%xmm1
-	movdqa	K_XX_XX+160(%rip),%xmm3
 
 	movdqu	(%rsi),%xmm4
 	pshufd	$27,%xmm0,%xmm0
 	movdqu	16(%rsi),%xmm5
 	pshufd	$27,%xmm1,%xmm1
 	movdqu	32(%rsi),%xmm6
-	pshufb	%xmm3,%xmm4
 	movdqu	48(%rsi),%xmm7
-	pshufb	%xmm3,%xmm5
-	pshufb	%xmm3,%xmm6
 	movdqa	%xmm1,%xmm9
-	pshufb	%xmm3,%xmm7
 	jmp	.Loop_shaext
 
 .align	16
@@ -194,24 +189,20 @@ ENTRY(sha1_cryptogams_shaext_xform_le)
 	sha1rnds4	-ex3,%xmm1,%xmm0
 	sha1nexte	%xmm5,%xmm2
 	movdqu	16(%rsi),%xmm5
-	pshufb	%xmm3,%xmm4
 
 	movdqa	%xmm0,%xmm1
 	sha1rnds4	-ex3,%xmm2,%xmm0
 	sha1nexte	%xmm6,%xmm1
 	movdqu	32(%rsi),%xmm6
-	pshufb	%xmm3,%xmm5
 
 	movdqa	%xmm0,%xmm2
 	sha1rnds4	-ex3,%xmm1,%xmm0
 	sha1nexte	%xmm7,%xmm2
 	movdqu	48(%rsi),%xmm7
-	pshufb	%xmm3,%xmm6
 
 	movdqa	%xmm0,%xmm1
 	sha1rnds4	-ex3,%xmm2,%xmm0
 	sha1nexte	%xmm9,%xmm1
-	pshufb	%xmm3,%xmm7
 
 	paddd	%xmm8,%xmm0
 	movdqa	%xmm1,%xmm9

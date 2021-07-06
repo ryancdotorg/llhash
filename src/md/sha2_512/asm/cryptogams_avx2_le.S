@@ -185,26 +185,17 @@ ENTRY(sha2_512_cryptogams_avx2_xform_le)
 	vmovdqu	-128+96(%rsi),%xmm6
 	vmovdqu	-128+112(%rsi),%xmm7
 
-	vmovdqa	1152(%rbp),%ymm10
 	vinserti128	$1,(%r12),%ymm0,%ymm0
 	vinserti128	$1,16(%r12),%ymm1,%ymm1
-	vpshufb	%ymm10,%ymm0,%ymm0
 	vinserti128	$1,32(%r12),%ymm2,%ymm2
-	vpshufb	%ymm10,%ymm1,%ymm1
 	vinserti128	$1,48(%r12),%ymm3,%ymm3
-	vpshufb	%ymm10,%ymm2,%ymm2
 	vinserti128	$1,64(%r12),%ymm4,%ymm4
-	vpshufb	%ymm10,%ymm3,%ymm3
 	vinserti128	$1,80(%r12),%ymm5,%ymm5
-	vpshufb	%ymm10,%ymm4,%ymm4
 	vinserti128	$1,96(%r12),%ymm6,%ymm6
-	vpshufb	%ymm10,%ymm5,%ymm5
 	vinserti128	$1,112(%r12),%ymm7,%ymm7
 
 	vpaddq	-128(%rbp),%ymm0,%ymm8
-	vpshufb	%ymm10,%ymm6,%ymm6
 	vpaddq	-96(%rbp),%ymm1,%ymm9
-	vpshufb	%ymm10,%ymm7,%ymm7
 	vpaddq	-64(%rbp),%ymm2,%ymm10
 	vpaddq	-32(%rbp),%ymm3,%ymm11
 	vmovdqa	%ymm8,0(%rsp)

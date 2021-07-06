@@ -93,18 +93,13 @@ ENTRY(sha1_cryptogams_ssse3_xform_le)
 	xorl	%edx,%edi
 	andl	%edi,%esi
 
-	movdqa	64(%r14),%xmm6
 	movdqa	-64(%r14),%xmm9
 	movdqu	0(%r9),%xmm0
 	movdqu	16(%r9),%xmm1
 	movdqu	32(%r9),%xmm2
 	movdqu	48(%r9),%xmm3
-	pshufb	%xmm6,%xmm0
-	pshufb	%xmm6,%xmm1
-	pshufb	%xmm6,%xmm2
 	addq	$64,%r9
 	paddd	%xmm9,%xmm0
-	pshufb	%xmm6,%xmm3
 	paddd	%xmm9,%xmm1
 	paddd	%xmm9,%xmm2
 	movdqa	%xmm0,0(%rsp)
@@ -990,18 +985,15 @@ ENTRY(sha1_cryptogams_ssse3_xform_le)
 	addl	%edx,%ecx
 	cmpq	%r10,%r9
 	je	.Ldone_ssse3
-	movdqa	64(%r14),%xmm6
 	movdqa	-64(%r14),%xmm9
 	movdqu	0(%r9),%xmm0
 	movdqu	16(%r9),%xmm1
 	movdqu	32(%r9),%xmm2
 	movdqu	48(%r9),%xmm3
-	pshufb	%xmm6,%xmm0
 	addq	$64,%r9
 	addl	16(%rsp),%ebx
 	xorl	%ebp,%esi
 	movl	%ecx,%edi
-	pshufb	%xmm6,%xmm1
 	roll	$5,%ecx
 	addl	%esi,%ebx
 	xorl	%ebp,%edi
@@ -1037,7 +1029,6 @@ ENTRY(sha1_cryptogams_ssse3_xform_le)
 	addl	32(%rsp),%ecx
 	xorl	%eax,%esi
 	movl	%edx,%edi
-	pshufb	%xmm6,%xmm2
 	roll	$5,%edx
 	addl	%esi,%ecx
 	xorl	%eax,%edi
@@ -1073,7 +1064,6 @@ ENTRY(sha1_cryptogams_ssse3_xform_le)
 	addl	48(%rsp),%edx
 	xorl	%ebx,%esi
 	movl	%ebp,%edi
-	pshufb	%xmm6,%xmm3
 	roll	$5,%ebp
 	addl	%esi,%edx
 	xorl	%ebx,%edi

@@ -85,12 +85,6 @@ XTMP4 = %ymm8
 XFER  = %ymm9
 XTMP5 = %ymm11
 
-SHUF_00BA =	%ymm10 # shuffle xBxA -> 00BA
-SHUF_DC00 =	%ymm12 # shuffle xDxC -> DC00
-BYTE_FLIP_MASK = %ymm13
-
-X_BYTE_FLIP_MASK = %xmm13 # XMM version of BYTE_FLIP_MASK
-
 NUM_BLKS = %rdx	# 3rd arg
 INP	= %rsi  # 2nd arg
 CTX	= %rdi	# 1st arg
@@ -285,7 +279,6 @@ STACK_SIZE	= _RSP      + _RSP_SIZE
 	vpxor	XTMP2, XTMP4, XTMP4	# XTMP4 = s1 {xBxA}
 	xor	g, y2		# y2 = CH = ((f^g)&e)^g                 # CH
 
-	vpshufb	SHUF_00BA, XTMP4, XTMP4	# XTMP4 = s1 {00BA}
 	xor	T1, y1		# y1 = (a>>22) ^ (a>>13)		# S0
 	rorx	$2, a ,T1	# T1 = (a >> 2)				# S0
 	vpaddd	XTMP4, XTMP0, XTMP0	# XTMP0 = {..., ..., W[1], W[0]}
@@ -342,7 +335,6 @@ STACK_SIZE	= _RSP      + _RSP_SIZE
 	add	y2, d		# d = k + w + h + d + S1 + CH = d + t1  # --
 
 	rorx	$2, a, T1	# T1 = (a >> 2)				# S0
-	vpshufb	SHUF_DC00, XTMP5, XTMP5	# XTMP5 = s1 {DC00}
 
 	vpaddd	XTMP0, XTMP5, X0	# X0 = {W[3], W[2], W[1], W[0]}
 	xor	T1, y1		# y1 = (a>>22) ^ (a>>13) ^ (a>>2)	# S0
@@ -577,12 +569,6 @@ loop0:
 	VMOVDQ	2*32(INP),XTMP2
 	VMOVDQ	3*32(INP),XTMP3
 
-	## byte swap data
-	vpshufb	BYTE_FLIP_MASK, XTMP0, XTMP0
-	vpshufb	BYTE_FLIP_MASK, XTMP1, XTMP1
-	vpshufb	BYTE_FLIP_MASK, XTMP2, XTMP2
-	vpshufb	BYTE_FLIP_MASK, XTMP3, XTMP3
-
 	## transpose data into high/low halves
 	vperm2i128	$0x20, XTMP2, XTMP0, X0
 	vperm2i128	$0x31, XTMP2, XTMP0, X1
@@ -685,11 +671,6 @@ do_last_block:
 	VMOVDQ	2*16(INP),XWORD2
 	VMOVDQ	3*16(INP),XWORD3
 
-	vpshufb	X_BYTE_FLIP_MASK, XWORD0, XWORD0
-	vpshufb	X_BYTE_FLIP_MASK, XWORD1, XWORD1
-	vpshufb	X_BYTE_FLIP_MASK, XWORD2, XWORD2
-	vpshufb	X_BYTE_FLIP_MASK, XWORD3, XWORD3
-
 	jmp	last_block_enter
 
 only_one_block:
@@ -703,10 +684,6 @@ only_one_block:
 	mov	(4*5)(CTX),f
 	mov	(4*6)(CTX),g
 	mov	(4*7)(CTX),h
-
-	vmovdqa	PSHUFFLE_BYTE_FLIP_MASK(%rip), BYTE_FLIP_MASK
-	vmovdqa	_SHUF_00BA(%rip), SHUF_00BA
-	vmovdqa	_SHUF_DC00(%rip), SHUF_DC00
 
 	mov	CTX, _CTX(%rsp)
 	jmp	do_last_block
@@ -760,14 +737,4 @@ K256:
 	.long	0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 	.long	0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 
-PSHUFFLE_BYTE_FLIP_MASK:
-	.octa 0x0c0d0e0f08090a0b0405060700010203,0x0c0d0e0f08090a0b0405060700010203
-
-# shuffle xBxA -> 00BA
-_SHUF_00BA:
-	.octa 0xFFFFFFFFFFFFFFFF0b0a090803020100,0xFFFFFFFFFFFFFFFF0b0a090803020100
-
-# shuffle xDxC -> DC00
-_SHUF_DC00:
-	.octa 0x0b0a090803020100FFFFFFFFFFFFFFFF,0x0b0a090803020100FFFFFFFFFFFFFFFF
 #endif
