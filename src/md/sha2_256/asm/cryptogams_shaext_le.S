@@ -107,12 +107,12 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 	movdqu	(%rsi),%xmm3
 	movdqu	16(%rsi),%xmm4
 	movdqu	32(%rsi),%xmm5
-.byte	102,15,56,0,223
+	pshufb	%xmm7,%xmm3
 	movdqu	48(%rsi),%xmm6
 
 	movdqa	0-128(%rcx),%xmm0
 	paddd	%xmm3,%xmm0
-.byte	102,15,56,0,231
+	pshufb	%xmm7,%xmm4
 	movdqa	%xmm2,%xmm10
 .byte	15,56,203,209
 	pshufd	$0x0e,%xmm0,%xmm0
@@ -122,7 +122,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 
 	movdqa	32-128(%rcx),%xmm0
 	paddd	%xmm4,%xmm0
-.byte	102,15,56,0,239
+	pshufb	%xmm7,%xmm5
 .byte	15,56,203,209
 	pshufd	$0x0e,%xmm0,%xmm0
 	leaq	64(%rsi),%rsi
@@ -131,7 +131,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform_le)
 
 	movdqa	64-128(%rcx),%xmm0
 	paddd	%xmm5,%xmm0
-.byte	102,15,56,0,247
+	pshufb	%xmm7,%xmm6
 .byte	15,56,203,209
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7

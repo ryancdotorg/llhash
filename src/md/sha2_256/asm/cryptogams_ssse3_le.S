@@ -131,16 +131,16 @@ ENTRY(sha2_256_cryptogams_ssse3_xform_le)
 	movdqu	0(%rsi),%xmm0
 	movdqu	16(%rsi),%xmm1
 	movdqu	32(%rsi),%xmm2
-.byte	102,15,56,0,199
+	pshufb	%xmm7,%xmm0
 	movdqu	48(%rsi),%xmm3
 	leaq	K256(%rip),%rbp
-.byte	102,15,56,0,207
+	pshufb	%xmm7,%xmm1
 	movdqa	0(%rbp),%xmm4
 	movdqa	32(%rbp),%xmm5
-.byte	102,15,56,0,215
+	pshufb	%xmm7,%xmm2
 	paddd	%xmm0,%xmm4
 	movdqa	64(%rbp),%xmm6
-.byte	102,15,56,0,223
+	pshufb	%xmm7,%xmm3
 	movdqa	96(%rbp),%xmm7
 	paddd	%xmm1,%xmm5
 	paddd	%xmm2,%xmm6

@@ -70,12 +70,12 @@ ENTRY(sha1_cryptogams_shaext_xform_le)
 	movdqu	16(%rsi),%xmm5
 	pshufd	$27,%xmm1,%xmm1
 	movdqu	32(%rsi),%xmm6
-.byte	102,15,56,0,227
+	pshufb	%xmm3,%xmm4
 	movdqu	48(%rsi),%xmm7
-.byte	102,15,56,0,235
-.byte	102,15,56,0,243
+	pshufb	%xmm3,%xmm5
+	pshufb	%xmm3,%xmm6
 	movdqa	%xmm1,%xmm9
-.byte	102,15,56,0,251
+	pshufb	%xmm3,%xmm7
 	jmp	.Loop_shaext
 
 .align	16
@@ -194,24 +194,24 @@ ENTRY(sha1_cryptogams_shaext_xform_le)
 .byte	15,58,204,193,3
 .byte	15,56,200,213
 	movdqu	16(%rsi),%xmm5
-.byte	102,15,56,0,227
+	pshufb	%xmm3,%xmm4
 
 	movdqa	%xmm0,%xmm1
 .byte	15,58,204,194,3
 .byte	15,56,200,206
 	movdqu	32(%rsi),%xmm6
-.byte	102,15,56,0,235
+	pshufb	%xmm3,%xmm5
 
 	movdqa	%xmm0,%xmm2
 .byte	15,58,204,193,3
 .byte	15,56,200,215
 	movdqu	48(%rsi),%xmm7
-.byte	102,15,56,0,243
+	pshufb	%xmm3,%xmm6
 
 	movdqa	%xmm0,%xmm1
 .byte	15,58,204,194,3
 .byte	65,15,56,200,201
-.byte	102,15,56,0,251
+	pshufb	%xmm3,%xmm7
 
 	paddd	%xmm8,%xmm0
 	movdqa	%xmm1,%xmm9
