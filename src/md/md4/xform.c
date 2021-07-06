@@ -20,9 +20,9 @@
 #define R2(r,a,b,c,d,p) a=ROL32(a+H(b,c,d)+W[p]+0x6ed9eba1, S2(r));
 
 #define P(r,a,b,c,d,p) do {            \
-  if (r < 16) {      asm(STR(CONCAT(md4_,c_impl,_f,PAD02(r))) ":\n"); R0(r,a,b,c,d,p) } \
-  else if (r < 32) { asm(STR(CONCAT(md4_,c_impl,_g,PAD02(r))) ":\n"); R1(r,a,b,c,d,p) } \
-  else {             asm(STR(CONCAT(md4_,c_impl,_h,PAD02(r))) ":\n"); R2(r,a,b,c,d,p) } \
+  if (r < 16) {      R0(r,a,b,c,d,p) } \
+  else if (r < 32) { R1(r,a,b,c,d,p) } \
+  else {             R2(r,a,b,c,d,p) } \
 } while(0)
 
 #define R(r,p) do {                        \
@@ -41,7 +41,6 @@ void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
 
   for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
     // load input
-    asm(STR(JOIN(md4,c_impl,load)) ":\n");
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
     uint32_t W[16];
     for (int i = 0; i < 16; ++i) W[i] = htole32(input[i]);
