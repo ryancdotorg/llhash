@@ -76,8 +76,8 @@
 #define NOR(a,b) COMPL(OR(a,b))
 
 // need to define e.g. COMPARE_foo(x) x
-#define COMPARABLE(x) IS_PAREN(CAT(COMPARE_,x)(()))
-#define _COMPARE(a, b) COMPL(IS_PAREN(COMPARE_##a(COMPARE_##b)(())))
+#define COMPARABLE(x) IS_PAREN(CAT(_COMPARE_,x)(()))
+#define _COMPARE(a, b) COMPL(IS_PAREN(_COMPARE_##a(_COMPARE_##b)(())))
 #define EQUAL(x, y) BITAND(BITAND(COMPARABLE(x))(COMPARABLE(y)))(_COMPARE(x,y))
 #define NOT_EQUAL(x, y) COMPL(EQUAL(x, y))
 

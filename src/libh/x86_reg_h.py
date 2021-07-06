@@ -18,9 +18,9 @@ pr32('''
 
 def prdef(x, w, reg):
         if reg.startswith('r'):
-            pr64('#define COMPARE_{}(x) x'.format(f))
+            pr64.comparable(f)
         else:
-            pr32('#define COMPARE_{}(x) x'.format(f))
+            pr32.comparable(f)
         pr64('#define _REG{}_{} {}'.format(64, reg, w[0]))
         for bits, n in ((32, 1), (16, 2), (8, 3)):
             pr32('#define _REG{}_{} {}'.format(bits, reg, w[n]))
@@ -41,7 +41,6 @@ for x in range(8, 16):
         prdef(x, w, f)
 
 print('\n'.join([
-'#pragma once\n',
 '#define SAME_REG(a,b) EQUAL(REG32(a),REG32(b))',
 '#define DIFF_REG(a,b) NOT_EQUAL(REG32(a),REG32(b))',
 f'#if __i386__ || __x86_64__\n{pr32}#endif',

@@ -38,15 +38,36 @@ class Appender:
     def __init__(self):
         self._f = io.StringIO('')
         self._d = OrderedDict()
+        self._s = 0
 
-    def __getattr__(self, name):
+    def section(self, name=None):
+        if name is None:
+            name = (id(self), self._s)
+            self._s += 1
+
         return self._d.setdefault(name, Appender())
 
+    def __getattr__(self, name):
+        return self.section(name)
+
     def __call__(self, s):
-        self._f.write(s.strip('\n')+'\n')
+        self._writeln(s.strip('\n'))
 
     def __str__(self):
         return self._f.getvalue()
+
+    def _writeln(self, s):
+        self._f.write(s+'\n')
+
+    # helpers
+    def define(self, k, v):
+        self._writeln(f'#define {k} {v}')
+
+    def gettable(self, k, v):
+        self._writeln(f'#define {k}() {v}, ()')
+
+    def comparable(self, k):
+        self._writeln(f'#define _COMPARE_{k}(x) x')
 
     def print(self):
         print(str(self).strip('\n'))

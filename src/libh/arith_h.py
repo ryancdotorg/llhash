@@ -30,7 +30,7 @@ h.macros('#define ALTER4(r, a, b, c, d) ' + ALTER(4))
 h.helpers('#define _MOD(a, ...) _MOD_ ## a ## _ ## __VA_ARGS__')
 
 for i in range(MAX):
-    h.compare(f'#define COMPARE_{i}(x) x')
+    h.compare.comparable(i)
 
 for i in range(MAX):
     h.decinc(f'#define _INC_{i} {i+1}')

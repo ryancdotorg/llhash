@@ -26,20 +26,9 @@
 #define HASH_STATE_WORDS HASH(STATE_WORDS)
 #define HASH_WORD_SIZE HASH(WORD_SIZE)
 #define HASH_WORD_BITS HASH_WORD_SIZE
+#define HASH_WORD_BYTES BYTES(HASH_WORD_BITS)
+#define HASH_STATE_BYTES (HASH_WORD_BYTES*HASH_STATE_WORDS)
 #define HASH_ENDIAN HASH(ENDIAN)
-
-/* bytes */
-#if HASH_WORD_BITS == 64
-#define HASH_WORD_BYTES 8
-#elif HASH_WORD_BITS == 32
-#define HASH_WORD_BYTES 4
-#elif HASH_WORD_BITS == 16
-#define HASH_WORD_BYTES 2
-#elif HASH_WORD_BITS == 8
-#define HASH_WORD_BYTES 1
-#else
-#define HASH_WORD_BYTES (HASH_WORD_BITS/8)
-#endif
 
 /* type/size definition macro */
 #define uintWS_t CONCAT(uint,HASH_WORD_BITS,_t)
@@ -69,3 +58,13 @@
 #define ROR32(x,n) __extension__({ uint32_t _x=(x), _n=(n); (_x >> _n) | (_x << (32-_n)); })
 #define ROL64(x,n) __extension__({ uint64_t _x=(x), _n=(n); (_x << _n) | (_x >> (64-_n)); })
 #define ROR64(x,n) __extension__({ uint64_t _x=(x), _n=(n); (_x >> _n) | (_x << (64-_n)); })
+
+#define PTR_ADD(P, N) (typeof(P))(((unsigned char *)(P)) + (N))
+
+#if HASH_ENDIAN == __ORDER_BIG_ENDIAN__ && HASH_WORD_SIZE == 64
+#define NTH_BYTE_OF_WORD(W, N) (((W) >> (56-BITS(N))) & 0xff)
+#elif HASH_ENDIAN == __ORDER_BIG_ENDIAN__ && HASH_WORD_SIZE == 32
+#define NTH_BYTE_OF_WORD(W, N) (((W) >> (24-BITS(N))) & 0xff)
+#elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
+#define NTH_BYTE_OF_WORD(W, N) (((W) >> BITS(N)) & 0xff)
+#endif
