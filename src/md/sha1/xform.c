@@ -42,11 +42,16 @@ int JOIN(sha1,c_impl,xform,built)() { return 1; }
 // Process input in chunks of 64 bytes, caller resposible for padding
 void JOIN(sha1,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk) {
   const uint32_t *input=(uint32_t *)data;
-  uint32_t A, B, C, D, E, W[16];
+  uint32_t A, B, C, D, E;
 
   for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
     // load input
+#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
+    uint32_t W[16];
     for (int i = 0; i < 16; ++i) W[i] = htobe32(input[i]);
+#else
+    const uint32_t *W = input;
+#endif
 
     A=digest[0]; B=digest[1]; C=digest[2]; D=digest[3]; E=digest[4];
 
