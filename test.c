@@ -181,7 +181,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
       if (fail) { \
         printf("Init/Update/Final        %s - FAIL - %s\n", rpadf(26, #NAME "[%2d](%s[0:%u])", impl, desc, N), NAME##_Describe(impl)); \
         printf("data:    %s\n", hex(hexstr, ctx.data, sizeof(ctx.data))); \
-        printf("bitlen:  %zu\n", ctx.bitlen); \
+        printf("bytelen: %zu\n", ctx.bytelen); \
         printf("datalen: %u\n", ctx.datalen); \
         printf("bad %s\n", hex(hexstr, hash, SIZE)); \
         printf("ref %s\n", hex(hexstr, ref, SIZE)); \
@@ -198,7 +198,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
       if (fail) { \
         printf("Init/Update/Update/Final %s - FAIL - %s\n", rpadf(26, #NAME "[%2d](%s[0:%u])", impl, desc, N), NAME##_Describe(impl)); \
         printf("data:    %s\n", hex(hexstr, ctx.data, sizeof(ctx.data))); \
-        printf("bitlen:  %zu\n", ctx.bitlen); \
+        printf("bytelen: %zu\n", ctx.bytelen); \
         printf("datalen: %u\n", ctx.datalen); \
         printf("bad %s\n", hex(hexstr, hash, SIZE)); \
         printf("ref %s\n", hex(hexstr, ref, SIZE)); \
