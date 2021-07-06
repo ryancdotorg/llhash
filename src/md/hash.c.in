@@ -17,6 +17,13 @@ _H include <string.h>
 _H include <endian.h>
 _H include STR(../../../src/md/HASH_name/param.h)
 _H include "hash.h"
+_H define HASH(HASH_C)
+#endif
+
+#if HASH_WORD_SIZE != 32 && HASH_WORD_SIZE != 64
+#error "bad word size"
+#elif HASH_ENDIAN != __ORDER_BIG_ENDIAN__ && HASH_ENDIAN !=  __ORDER_LITTLE_ENDIAN__
+#error "bad endianess"
 #endif
 
 static const uintWS_t iv[] = HASH(IV);
@@ -66,10 +73,10 @@ __attribute__((alias(STR(HASH(Clone)))));
 void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src) {
   // relies on .data being first
   if (src->datalen) {
-    memcpy(dst, src, sizeof(*dst));
+    memcpy(dst, src, sizeof(HASH(CTX)));
   } else {
     // don't copy the data if there isn't any
-    memcpy(dst + sizeof(dst->data), src + sizeof(dst->data), sizeof(*dst) - sizeof(dst->data));
+    memcpy(PTR_ADD(dst, HASH_BLOCK_LENGTH), PTR_ADD(src, HASH_BLOCK_LENGTH), sizeof(HASH(CTX)) - HASH_BLOCK_LENGTH);
   }
 }
 
@@ -78,7 +85,7 @@ void ALIAS(Init)(ALIAS(CTX) *ctx)
 __attribute__((alias(STR(HASH(Init)))));
 #endif
 void HASH(Init)(HASH(CTX) *ctx) {
-  ctx->bitlen = ctx->datalen = 0;
+  ctx->bytelen = ctx->datalen = 0;
   for (int i = 0; i < HASH(STATE_WORDS); ++i) ctx->state[i] = iv[i];
 }
 
@@ -100,7 +107,7 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
     } else {
       memcpy(ctx->data + ctx->datalen, input, i);
       HASH(Transform)(ctx->state, ctx->data, 1);
-      ctx->bitlen += HASH_BLOCK_LENGTH*8;
+      ctx->bytelen += HASH_BLOCK_LENGTH;
       ctx->datalen = 0;
       input += i;
       len -= i;
@@ -112,7 +119,7 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
     HASH(Transform)(ctx->state, input, i);
     len -= i * HASH_BLOCK_LENGTH;
     input += i * HASH_BLOCK_LENGTH;
-    ctx->bitlen += i * HASH_BLOCK_LENGTH*8;
+    ctx->bytelen += i * HASH_BLOCK_LENGTH;
   }
 
   memcpy(ctx->data, input, len);
@@ -137,8 +144,8 @@ void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
   }
 
   // padding
-  ctx->bitlen += ctx->datalen * 8;
-  ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bitlen);
+  ctx->bytelen += ctx->datalen;
+  ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bytelen*8);
 
   HASH(Transform)(ctx->state, ctx->data, 1);
 
@@ -150,7 +157,7 @@ void ALIAS(Clear)(ALIAS(CTX) *ctx)
 __attribute__((alias(STR(HASH(Clear)))));
 #endif
 void HASH(Clear)(HASH(CTX) *ctx) {
-  ctx->bitlen = ctx->datalen = 0;
+  ctx->bytelen = ctx->datalen = 0;
   for (int i = 0; i < HASH(STATE_WORDS); ++i) ctx->state[i] = 0;
 }
 
@@ -192,11 +199,11 @@ uint8_t HASH(Tail)(uint8_t last_data_block[], size_t len) {
   // set a 1 bit after the data
   last_data_block[remaining_bytes] = 0x80;
   if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
-    memset(last_data_block + len + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
+    memset(last_data_block + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
     *((uint64_t *)(last_data_block + HASH_BLOCK_LENGTH - 8)) = htoDe64(len * 8);
     return 1;
   } else {
-    memset(last_data_block + len + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
+    memset(last_data_block + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
     *((uint64_t *)(last_data_block + (HASH_BLOCK_LENGTH*2) - 8)) = htoDe64(len * 8);
     return 2;
   }
@@ -224,52 +231,52 @@ void HASH(Serialize)(uint8_t hash[], const uintWS_t state[]) {
 }
 
 #if HASH_ALIASED
-void ALIAS(Partial)(uint8_t out[], const uintWS_t state[], size_t len)
+void ALIAS(Partial)(uint8_t out[], const uintWS_t state[], size_t start, size_t end)
 __attribute__((alias(STR(HASH(Partial)))));
 #endif
-void HASH(Partial)(uint8_t *restrict out, const uintWS_t *restrict state, size_t len) {
+void HASH(Partial)(uint8_t *restrict out, const uintWS_t *restrict _state, size_t start, size_t end) {
+  const uintWS_t *state = __builtin_assume_aligned(_state, HASH_WORD_BYTES);
+  state += (start / HASH_WORD_BYTES);
+  if (start > end || start > HASH_DIGEST_LENGTH || end > HASH_DIGEST_LENGTH) __builtin_unreachable();
 #if HASH_ENDIAN == __BYTE_ORDER__
-  memcpy(out, state, len);
+  memcpy(out, ((uint8_t *)state)+start, end);
 #else
-  size_t pos = 0;
+  size_t pos = start;
+  if (start & (HASH_WORD_BYTES-1)) {
+# if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
+      for (char i = (HASH_WORD_SIZE-8) - (pos<<3); i >= 0 && pos > end; i -= 8, ++pos) {
+        *out++ = (*state >> i) & 0xff;
+      }
+# elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
+      for (char i = (pos<<3); pos > end && i < HASH_WORD_SIZE; i += 8, ++pos) {
+        *out++ = (*state >> i) & 0xff;
+      }
+# endif
+    state += 1;
+  }
+
   do {
-    size_t rem = len - pos;
+    size_t rem = end - pos;
     if (rem >= HASH_WORD_BYTES) {
 # if HASH_WORD_BITS == 32
-#  if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
-      *out++ = (*state >> 24) & 0xff; *out++ = (*state >> 16) & 0xff;
-      *out++ = (*state >>  8) & 0xff; *out++ = (*state >>  0) & 0xff;
-#  elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
-      *out++ = (*state >>  0) & 0xff; *out++ = (*state >>  8) & 0xff;
-      *out++ = (*state >> 16) & 0xff; *out++ = (*state >> 24) & 0xff;
-#  else
-#  error "bad endian"
-#  endif
-    } else {
-      for (unsigned int i = 24; rem; i -= 8, --rem) *out++ = (*state >> i) & 0xff;
+      *out++ = NTH_BYTE_OF_WORD(*state, 0); *out++ = NTH_BYTE_OF_WORD(*state, 1);
+      *out++ = NTH_BYTE_OF_WORD(*state, 2); *out++ = NTH_BYTE_OF_WORD(*state, 3);
 # elif HASH_WORD_BITS == 64
-#  if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
-      *out++ = (*state >> 56) & 0xff; *out++ = (*state >> 48) & 0xff;
-      *out++ = (*state >> 40) & 0xff; *out++ = (*state >> 32) & 0xff;
-      *out++ = (*state >> 24) & 0xff; *out++ = (*state >> 16) & 0xff;
-      *out++ = (*state >>  8) & 0xff; *out++ = (*state >>  0) & 0xff;
-#  elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
-      *out++ = (*state >>  0) & 0xff; *out++ = (*state >>  8) & 0xff;
-      *out++ = (*state >> 16) & 0xff; *out++ = (*state >> 24) & 0xff;
-      *out++ = (*state >> 32) & 0xff; *out++ = (*state >> 40) & 0xff;
-      *out++ = (*state >> 48) & 0xff; *out++ = (*state >> 56) & 0xff;
-#  else
-#  error "bad endian"
-#  endif
+      *out++ = NTH_BYTE_OF_WORD(*state, 0); *out++ = NTH_BYTE_OF_WORD(*state, 1);
+      *out++ = NTH_BYTE_OF_WORD(*state, 2); *out++ = NTH_BYTE_OF_WORD(*state, 3);
+      *out++ = NTH_BYTE_OF_WORD(*state, 4); *out++ = NTH_BYTE_OF_WORD(*state, 5);
+      *out++ = NTH_BYTE_OF_WORD(*state, 6); *out++ = NTH_BYTE_OF_WORD(*state, 7);
+# endif
     } else {
-      for (unsigned int i = 56; rem; i -= 8, --rem) *out++ = (*state >> i) & 0xff;
-# else
-# error "unhandled word size"
+# if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
+      for (char i = (HASH_WORD_SIZE-8); rem; i -= 8, --rem) *out++ = (*state >> i) & 0xff;
+# elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
+      for (char i = 0; rem; i += 8, --rem) *out++ = (*state >> i) & 0xff;
 # endif
     }
     pos += HASH_WORD_BYTES;
     state += 1;
-  } while (pos < len);
+  } while (pos < end);
 #endif
 }
 
@@ -283,11 +290,12 @@ void HASH(Extend)(HASH(CTX) *ctx, uint8_t hash[], uint64_t nblk) {
   for (int i = 0; i < HASH_STATE_WORDS; ++i) {
     ctx->state[i] = DeWStoh(digest[i]);
   }
-  ctx->bitlen = 8 * HASH_BLOCK_LENGTH * nblk;
+  ctx->bytelen = HASH_BLOCK_LENGTH * nblk;
 }
 #endif
 
-static inline void __attribute__((always_inline)) serialize(uint8_t hash[], const uintWS_t *state) {
+static inline void __attribute__((always_inline)) serialize(uint8_t hash[], const uintWS_t *_state) {
+  const uintWS_t *state = __builtin_assume_aligned(_state, HASH_WORD_BYTES);
   uintWS_t *outW = (uintWS_t *)hash;
 
 #if HASH_STATE_WORDS > 0

@@ -19,54 +19,137 @@ _H include <endian.h>
 _H include STR(../../../src/md/HASH_name/param.h)
 _H include STR(../../../util.h)
 _H include STR(ext.h)
+_H define HASH(EXT_C)
+
+_H ifdef HASH(HASH_C)
+_H define SERIALIZE(A, B) serialize(A, B)
+_H else
+_H define SERIALIZE(A, B) HASH(Serialize)(A, B)
+_H endif
 #endif
 
-#define PBKDF2_NAME JOIN(PBKDF2,HASH_NAME)
+void HKDF(Extract)(
+uint8_t *prk,
+const uint8_t salt[], size_t salt_sz,
+const uint8_t ikm[], size_t ikm_sz) {
+  JOIN(HMAC,HASH_NAME)(salt, salt_sz, ikm, ikm_sz, prk);
+}
+
+/*
+void HKDF(Expand)(
+uint8_t *okm, size_t okm_sz,
+const uint8_t prk[], size_t prk_sz,
+const uint8_t info[], size_t info_sz) {
+  uint8_t scratch[sizeof(HMAC(CTX)) + HASH_BLOCK_LENGTH * 2];
+  uint8_t *restrict tail = scratch;
+  HMAC(CTX) *restrict ctx = (HMAC(CTX)*)(scratch + HASH_BLOCK_LENGTH * 2);
+  HMAC(Init)(ctx, prk, prk_sz);
+}
+*/
+
+#define PBKDF2_NAME JOIN(PBKDF2,HMAC,HASH_NAME)
+
+#define PBKDF2_NAME_1 JOIN(PBKDF2_NAME,1)
+
+void PBKDF2_NAME_1(
+uint8_t dk[], size_t dk_sz,
+const uint8_t pass[], size_t pass_sz,
+const uint8_t salt[], size_t salt_sz) {
+  uint8_t scratch[sizeof(HMAC(CTX)) * 1 + HASH_STATE_BYTES * 1 + HASH_BLOCK_LENGTH * 2];
+  HMAC(CTX) *restrict ctx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
+  uintWS_t *restrict U = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*0);
+  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*1;
+
+  HMAC(Init)(ctx, pass, pass_sz);
+  HMAC(Update)(ctx, salt, salt_sz);
+
+  size_t nout = 0;
+  uint32_t block = 1;
+
+  memcpy(otail, ctx->data, ctx->datalen);
+  uint8_t otail_blks = HASH(Tail)(otail, ctx->bytelen + ctx->datalen + 4);
+
+  while (nout < dk_sz) {
+    memcpy(U, ctx->state, HASH_STATE_BYTES);
+    otail[ctx->datalen+0] = (block >> 24) & 0xff;
+    otail[ctx->datalen+1] = (block >> 16) & 0xff;
+    otail[ctx->datalen+2] = (block >>  8) & 0xff;
+    otail[ctx->datalen+3] = (block >>  0) & 0xff;
+    HASH(Transform)(U, otail, otail_blks);
+    SERIALIZE(ctx->hmac + HASH_BLOCK_LENGTH, U);
+    U = (uintWS_t[])HASH(IV);
+    HASH(Transform)(U, ctx->hmac, HMAC_OUTER_BLOCKS);
+
+    if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
+      SERIALIZE(dk + nout, U);
+      nout += HASH_DIGEST_LENGTH;
+    } else {
+      HASH(Partial)(dk + nout, U, 0, dk_sz - nout);
+      break;
+      nout = dk_sz;
+    }
+    ++block;
+  }
+
+  wipe(scratch);
+}
 
 void PBKDF2_NAME(
 uint8_t dk[], size_t dk_sz,
 const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz,
 uint32_t c) {
-  HMAC(CTX) ictx, octx;
-  HMAC(Init)(&ictx, pass, pass_sz);
-  HMAC(Clone)(&octx, &ictx);
-  HMAC(Update)(&octx, salt, salt_sz);
+  uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 2 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
+  HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
+  HMAC(CTX) *restrict octx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*0);
+  uintWS_t *restrict T = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*0);
+  uintWS_t *restrict U = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*1);
+  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*0;
+  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*2;
 
-  size_t nout = 0, block = 1;
-  uintWS_t T[HASH_STATE_WORDS], U[HASH_STATE_WORDS];
+  HMAC(Init)(ictx, pass, pass_sz);
+  HMAC(Clone)(octx, ictx);
+  HMAC(Update)(octx, salt, salt_sz);
 
-  uint8_t otail[HASH_BLOCK_LENGTH*2], itail[HASH_BLOCK_LENGTH*3];
-  memcpy(otail, octx.data, octx.datalen);
-  memcpy(itail, ictx.data, ictx.datalen);
-  uint8_t otail_blks = HASH(Tail)(otail, (octx.bitlen >> 3) + octx.datalen + 4);
-  uint8_t itail_blks = HASH(Tail)(itail, (ictx.bitlen >> 3) + ictx.datalen + HASH_DIGEST_LENGTH);
+  size_t nout = 0;
+  uint32_t block = 1;
+
+  memcpy(otail, octx->data, octx->datalen);
+  //memcpy(itail, ictx->data, ictx->datalen);
+  uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
+  uint8_t itail_blks = HASH(Tail)(itail, ictx->bytelen + ictx->datalen + HASH_DIGEST_LENGTH);
 
   while (nout < dk_sz) {
-    memcpy(T, octx.state, sizeof(octx.state));
-    otail[octx.datalen+0] = (block >> 24) & 0xff;
-    otail[octx.datalen+1] = (block >> 16) & 0xff;
-    otail[octx.datalen+2] = (block >>  8) & 0xff;
-    otail[octx.datalen+3] = (block >>  0) & 0xff;
-    HASH(Transform)(T, otail, otail_blks);
+    memcpy(U, octx->state, HASH_STATE_BYTES);
+    otail[octx->datalen+0] = (block >> 24) & 0xff;
+    otail[octx->datalen+1] = (block >> 16) & 0xff;
+    otail[octx->datalen+2] = (block >>  8) & 0xff;
+    otail[octx->datalen+3] = (block >>  0) & 0xff;
+    HASH(Transform)(U, otail, otail_blks);
+    SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
+    U = (uintWS_t[])HASH(IV);
+    HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
+    memcpy(T, U, HASH_STATE_BYTES);
     for (size_t i = 1; i < c; ++i) {
-      memcpy(U, ictx.state, sizeof(ictx.state));
-      HASH(Serialize)(itail + ictx.datalen, T);
+      SERIALIZE(itail + ictx->datalen, U);
+      memcpy(U, ictx->state, HASH_STATE_BYTES);
       HASH(Transform)(U, itail, itail_blks);
+      SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
+      U = (uintWS_t[])HASH(IV);
+      HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
       for (size_t j = 0; j < HASH_STATE_WORDS; ++j) { T[j] ^= U[j]; }
     }
 
     if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
-      HASH(Serialize)(dk + nout, T);
+      SERIALIZE(dk + nout, T);
       nout += HASH_DIGEST_LENGTH;
     } else {
-      HASH(Partial)(dk + nout, T, dk_sz - nout);
+      HASH(Partial)(dk + nout, T, 0, dk_sz - nout);
+      break;
+      nout = dk_sz;
     }
     ++block;
   }
 
-  wipe(&octx, sizeof(octx));
-  wipe(&ictx, sizeof(ictx));
-  wipe(T);
-  wipe(U);
+  wipe(scratch);
 }

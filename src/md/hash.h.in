@@ -18,7 +18,7 @@ void ALIAS(Transform)(uintWS_t *digest, const void *data, uint32_t nblk);
 
 typedef struct {
   uint8_t data[HASH_BLOCK_LENGTH];
-  uint64_t bitlen;
+  uint64_t bytelen;
   uintWS_t state[HASH_STATE_WORDS];
   uint32_t datalen;
 } HASH(CTX);
@@ -45,14 +45,14 @@ uint64_t HASH(Pad)(uint8_t data[], size_t len);
 uint8_t HASH(Tail)(uint8_t last_data_block[], size_t len);
 void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
 void HASH(Serialize)(uint8_t hash[], const uintWS_t state[]);
-void HASH(Partial)(uint8_t hash[], const uintWS_t state[], size_t len);
+void HASH(Partial)(uint8_t hash[], const uintWS_t state[], size_t start, size_t end);
 
 #if HASH_ALIASED
 uint64_t ALIAS(Pad)(uint8_t data[], size_t len);
 uint8_t ALIAS(Tail)(uint8_t last_data_block[], size_t len);
 void ALIAS(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk);
 void ALIAS(Serialize)(uint8_t hash[], const uintWS_t state[]);
-void ALIAS(Partial)(uint8_t hash[], const uintWS_t state[], size_t len);
+void ALIAS(Partial)(uint8_t hash[], const uintWS_t state[], size_t start, size_t end);
 #endif
 
 #if HASH_DIGEST_LENGTH == HASH_STATE_WORDS * (HASH_WORD_SIZE / 8)

@@ -17,6 +17,7 @@ _H include <string.h>
 _H include <endian.h>
 _H include STR(../../../src/md/HASH_name/param.h)
 _H include "hmac.h"
+_H define HASH(HMAC_C)
 #endif
 
 #define HMAC_NAME JOIN(HMAC,HASH_NAME)
@@ -30,9 +31,9 @@ _H include "hmac.h"
 void HMAC_Clone(HMAC_CTX *dst, const HMAC_CTX *src) {
   // relies on .data being first
   if (src->datalen) {
-    memcpy(dst, src, sizeof(*dst));
+    memcpy(dst, src, sizeof(HMAC_CTX));
   } else {
-    memcpy(dst + sizeof(dst->data), src + sizeof(dst->data), sizeof(*dst) - sizeof(dst->data));
+    memcpy(PTR_ADD(dst, HASH_BLOCK_LENGTH), PTR_ADD(src, HASH_BLOCK_LENGTH), sizeof(HMAC_CTX) - HASH_BLOCK_LENGTH);
   }
 }
 
@@ -53,7 +54,7 @@ void HMAC_Init(HMAC_CTX *ctx, const void *key, size_t len) {
   }
 
   // load ipad into hash state
-  ctx->bitlen = HASH_BLOCK_LENGTH * 8;
+  ctx->bytelen = HASH_BLOCK_LENGTH;
   HASH(Transform)(ctx->state, ctx->hmac, 1);
 
   // convert ipad to opad (0x6a == 0x36 ^ 0x5c)
