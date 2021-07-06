@@ -36,7 +36,7 @@ HEADERS := $(foreach h,$(HASHES),$(patsubst %,gen/%/hash.h,$h))
 HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/hmac.h,$h))
 HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/ext.h,$h))
 
-BINARIES = test sha2t
+BINARIES = test vectors sha2t
 #override CFLAGS += -O3 -flto -fPIC -funsigned-char \
 #-flto -ffat-lto-objects \
 
@@ -52,7 +52,7 @@ LD := ccache ld
 COMPILE = $(CC) $(CFLAGS)
 ASSEMBLE = $(AS) $(LICENSES) -O3 -ggdb
 
-.PHONY: all libh asm native generic headers clean _clean _nop
+.PHONY: all libh asm native generic headers clean _clean _nop run_test run_vectors
 
 all: obj/llhash.o
 
@@ -106,6 +106,10 @@ gen/md/%/ext.c: src/md/%/param.h src/md/ext.h.in src/md/ext.c.in | libh
 	@mkdir -p $(@D)
 	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/ext.c.in > $@
+
+gen/md/%/driver.c: gen/md/%/hash.c gen/md/%/hmac.c gen/md/%/ext.c
+	@mkdir -p $(@D)
+	cat $^ > $@
 
 # c transform implementations
 obj/md/%/xform/generic.o: src/md/%/xform.c | libh
@@ -161,7 +165,12 @@ obj/can.o: $(OBJ_CAN)
 	$(LD) -r $^ -o $@
 
 # individual hash module
-obj/md/%.o: obj/md/%/hash.o obj/md/%/hmac.o obj/md/%/ext.o obj/md/%/register.o
+obj/md/%/driver.o: gen/md/%/driver.c | gen/md/%/hash.h gen/md/%/hmac.h gen/md/%/ext.h libh
+	@mkdir -p $(@D)
+	$(COMPILE) -c $< -o $@
+
+#obj/md/%.o: obj/md/%/hash.o obj/md/%/hmac.o obj/md/%/ext.o obj/md/%/register.o
+obj/md/%.o: obj/md/%/driver.o obj/md/%/register.o
 	$(LD) -r $^ -o $@
 
 obj/xform.o: $(OBJ_XFORM)
@@ -224,6 +233,13 @@ vectors.o: vectors.c | headers gen/test_vectors.h
 
 vectors: vectors.o obj/test_vectors.o obj/llhash.o
 	$(COMPILE) $^ -o $@
+
+# run test programs
+run_test: test
+	./test
+
+run_vectors: vectors
+	./vectors
 
 #@awk '/_clean:/{f=1;next}/^([^\t]|$$)/{f=0}f&&sub(/\t/,"")' $(MAKEFILE_LIST)
 # hack to force clean to run first *to completion* even for parallel builds
