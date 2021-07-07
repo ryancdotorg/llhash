@@ -56,5 +56,5 @@ int __attribute__((noinline)) MD5_Register(int enable) {
   MAYBE_REGISTER(native,NATIVE);
   MAYBE_REGISTER(generic,GENERIC);
   MAYBE_REGISTER(nayuki64,NAYUKI64);
-  return err ? err : RHASHC_ERROR_NOENABLE;
+  return err ? err : LLHASH_ERROR_NOENABLE;
 }

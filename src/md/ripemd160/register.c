@@ -52,5 +52,5 @@ int __attribute__((noinline)) RIPEMD160_Register(int enable) {
   int err = 0;
   MAYBE_REGISTER(native,NATIVE);
   MAYBE_REGISTER(generic,GENERIC);
-  return err ? err : RHASHC_ERROR_NOENABLE;
+  return err ? err : LLHASH_ERROR_NOENABLE;
 }

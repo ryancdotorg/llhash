@@ -56,5 +56,5 @@ int __attribute__((noinline)) MD4_Register(int enable) {
   MAYBE_REGISTER(generic,GENERIC);
   MAYBE_REGISTER(ryanc,RYANC);
   MAYBE_REGISTER(ryanc_naive,RYANC_NAIVE);
-  return err ? err : RHASHC_ERROR_NOENABLE;
+  return err ? err : LLHASH_ERROR_NOENABLE;
 }

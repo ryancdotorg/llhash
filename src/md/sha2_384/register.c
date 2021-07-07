@@ -71,5 +71,5 @@ int __attribute__((noinline)) SHA2_384_Register(int enable) {
   MAYBE_REGISTER(native,NATIVE);
   MAYBE_REGISTER(nayuki64,NAYUKI64);
   MAYBE_REGISTER(generic,GENERIC);
-  return err ? err : RHASHC_ERROR_NOENABLE;
+  return err ? err : LLHASH_ERROR_NOENABLE;
 }
