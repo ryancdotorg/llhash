@@ -215,6 +215,20 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
         printf("bad %s\n", hex(hexstr, hash, SIZE)); \
         printf("ref %s\n", hex(hexstr, ref, SIZE)); \
       } \
+\
+      memcpy(scratch, buf, N); \
+      blocks = NAME##_Pad(scratch, N); \
+      NAME##_Bswap(scratch, blocks); \
+      NAME##_Init(&ctx); \
+      NAME##_Native(ctx.state, scratch, blocks); \
+      NAME##_Serialize(hash, ctx.state); \
+      fail = 0; \
+      for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
+      if (fail) { \
+        printf("Bswap/Native/Serialize   %s - FAIL - %s\n", rpadf(26, #NAME "[%2d](%s[0:%u])", impl, desc, N), NAME##_Describe(impl)); \
+        printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+        printf("ref %s\n", hex(hexstr, ref, SIZE)); \
+      } \
     } \
   } \
 } while(0)
