@@ -37,6 +37,8 @@
 #include "gen/md/sha2_512/hmac.h"
 #include "gen/md/sha2_512/hash.h"
 
+#include "macros.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 #define BILLION 1000000000ULL;
@@ -218,9 +220,9 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 \
       memcpy(scratch, buf, N); \
       blocks = NAME##_Pad(scratch, N); \
-      NAME##_Bswap(scratch, blocks); \
+      NAME##_Bswap((CONCAT(uint,NAME##_WORD_SIZE,_t)*)scratch, blocks); \
       NAME##_Init(&ctx); \
-      NAME##_Native(ctx.state, scratch, blocks); \
+      NAME##_Native(ctx.state, (CONCAT(uint,NAME##_WORD_SIZE,_t)*)scratch, blocks); \
       NAME##_Serialize(hash, ctx.state); \
       fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
