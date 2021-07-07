@@ -1,0 +1,122 @@
+#include "../../macros.h"
+
+#ifndef HASH_NAME
+/* this exists to keep the linter happy */
+#define HASH_NAME MD5
+#define HASH_name md5
+
+#include <stddef.h>
+#include <stdint.h>
+#include <signal.h>
+#include <stdio.h>
+
+#include "../../llhash.h"
+#include "../../gen/md/md5/hash.h"
+#else
+_H include <stddef.h>
+_H include <stdint.h>
+_H include <signal.h>
+_H include <stdio.h>
+
+_H include "../../../llhash.h"
+_H include STR(../../../src/md/HASH_name/param.h)
+#endif
+
+#define CASE_DESC(I) case JOIN(HASH_NAME,USING,SECOND I): return JOIN(HASH_NAME,DESC,SECOND I);
+char * HASH(Describe)(int impl) {
+  switch (impl >= 0 ? impl : -1) {
+    MAP(CASE_DESC, EMPTY, HASH(IMPL_PRIO))
+    case -1: return "Invalid"; default: return "Unknown";
+  }
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+static void JOIN(HASH_name,xform_invalid)(uintWS_t *a, const void *b, uint32_t c) {
+  raise(SIGILL);
+}
+#pragma GCC diagnostic pop
+
+static void JOIN(HASH_name,xform_default)(uintWS_t *a, const void *b, uint32_t c) {
+  if (HASH(Register)(-1) < 0) {
+    fprintf(stderr, "No `" STR(HASH_NAME) "_Transform` implementation available!\n");
+    HASH(Transform) = JOIN(HASH_name,xform_invalid);
+    HASH(Native) = (JOIN(HASH_name,native_t))JOIN(HASH_name,xform_invalid);
+  }
+  HASH(Transform)(a, b, c);
+}
+
+void (*HASH(Transform))(uintWS_t *, const void *, uint32_t) = JOIN(HASH_name,xform_default);
+
+#if HASH_ENDIAN == __BYTE_ORDER__
+static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t c)
+__attribute__((alias(STR(JOIN(HASH_name,xform_default)))));
+#else
+static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t c) {
+  if (HASH(Register)(-1) < 0) {
+    fprintf(stderr, "No `" STR(HASH_NAME) "_Native` implementation available!\n");
+    HASH(Transform) = md5_xform_invalid;
+    HASH(Native) = (JOIN(HASH_name,native_t))JOIN(HASH_name,xform_invalid);
+  }
+  HASH(Native)(a, b, c);
+}
+#endif
+
+#if EQUAL(HASH_NAME,SHA2_224)
+#define BASE_IMPL sha2_256
+#elif EQUAL(HASH_NAME,SHA2_384)
+#define BASE_IMPL sha2_512
+#else
+#define BASE_IMPL HASH_name
+#endif
+
+#if HASH_ENDIAN == __BYTE_ORDER__
+#define NATIVE_SUFFIX
+#define IMPL_DEFS(I) \
+  extern int JOIN(BASE_IMPL,FIRST I,xform_built)(); \
+  extern void JOIN(BASE_IMPL,FIRST I,xform)(uintWS_t *, const void *, uint32_t)
+#define CHECK_BUILT(I) \
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) e |= 1
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define NATIVE_SUFFIX _le
+#define IMPL_DEFS(I) \
+  extern int JOIN(BASE_IMPL,FIRST I,xform_built)(); \
+  extern void JOIN(BASE_IMPL,FIRST I,xform)(uintWS_t *, const void *, uint32_t); \
+  extern int JOIN(BASE_IMPL,FIRST I,xform_le_built)(); \
+  extern void JOIN(BASE_IMPL,FIRST I,xform_le)(uintWS_t *, const uintWS_t *, uint32_t)
+#define CHECK_BUILT(I) \
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) e |= 1; \
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built_le)()) e |= 1
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define NATIVE_SUFFIX _be
+#define IMPL_DEFS(I) \
+  extern int JOIN(BASE_IMPL,FIRST I,xform_built)(); \
+  extern void JOIN(BASE_IMPL,FIRST I,xform)(uintWS_t *, const void *, uint32_t); \
+  extern int JOIN(BASE_IMPL,FIRST I,xform_be_built)(); \
+  extern void JOIN(BASE_IMPL,FIRST I,xform_be)(uintWS_t *, const uintWS_t *, uint32_t)
+#define CHECK_BUILT(I) \
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) e |= 1; \
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built_be)()) e |= 1
+#endif
+
+#define MAYBE_REGISTER(I) \
+  extern int JOIN(can,FIRST I)(); \
+  IMPL_DEFS(I); \
+  if (enable & JOIN(HASH_NAME,ENABLE,SECOND I)) { \
+    int e = 0; \
+    CHECK_BUILT(I); \
+    if (!JOIN(can,FIRST I)()) e |= 2; \
+    if (e) { \
+      err |= ~e; \
+    } else { \
+      HASH(Transform) = JOIN(BASE_IMPL,FIRST I,xform); \
+      HASH(Native) = (JOIN(BASE_IMPL,native_t))CONCAT(BASE_IMPL,_,FIRST I,_xform,NATIVE_SUFFIX); \
+      return JOIN(HASH_NAME,USING,SECOND I); \
+    } \
+  }
+
+int __attribute__((noinline)) HASH(Register)(int enable) {
+  int err = 0;
+  MAP(MAYBE_REGISTER, EMPTY, HASH(IMPL_PRIO))
+  return err ? err : LLHASH_ERROR_NOENABLE;
+}

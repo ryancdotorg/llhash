@@ -92,6 +92,11 @@ gen/md/%/ext.h: src/md/%/param.h src/md/ext.h.in | libh/libh.h
 	sed -En 's/^\s*#\s+/#/;/pragma once/,$$p' > $@
 
 # generated c hash driver
+gen/md/%/register.c: src/md/%/param.h src/md/register.c.in | libh
+	@mkdir -p $(@D)
+	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
+	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/register.c.in > $@
+
 gen/md/%/hash.c: src/md/%/param.h src/md/hash.h.in src/md/hash.c.in | libh
 	@mkdir -p $(@D)
 	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
@@ -107,6 +112,7 @@ gen/md/%/ext.c: src/md/%/param.h src/md/ext.h.in src/md/ext.c.in | libh
 	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/ext.c.in > $@
 
+# combining these allows a bit more optimization...
 gen/md/%/driver.c: gen/md/%/hash.c gen/md/%/hmac.c gen/md/%/ext.c
 	@mkdir -p $(@D)
 	cat $^ > $@
@@ -143,7 +149,7 @@ obj/md/%/ext.o: gen/md/%/ext.c gen/md/%/ext.h gen/md/%/hmac.h gen/md/%/hash.h
 	$(COMPILE) -c $< -o $@
 
 # impl registration
-obj/md/%/register.o: src/md/%/register.c gen/md/%/hash.h | libh
+obj/md/%/register.o: gen/md/%/register.c gen/md/%/hash.h | libh
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
