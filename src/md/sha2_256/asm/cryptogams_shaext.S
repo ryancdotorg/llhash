@@ -98,7 +98,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	pshufd	$0xb1,%xmm1,%xmm1
 	pshufd	$0x1b,%xmm2,%xmm2
 	movdqa	%xmm7,%xmm8
-	palignr	-ex8,%xmm2,%xmm1
+	palignr	$0x8,%xmm2,%xmm1
 	punpcklqdq	%xmm0,%xmm2
 	jmp	.Loop_shaext
 
@@ -135,7 +135,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7
-	palignr	-ex4,%xmm5,%xmm7
+	palignr	$0x4,%xmm5,%xmm7
 	nop
 	paddd	%xmm7,%xmm3
 	sha256msg1	%xmm5,%xmm4
@@ -147,7 +147,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm3,%xmm7
-	palignr	-ex4,%xmm6,%xmm7
+	palignr	$0x4,%xmm6,%xmm7
 	nop
 	paddd	%xmm7,%xmm4
 	sha256msg1	%xmm6,%xmm5
@@ -158,7 +158,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm4,%xmm7
-	palignr	-ex4,%xmm3,%xmm7
+	palignr	$0x4,%xmm3,%xmm7
 	nop
 	paddd	%xmm7,%xmm5
 	sha256msg1	%xmm3,%xmm6
@@ -169,7 +169,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm5,%xmm7
-	palignr	-ex4,%xmm4,%xmm7
+	palignr	$0x4,%xmm4,%xmm7
 	nop
 	paddd	%xmm7,%xmm6
 	sha256msg1	%xmm4,%xmm3
@@ -180,7 +180,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7
-	palignr	-ex4,%xmm5,%xmm7
+	palignr	$0x4,%xmm5,%xmm7
 	nop
 	paddd	%xmm7,%xmm3
 	sha256msg1	%xmm5,%xmm4
@@ -191,7 +191,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm3,%xmm7
-	palignr	-ex4,%xmm6,%xmm7
+	palignr	$0x4,%xmm6,%xmm7
 	nop
 	paddd	%xmm7,%xmm4
 	sha256msg1	%xmm6,%xmm5
@@ -202,7 +202,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm4,%xmm7
-	palignr	-ex4,%xmm3,%xmm7
+	palignr	$0x4,%xmm3,%xmm7
 	nop
 	paddd	%xmm7,%xmm5
 	sha256msg1	%xmm3,%xmm6
@@ -213,7 +213,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm5,%xmm7
-	palignr	-ex4,%xmm4,%xmm7
+	palignr	$0x4,%xmm4,%xmm7
 	nop
 	paddd	%xmm7,%xmm6
 	sha256msg1	%xmm4,%xmm3
@@ -224,7 +224,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm6,%xmm7
-	palignr	-ex4,%xmm5,%xmm7
+	palignr	$0x4,%xmm5,%xmm7
 	nop
 	paddd	%xmm7,%xmm3
 	sha256msg1	%xmm5,%xmm4
@@ -235,7 +235,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm3,%xmm7
-	palignr	-ex4,%xmm6,%xmm7
+	palignr	$0x4,%xmm6,%xmm7
 	nop
 	paddd	%xmm7,%xmm4
 	sha256msg1	%xmm6,%xmm5
@@ -246,7 +246,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm4,%xmm7
-	palignr	-ex4,%xmm3,%xmm7
+	palignr	$0x4,%xmm3,%xmm7
 	nop
 	paddd	%xmm7,%xmm5
 	sha256msg1	%xmm3,%xmm6
@@ -257,7 +257,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	sha256rnds2	%xmm0,%xmm1,%xmm2
 	pshufd	$0x0e,%xmm0,%xmm0
 	movdqa	%xmm5,%xmm7
-	palignr	-ex4,%xmm4,%xmm7
+	palignr	$0x4,%xmm4,%xmm7
 	sha256rnds2	%xmm0,%xmm2,%xmm1
 	paddd	%xmm7,%xmm6
 
@@ -286,7 +286,7 @@ ENTRY(sha2_256_cryptogams_shaext_xform)
 	pshufd	$0x1b,%xmm1,%xmm7
 	pshufd	$0xb1,%xmm1,%xmm1
 	punpckhqdq	%xmm2,%xmm1
-	palignr	-ex8,%xmm7,%xmm2
+	palignr	$0x8,%xmm7,%xmm2
 
 	movdqu	%xmm1,(%rdi)
 	movdqu	%xmm2,16(%rdi)

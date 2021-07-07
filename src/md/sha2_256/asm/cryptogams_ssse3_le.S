@@ -163,10 +163,10 @@ ENTRY(sha2_256_cryptogams_ssse3_xform_le)
 	xorl	%r10d,%r12d
 	rorl	$5,%r13d
 	xorl	%eax,%r14d
-	palignr	-ex4,%xmm0,%xmm4
+	palignr	$0x4,%xmm0,%xmm4
 	andl	%r8d,%r12d
 	xorl	%r8d,%r13d
-	palignr	-ex4,%xmm2,%xmm7
+	palignr	$0x4,%xmm2,%xmm7
 	addl	0(%rsp),%r11d
 	movl	%eax,%r15d
 	xorl	%r10d,%r12d
@@ -307,10 +307,10 @@ ENTRY(sha2_256_cryptogams_ssse3_xform_le)
 	xorl	%ecx,%r12d
 	rorl	$5,%r13d
 	xorl	%r8d,%r14d
-	palignr	-ex4,%xmm1,%xmm4
+	palignr	$0x4,%xmm1,%xmm4
 	andl	%eax,%r12d
 	xorl	%eax,%r13d
-	palignr	-ex4,%xmm3,%xmm7
+	palignr	$0x4,%xmm3,%xmm7
 	addl	16(%rsp),%edx
 	movl	%r8d,%r15d
 	xorl	%ecx,%r12d
@@ -451,10 +451,10 @@ ENTRY(sha2_256_cryptogams_ssse3_xform_le)
 	xorl	%r10d,%r12d
 	rorl	$5,%r13d
 	xorl	%eax,%r14d
-	palignr	-ex4,%xmm2,%xmm4
+	palignr	$0x4,%xmm2,%xmm4
 	andl	%r8d,%r12d
 	xorl	%r8d,%r13d
-	palignr	-ex4,%xmm0,%xmm7
+	palignr	$0x4,%xmm0,%xmm7
 	addl	32(%rsp),%r11d
 	movl	%eax,%r15d
 	xorl	%r10d,%r12d
@@ -595,10 +595,10 @@ ENTRY(sha2_256_cryptogams_ssse3_xform_le)
 	xorl	%ecx,%r12d
 	rorl	$5,%r13d
 	xorl	%r8d,%r14d
-	palignr	-ex4,%xmm3,%xmm4
+	palignr	$0x4,%xmm3,%xmm4
 	andl	%eax,%r12d
 	xorl	%eax,%r13d
-	palignr	-ex4,%xmm1,%xmm7
+	palignr	$0x4,%xmm1,%xmm7
 	addl	48(%rsp),%edx
 	movl	%r8d,%r15d
 	xorl	%ecx,%r12d

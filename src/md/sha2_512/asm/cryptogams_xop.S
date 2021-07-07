@@ -219,7 +219,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm4,%xmm5,%xmm11
 	movq	%r9,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%r8,%r13
 	xorq	%r10,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -230,7 +230,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%r8,%r13
 	addq	0(%rsp),%r11
 	movq	%rax,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%r10,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -238,7 +238,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%r11
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm7,%xmm11
+	vprotq	$0x3,%xmm7,%xmm11
 	xorq	%rax,%r14
 	addq	%r13,%r11
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -250,7 +250,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm0,%xmm0
 	movq	%rdx,%r13
 	addq	%r11,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%r11
 	vpxor	%xmm10,%xmm11,%xmm11
@@ -288,7 +288,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm5,%xmm6,%xmm11
 	movq	%rdx,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%rcx,%r13
 	xorq	%r8,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -299,7 +299,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%rcx,%r13
 	addq	16(%rsp),%r9
 	movq	%r10,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%r8,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -307,7 +307,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%r9
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm0,%xmm11
+	vprotq	$0x3,%xmm0,%xmm11
 	xorq	%r10,%r14
 	addq	%r13,%r9
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -319,7 +319,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm1,%xmm1
 	movq	%rbx,%r13
 	addq	%r9,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%r9
 	vpxor	%xmm10,%xmm11,%xmm11
@@ -357,7 +357,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm6,%xmm7,%xmm11
 	movq	%rbx,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%rax,%r13
 	xorq	%rcx,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -368,7 +368,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%rax,%r13
 	addq	32(%rsp),%rdx
 	movq	%r8,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%rcx,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -376,7 +376,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%rdx
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm1,%xmm11
+	vprotq	$0x3,%xmm1,%xmm11
 	xorq	%r8,%r14
 	addq	%r13,%rdx
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -388,7 +388,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm2,%xmm2
 	movq	%r11,%r13
 	addq	%rdx,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%rdx
 	vpxor	%xmm10,%xmm11,%xmm11
@@ -426,7 +426,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm7,%xmm0,%xmm11
 	movq	%r11,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%r10,%r13
 	xorq	%rax,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -437,7 +437,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%r10,%r13
 	addq	48(%rsp),%rbx
 	movq	%rcx,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%rax,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -445,7 +445,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%rbx
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm2,%xmm11
+	vprotq	$0x3,%xmm2,%xmm11
 	xorq	%rcx,%r14
 	addq	%r13,%rbx
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -457,7 +457,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm3,%xmm3
 	movq	%r9,%r13
 	addq	%rbx,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%rbx
 	vpxor	%xmm10,%xmm11,%xmm11
@@ -495,7 +495,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm0,%xmm1,%xmm11
 	movq	%r9,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%r8,%r13
 	xorq	%r10,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -506,7 +506,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%r8,%r13
 	addq	64(%rsp),%r11
 	movq	%rax,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%r10,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -514,7 +514,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%r11
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm3,%xmm11
+	vprotq	$0x3,%xmm3,%xmm11
 	xorq	%rax,%r14
 	addq	%r13,%r11
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -526,7 +526,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm4,%xmm4
 	movq	%rdx,%r13
 	addq	%r11,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%r11
 	vpxor	%xmm10,%xmm11,%xmm11
@@ -564,7 +564,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm1,%xmm2,%xmm11
 	movq	%rdx,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%rcx,%r13
 	xorq	%r8,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -575,7 +575,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%rcx,%r13
 	addq	80(%rsp),%r9
 	movq	%r10,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%r8,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -583,7 +583,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%r9
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm4,%xmm11
+	vprotq	$0x3,%xmm4,%xmm11
 	xorq	%r10,%r14
 	addq	%r13,%r9
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -595,7 +595,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm5,%xmm5
 	movq	%rbx,%r13
 	addq	%r9,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%r9
 	vpxor	%xmm10,%xmm11,%xmm11
@@ -633,7 +633,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm2,%xmm3,%xmm11
 	movq	%rbx,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%rax,%r13
 	xorq	%rcx,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -644,7 +644,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%rax,%r13
 	addq	96(%rsp),%rdx
 	movq	%r8,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%rcx,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -652,7 +652,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%rdx
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm5,%xmm11
+	vprotq	$0x3,%xmm5,%xmm11
 	xorq	%r8,%r14
 	addq	%r13,%rdx
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -664,7 +664,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm6,%xmm6
 	movq	%r11,%r13
 	addq	%rdx,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%rdx
 	vpxor	%xmm10,%xmm11,%xmm11
@@ -702,7 +702,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpalignr	$8,%xmm3,%xmm4,%xmm11
 	movq	%r11,%r12
 	rorq	$5,%r14
-	vprotq	-ex38,%xmm8,%xmm9
+	vprotq	$0x38,%xmm8,%xmm9
 	xorq	%r10,%r13
 	xorq	%rax,%r12
 	vpsrlq	$7,%xmm8,%xmm8
@@ -713,7 +713,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	xorq	%r10,%r13
 	addq	112(%rsp),%rbx
 	movq	%rcx,%r15
-	vprotq	-ex7,%xmm9,%xmm10
+	vprotq	$0x7,%xmm9,%xmm10
 	xorq	%rax,%r12
 	rorq	$6,%r14
 	vpxor	%xmm9,%xmm8,%xmm8
@@ -721,7 +721,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	addq	%r12,%rbx
 	rorq	$14,%r13
 	andq	%r15,%rdi
-	vprotq	-ex3,%xmm6,%xmm11
+	vprotq	$0x3,%xmm6,%xmm11
 	xorq	%rcx,%r14
 	addq	%r13,%rbx
 	vpxor	%xmm10,%xmm8,%xmm8
@@ -733,7 +733,7 @@ ENTRY(sha2_512_cryptogams_xop_xform)
 	vpaddq	%xmm8,%xmm7,%xmm7
 	movq	%r9,%r13
 	addq	%rbx,%r14
-	vprotq	-ex2a,%xmm11,%xmm9
+	vprotq	$0x2a,%xmm11,%xmm9
 	rorq	$23,%r13
 	movq	%r14,%rbx
 	vpxor	%xmm10,%xmm11,%xmm11

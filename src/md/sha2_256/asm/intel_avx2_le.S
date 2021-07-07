@@ -554,10 +554,6 @@ ENTRY(sha2_256_intel_avx2_xform_le)
 	mov	4*6(CTX), g
 	mov	4*7(CTX), h
 
-	vmovdqa  PSHUFFLE_BYTE_FLIP_MASK(%rip), BYTE_FLIP_MASK
-	vmovdqa  _SHUF_00BA(%rip), SHUF_00BA
-	vmovdqa  _SHUF_DC00(%rip), SHUF_DC00
-
 	mov	CTX, _CTX(%rsp)
 
 loop0:

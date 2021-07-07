@@ -82,126 +82,126 @@ ENTRY(sha1_cryptogams_shaext_xform_le)
 	movdqa	%xmm0,%xmm8
 	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex0,%xmm1,%xmm0
+	sha1rnds4	$0x0,%xmm1,%xmm0
 	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
 	sha1msg1	%xmm6,%xmm5
 	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex0,%xmm2,%xmm0
+	sha1rnds4	$0x0,%xmm2,%xmm0
 	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
 	sha1msg2	%xmm4,%xmm5
 	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex0,%xmm1,%xmm0
+	sha1rnds4	$0x0,%xmm1,%xmm0
 	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
 	sha1msg1	%xmm4,%xmm7
 	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex0,%xmm2,%xmm0
+	sha1rnds4	$0x0,%xmm2,%xmm0
 	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
 	sha1msg2	%xmm6,%xmm7
 	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex0,%xmm1,%xmm0
+	sha1rnds4	$0x0,%xmm1,%xmm0
 	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
 	sha1msg1	%xmm6,%xmm5
 	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex1,%xmm2,%xmm0
+	sha1rnds4	$0x1,%xmm2,%xmm0
 	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
 	sha1msg2	%xmm4,%xmm5
 	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex1,%xmm1,%xmm0
+	sha1rnds4	$0x1,%xmm1,%xmm0
 	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
 	sha1msg1	%xmm4,%xmm7
 	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex1,%xmm2,%xmm0
+	sha1rnds4	$0x1,%xmm2,%xmm0
 	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
 	sha1msg2	%xmm6,%xmm7
 	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex1,%xmm1,%xmm0
+	sha1rnds4	$0x1,%xmm1,%xmm0
 	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
 	sha1msg1	%xmm6,%xmm5
 	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex1,%xmm2,%xmm0
+	sha1rnds4	$0x1,%xmm2,%xmm0
 	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
 	sha1msg2	%xmm4,%xmm5
 	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex2,%xmm1,%xmm0
+	sha1rnds4	$0x2,%xmm1,%xmm0
 	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
 	sha1msg1	%xmm4,%xmm7
 	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex2,%xmm2,%xmm0
+	sha1rnds4	$0x2,%xmm2,%xmm0
 	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
 	sha1msg2	%xmm6,%xmm7
 	sha1msg1	%xmm5,%xmm4
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex2,%xmm1,%xmm0
+	sha1rnds4	$0x2,%xmm1,%xmm0
 	sha1nexte	%xmm5,%xmm2
 	pxor	%xmm6,%xmm4
 	sha1msg1	%xmm6,%xmm5
 	sha1msg2	%xmm7,%xmm4
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex2,%xmm2,%xmm0
+	sha1rnds4	$0x2,%xmm2,%xmm0
 	sha1nexte	%xmm6,%xmm1
 	pxor	%xmm7,%xmm5
 	sha1msg2	%xmm4,%xmm5
 	sha1msg1	%xmm7,%xmm6
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex2,%xmm1,%xmm0
+	sha1rnds4	$0x2,%xmm1,%xmm0
 	sha1nexte	%xmm7,%xmm2
 	pxor	%xmm4,%xmm6
 	sha1msg1	%xmm4,%xmm7
 	sha1msg2	%xmm5,%xmm6
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex3,%xmm2,%xmm0
+	sha1rnds4	$0x3,%xmm2,%xmm0
 	sha1nexte	%xmm4,%xmm1
 	pxor	%xmm5,%xmm7
 	sha1msg2	%xmm6,%xmm7
 	movdqu	(%rsi),%xmm4
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex3,%xmm1,%xmm0
+	sha1rnds4	$0x3,%xmm1,%xmm0
 	sha1nexte	%xmm5,%xmm2
 	movdqu	16(%rsi),%xmm5
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex3,%xmm2,%xmm0
+	sha1rnds4	$0x3,%xmm2,%xmm0
 	sha1nexte	%xmm6,%xmm1
 	movdqu	32(%rsi),%xmm6
 
 	movdqa	%xmm0,%xmm2
-	sha1rnds4	-ex3,%xmm1,%xmm0
+	sha1rnds4	$0x3,%xmm1,%xmm0
 	sha1nexte	%xmm7,%xmm2
 	movdqu	48(%rsi),%xmm7
 
 	movdqa	%xmm0,%xmm1
-	sha1rnds4	-ex3,%xmm2,%xmm0
+	sha1rnds4	$0x3,%xmm2,%xmm0
 	sha1nexte	%xmm9,%xmm1
 
 	paddd	%xmm8,%xmm0
