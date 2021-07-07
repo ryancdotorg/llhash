@@ -1,39 +1,42 @@
 #pragma once
 #include "arith.h"
 /* arcane macro magic, based in part on tricks from
+ * http://jhnet.co.uk/articles/cpp_magic and
  * https://github.com/18sg/uSHET/blob/master/lib/cpp_magic.h and
  * https://github.com/pfultz2/Cloak/wiki/C-Preprocessor-tricks,-tips,-and-idioms
  */
 
-#define EVAL(...) EVAL1024(__VA_ARGS__)
-#define EVAL1024(...) EVAL512(EVAL512(__VA_ARGS__))
-#define EVAL512(...) EVAL256(EVAL256(__VA_ARGS__))
-#define EVAL256(...) EVAL128(EVAL128(__VA_ARGS__))
-#define EVAL128(...) EVAL64(EVAL64(__VA_ARGS__))
-#define EVAL64(...) EVAL32(EVAL32(__VA_ARGS__))
-#define EVAL32(...) EVAL16(EVAL16(__VA_ARGS__))
-#define EVAL16(...) EVAL8(EVAL8(__VA_ARGS__))
-#define EVAL8(...) EVAL4(EVAL4(__VA_ARGS__))
-#define EVAL4(...) EVAL2(EVAL2(__VA_ARGS__))
-#define EVAL2(...) EVAL1(EVAL1(__VA_ARGS__))
-#define EVAL1(...) __VA_ARGS__
-
-#define PASS(...) __VA_ARGS__
 #define EMPTY()
 #define COMMA() ,
 #define SEMICOLON() ;
 
-#define DEFER1(id) id EMPTY()
-#define DEFER2(id) id EMPTY EMPTY()()
+// excessive nesting here makes my syntax checker slow
+#define EVAL(...)   _EVAL3(_EVAL3(_EVAL3(__VA_ARGS__)))
+#define _EVAL3(...) _EVAL2(_EVAL2(_EVAL2(__VA_ARGS__)))
+#define _EVAL2(...) _EVAL1(_EVAL1(_EVAL1(__VA_ARGS__)))
+#define _EVAL1(...) _EVAL0(_EVAL0(_EVAL0(__VA_ARGS__)))
+#define _EVAL0(...) __VA_ARGS__
 
 #define CAT(a, ...) a ## __VA_ARGS__
 #define CAT3(a, b, ...) a ## b ## __VA_ARGS__
 #define CAT4(a, b, c, ...) a ## b ## c ## __VA_ARGS__
 
-#define APPLY(fn, ...) fn(__VA_ARGS__)
+#define DEFER1(id) id EMPTY()
+#define DEFER2(id) id EMPTY EMPTY()()
+#define DEFER3(id) id EMPTY EMPTY EMPTY()()()
 
+#define CONSUME(...)
+#define EXPAND(...) __VA_ARGS__
+#define PASS(...) __VA_ARGS__
+#define ARRAY(...) {__VA_ARGS__}
+#define PARENS(...) (__VA_ARGS__)
+
+//#define OBSTRUCT(...) __VA_ARGS__ DEFER1(EMPTY)()
+
+#define APPLY(fn, ...) fn(__VA_ARGS__)
 #define FIRST(a, ...) a
 #define SECOND(a, b, ...) b
+#define THIRD(a, b, c, ...) c
 
 #define IS_PROBE(...) SECOND(__VA_ARGS__, 0)
 #define PROBE() ~, 1,
@@ -118,3 +121,30 @@
     sep() DEFER2(_MAP_WITH_COUNTER_INNER)()(op, sep, INC(n), ##__VA_ARGS__) \
   )
 #define _MAP_WITH_COUNTER_INNER() MAP_WITH_COUNTER_INNER
+
+#define REPEAT(...) IF(HAS_ARGS(__VA_ARGS__))(EVAL(REPEAT_INNER(__VA_ARGS__)))
+#define REPEAT_INNER(n, sep, ...) IF(n) ( \
+  DEFER2(_REPEAT_INNER)()(DEC(n), sep, __VA_ARGS__) \
+  IF(DEC(n))(sep()) __VA_ARGS__ \
+)
+#define _REPEAT_INNER() REPEAT_INNER
+
+#define REPEAT_WITH_COUNTER(...) \
+  IF(HAS_ARGS(__VA_ARGS__))(EVAL(REPEAT_WITH_COUNTER_INNER(__VA_ARGS__)))
+#define REPEAT_WITH_COUNTER_INNER(n, sep, op, ...) IF(n) ( \
+  DEFER2(_REPEAT_WITH_COUNTER_INNER)()(DEC(n), sep, op, __VA_ARGS__) \
+  IF(DEC(n))(sep()) \
+  DEFER2(op)(DEC(n), __VA_ARGS__) \
+)
+#define _REPEAT_WITH_COUNTER_INNER() REPEAT_WITH_COUNTER_INNER
+
+/*
+#define WHILE(...) IF(HAS_ARGS(__VA_ARGS__))(EVAL(WHILE_INNER(__VA_ARGS)))
+#define WHILE_INNER(c, op, ...) IF_ELSE(c(__VA_ARGS__))( \
+  DEFER2(_WHILE_INNER) () (c, op, op(__VA_ARGS__)), \
+  __VA_ARGS__ \
+)
+#define _WHILE_INNER() WHILE_INNER
+*/
+
+#define REMOVE_TRAILING_COMMAS(...) MAP(PASS, COMMA, __VA_ARGS__)
