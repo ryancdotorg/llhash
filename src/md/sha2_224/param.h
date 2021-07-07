@@ -1,5 +1,6 @@
 #pragma once
 
+#define _COMPARE_SHA2_224(x) x
 #define SHA2_224_ALIAS() SHA224, ()
 
 #define SHA2_224_DIGEST_LENGTH 28
@@ -12,6 +13,20 @@
   0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, \
   0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4  \
 }
+
+#define SHA2_224_IMPL_PRIO \
+(cryptogams_shaext, CRYPTOGAMS_SHAEXT), \
+(intel_shaext, INTEL_SHAEXT), \
+(cryptogams_avx2, CRYPTOGAMS_AVX2), \
+(intel_avx2, INTEL_AVX2), \
+(cryptogams_avx, CRYPTOGAMS_AVX), \
+(cryptogams_ssse3, CRYPTOGAMS_SSSE3), \
+(intel_avx, INTEL_AVX), \
+(intel_ssse3, INTEL_SSSE3), \
+(cryptogams_gen, CRYPTOGAMS_GEN), \
+(native, NATIVE), \
+(nayuki64, NAYUKI64), \
+(generic, GENERIC)
 
 #define SHA2_224_USING_GENERIC            0
 #define SHA2_224_USING_NATIVE             1

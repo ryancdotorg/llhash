@@ -1,5 +1,7 @@
 #pragma once
 
+#define _COMPARE_SHA1(x) x
+
 #define SHA1_DIGEST_LENGTH 20
 #define SHA1_BLOCK_LENGTH 64
 #define SHA1_WORD_SIZE 32
@@ -9,6 +11,18 @@
 #define SHA1_IV { \
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 \
 }
+
+#define SHA1_IMPL_PRIO \
+(cryptogams_shaext, CRYPTOGAMS_SHAEXT), \
+(intel_shaext, INTEL_SHAEXT), \
+(intel_avx2, INTEL_AVX2), \
+(intel_avx, INTEL_AVX), \
+(cryptogams_ssse3, CRYPTOGAMS_SSSE3), \
+(intel_ssse3, INTEL_SSSE3), \
+(cryptogams_gen, CRYPTOGAMS_GEN), \
+(native, NATIVE), \
+(nayuki64, NAYUKI64), \
+(generic, GENERIC)
 
 #define SHA1_USING_GENERIC           0
 #define SHA1_USING_NATIVE            1

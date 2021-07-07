@@ -1,5 +1,7 @@
 #pragma once
 
+#define _COMPARE_MD5(x) x
+
 #define MD5_DIGEST_LENGTH 16
 #define MD5_BLOCK_LENGTH 64
 #define MD5_WORD_SIZE 32
@@ -9,6 +11,12 @@
 #define MD5_IV { \
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 \
 }
+
+#define MD5_IMPL_PRIO \
+(ryanc, RYANC), \
+(native, NATIVE), \
+(generic, GENERIC), \
+(nayuki64, NAYUKI64)
 
 #define MD5_USING_GENERIC              0
 #define MD5_USING_NATIVE               1

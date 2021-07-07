@@ -1,5 +1,6 @@
 #pragma once
 
+#define _COMPARE_SHA2_384(x) x
 #define SHA2_384_ALIAS() SHA384, ()
 
 #define SHA2_384_DIGEST_LENGTH 48
@@ -14,6 +15,18 @@
   0x67332667ffc00b31, 0x8eb44a8768581511, \
   0xdb0c2e0d64f98fa7, 0x47b5481dbefa4fa4  \
 }
+
+#define SHA2_384_IMPL_PRIO \
+(cryptogams_avx2, CRYPTOGAMS_AVX2), \
+(intel_avx2, INTEL_AVX2), \
+(cryptogams_avx, CRYPTOGAMS_AVX), \
+(intel_avx, INTEL_AVX), \
+(cryptogams_xop, CRYPTOGAMS_XOP), \
+(intel_ssse3, INTEL_SSSE3), \
+(cryptogams_gen, CRYPTOGAMS_GEN), \
+(native, NATIVE), \
+(nayuki64, NAYUKI64), \
+(generic, GENERIC)
 
 #define SHA2_384_USING_GENERIC         0
 #define SHA2_384_USING_NATIVE          1

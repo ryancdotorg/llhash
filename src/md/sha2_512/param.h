@@ -1,5 +1,6 @@
 #pragma once
 
+#define _COMPARE_SHA2_512(x) x
 #define SHA2_512_ALIAS() SHA512, ()
 
 #define SHA2_512_DIGEST_LENGTH 64
@@ -14,6 +15,18 @@
   0x510e527fade682d1, 0x9b05688c2b3e6c1f, \
   0x1f83d9abfb41bd6b, 0x5be0cd19137e2179  \
 }
+
+#define SHA2_512_IMPL_PRIO \
+(cryptogams_avx2, CRYPTOGAMS_AVX2), \
+(intel_avx2, INTEL_AVX2), \
+(cryptogams_avx, CRYPTOGAMS_AVX), \
+(intel_avx, INTEL_AVX), \
+(cryptogams_xop, CRYPTOGAMS_XOP), \
+(intel_ssse3, INTEL_SSSE3), \
+(cryptogams_gen, CRYPTOGAMS_GEN), \
+(native, NATIVE), \
+(nayuki64, NAYUKI64), \
+(generic, GENERIC)
 
 #define SHA2_512_USING_GENERIC         0
 #define SHA2_512_USING_NATIVE          1

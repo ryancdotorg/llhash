@@ -1,5 +1,7 @@
 #pragma once
 
+#define _COMPARE_MD4(x) x
+
 #define MD4_DIGEST_LENGTH 16
 #define MD4_BLOCK_LENGTH 64
 #define MD4_WORD_SIZE 32
@@ -9,6 +11,12 @@
 #define MD4_IV { \
   0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 \
 }
+
+#define MD4_IMPL_PRIO \
+(native, NATIVE), \
+(generic, GENERIC), \
+(ryanc, RYANC), \
+(ryanc_naive, RYANC_NAIVE)
 
 #define MD4_USING_GENERIC           0
 #define MD4_USING_NATIVE            1
