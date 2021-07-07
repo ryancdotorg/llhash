@@ -223,6 +223,25 @@ void HASH(Raw)(uint8_t hash[], const uint8_t data[], uint64_t nblk) {
 }
 
 #if HASH_ALIASED
+void ALIAS(Bswap)(uintWS_t data[], uint64_t nblk)
+__attribute__((alias(STR(HASH(Bswap)))));
+#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+void HASH(Bswap)(uintWS_t data[], uint64_t nblk) {
+#if HASH_ENDIAN == __BYTE_ORDER__
+/* do nothing */
+#else
+  for (const uintWS_t *end=data+nblk*HASH_BLOCK_WORDS; data < end; data += HASH_BLOCK_WORDS) {
+#define _BSWAP(n, _) data[n] = htoDeWS(data[n]);
+    REPEAT_WITH_COUNTER(16, EMPTY, _BSWAP);
+#undef _BSWAP
+  }
+#endif
+}
+#pragma GCC diagnostic pop
+
+#if HASH_ALIASED
 void ALIAS(Serialize)(uint8_t hash[], const uintWS_t state[])
 __attribute__((alias(STR(HASH(Serialize)))));
 #endif
