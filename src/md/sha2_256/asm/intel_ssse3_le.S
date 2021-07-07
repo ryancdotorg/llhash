@@ -76,6 +76,9 @@ XTMP3 = %xmm3
 XTMP4 = %xmm8
 XFER = %xmm9
 
+SHUF_00BA = %xmm10      # shuffle xBxA -> 00BA
+SHUF_DC00 = %xmm11      # shuffle xDxC -> DC00
+
 NUM_BLKS = %rdx   # 3rd arg
 INP = %rsi        # 2nd arg
 CTX = %rdi        # 1st arg
@@ -246,6 +249,7 @@ a = TMP_
 	mov     a, y0                   # y0 = a
 	add     y2, h                   # h = h + S1 + CH + k + w
 	mov     a, y2                   # y2 = a
+	pshufb  SHUF_00BA, XTMP4        # XTMP4 = s1 {00BA}
 	or      c, y0                   # y0 = a|c
 	add     h, d                    # d = d + h + S1 + CH + k + w
 	and     c, y2                   # y2 = a&c
@@ -286,6 +290,7 @@ a = TMP_
 	mov     a, y0                   # y0 = a
 	add     y2, h                   # h = h + S1 + CH + k + w
 	mov     a, y2                   # y2 = a
+	pshufb  SHUF_DC00, X0           # X0 = s1 {DC00}
 	or      c, y0                   # y0 = a|c
 	add     h, d                    # d = d + h + S1 + CH + k + w
 	and     c, y2                   # y2 = a&c
@@ -367,6 +372,9 @@ ENTRY(sha2_256_intel_ssse3_xform_le)
 	mov     4*5(CTX), f
 	mov     4*6(CTX), g
 	mov     4*7(CTX), h
+
+	movdqa  _SHUF_00BA(%rip), SHUF_00BA
+	movdqa  _SHUF_DC00(%rip), SHUF_DC00
 
 loop0:
 	lea     K256(%rip), TBL
@@ -477,4 +485,11 @@ K256:
         .long 0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
         .long 0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 
+# shuffle xBxA -> 00BA
+_SHUF_00BA:
+	.octa 0xFFFFFFFFFFFFFFFF0b0a090803020100
+
+# shuffle xDxC -> DC00
+_SHUF_DC00:
+	.octa 0x0b0a090803020100FFFFFFFFFFFFFFFF
 #endif

@@ -279,6 +279,7 @@ STACK_SIZE	= _RSP      + _RSP_SIZE
 	vpxor	XTMP2, XTMP4, XTMP4	# XTMP4 = s1 {xBxA}
 	xor	g, y2		# y2 = CH = ((f^g)&e)^g                 # CH
 
+	vpshufb	SHUF_00BA, XTMP4, XTMP4	# XTMP4 = s1 {00BA}
 	xor	T1, y1		# y1 = (a>>22) ^ (a>>13)		# S0
 	rorx	$2, a ,T1	# T1 = (a >> 2)				# S0
 	vpaddd	XTMP4, XTMP0, XTMP0	# XTMP0 = {..., ..., W[1], W[0]}
@@ -335,6 +336,7 @@ STACK_SIZE	= _RSP      + _RSP_SIZE
 	add	y2, d		# d = k + w + h + d + S1 + CH = d + t1  # --
 
 	rorx	$2, a, T1	# T1 = (a >> 2)				# S0
+	vpshufb	SHUF_DC00, XTMP5, XTMP5	# XTMP5 = s1 {DC00}
 
 	vpaddd	XTMP0, XTMP5, X0	# X0 = {W[3], W[2], W[1], W[0]}
 	xor	T1, y1		# y1 = (a>>22) ^ (a>>13) ^ (a>>2)	# S0
@@ -554,6 +556,9 @@ ENTRY(sha2_256_intel_avx2_xform_le)
 	mov	4*6(CTX), g
 	mov	4*7(CTX), h
 
+	vmovdqa  _SHUF_00BA(%rip), SHUF_00BA
+	vmovdqa  _SHUF_DC00(%rip), SHUF_DC00
+
 	mov	CTX, _CTX(%rsp)
 
 loop0:
@@ -681,6 +686,9 @@ only_one_block:
 	mov	(4*6)(CTX),g
 	mov	(4*7)(CTX),h
 
+	vmovdqa	_SHUF_00BA(%rip), SHUF_00BA
+	vmovdqa	_SHUF_DC00(%rip), SHUF_DC00
+
 	mov	CTX, _CTX(%rsp)
 	jmp	do_last_block
 
@@ -733,4 +741,11 @@ K256:
 	.long	0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 	.long	0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 
+# shuffle xBxA -> 00BA
+_SHUF_00BA:
+	.octa 0xFFFFFFFFFFFFFFFF0b0a090803020100,0xFFFFFFFFFFFFFFFF0b0a090803020100
+
+# shuffle xDxC -> DC00
+_SHUF_DC00:
+	.octa 0x0b0a090803020100FFFFFFFFFFFFFFFF,0x0b0a090803020100FFFFFFFFFFFFFFFF
 #endif

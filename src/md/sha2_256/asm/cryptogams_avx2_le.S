@@ -80,10 +80,13 @@ K256:
 
 .long	0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f
 .long	0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f
+
 .long	0x03020100,0x0b0a0908,0xffffffff,0xffffffff
 .long	0x03020100,0x0b0a0908,0xffffffff,0xffffffff
+
 .long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
 .long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
+
 .byte	83,72,65,50,53,54,32,98,108,111,99,107,32,116,114,97,110,115,102,111,114,109,32,102,111,114,32,120,56,54,95,54,52,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112,112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62,0
 
 
@@ -254,6 +257,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%r8d,%ecx,%r12d
 	xorl	%r15d,%r13d
 	rorxl	$6,%ecx,%r14d
+	vpshufb	%ymm8,%ymm6,%ymm6
 	leal	(%r9,%r12,1),%r9d
 	xorl	%r14d,%r13d
 	movl	%r10d,%r15d
@@ -285,6 +289,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%edx,%ebx,%r12d
 	xorl	%edi,%r13d
 	rorxl	$6,%ebx,%r14d
+	vpshufb	%ymm9,%ymm6,%ymm6
 	leal	(%r8,%r12,1),%r8d
 	xorl	%r14d,%r13d
 	movl	%r9d,%edi
@@ -379,6 +384,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%eax,%r10d,%r12d
 	xorl	%r15d,%r13d
 	rorxl	$6,%r10d,%r14d
+	vpshufb	%ymm8,%ymm6,%ymm6
 	leal	(%rbx,%r12,1),%ebx
 	xorl	%r14d,%r13d
 	movl	%ecx,%r15d
@@ -410,6 +416,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%r11d,%r9d,%r12d
 	xorl	%edi,%r13d
 	rorxl	$6,%r9d,%r14d
+	vpshufb	%ymm9,%ymm6,%ymm6
 	leal	(%rax,%r12,1),%eax
 	xorl	%r14d,%r13d
 	movl	%ebx,%edi
@@ -511,6 +518,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%r8d,%ecx,%r12d
 	xorl	%r15d,%r13d
 	rorxl	$6,%ecx,%r14d
+	vpshufb	%ymm8,%ymm6,%ymm6
 	leal	(%r9,%r12,1),%r9d
 	xorl	%r14d,%r13d
 	movl	%r10d,%r15d
@@ -542,6 +550,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%edx,%ebx,%r12d
 	xorl	%edi,%r13d
 	rorxl	$6,%ebx,%r14d
+	vpshufb	%ymm9,%ymm6,%ymm6
 	leal	(%r8,%r12,1),%r8d
 	xorl	%r14d,%r13d
 	movl	%r9d,%edi
@@ -636,6 +645,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%eax,%r10d,%r12d
 	xorl	%r15d,%r13d
 	rorxl	$6,%r10d,%r14d
+	vpshufb	%ymm8,%ymm6,%ymm6
 	leal	(%rbx,%r12,1),%ebx
 	xorl	%r14d,%r13d
 	movl	%ecx,%r15d
@@ -667,6 +677,7 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	andnl	%r11d,%r9d,%r12d
 	xorl	%edi,%r13d
 	rorxl	$6,%r9d,%r14d
+	vpshufb	%ymm9,%ymm6,%ymm6
 	leal	(%rax,%r12,1),%eax
 	xorl	%r14d,%r13d
 	movl	%ebx,%edi

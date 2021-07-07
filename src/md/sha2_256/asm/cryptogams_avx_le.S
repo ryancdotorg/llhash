@@ -80,10 +80,13 @@ K256:
 
 .long	0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f
 .long	0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f
+
 .long	0x03020100,0x0b0a0908,0xffffffff,0xffffffff
 .long	0x03020100,0x0b0a0908,0xffffffff,0xffffffff
+
 .long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
 .long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
+
 .byte	83,72,65,50,53,54,32,98,108,111,99,107,32,116,114,97,110,115,102,111,114,109,32,102,111,114,32,120,56,54,95,54,52,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112,112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62,0
 
 
@@ -123,6 +126,8 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	movl	20(%rdi),%r9d
 	movl	24(%rdi),%r10d
 	movl	28(%rdi),%r11d
+	vmovdqa	K256+512+32(%rip),%xmm8
+	vmovdqa	K256+512+64(%rip),%xmm9
 	jmp	.Lloop_avx
 .align	16
 .Lloop_avx:
@@ -224,6 +229,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	movl	%edx,%r12d
 	shrdl	$9,%r14d,%r14d
 	xorl	%ecx,%r13d
+	vpshufb	%xmm8,%xmm6,%xmm6
 	xorl	%r8d,%r12d
 	shrdl	$5,%r13d,%r13d
 	xorl	%r10d,%r14d
@@ -255,6 +261,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	shrdl	$14,%r13d,%r13d
 	movl	%r14d,%r9d
 	movl	%ecx,%r12d
+	vpshufb	%xmm9,%xmm6,%xmm6
 	shrdl	$9,%r14d,%r14d
 	xorl	%ebx,%r13d
 	xorl	%edx,%r12d
@@ -357,6 +364,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	movl	%r11d,%r12d
 	shrdl	$9,%r14d,%r14d
 	xorl	%r10d,%r13d
+	vpshufb	%xmm8,%xmm6,%xmm6
 	xorl	%eax,%r12d
 	shrdl	$5,%r13d,%r13d
 	xorl	%ecx,%r14d
@@ -388,6 +396,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	shrdl	$14,%r13d,%r13d
 	movl	%r14d,%ebx
 	movl	%r10d,%r12d
+	vpshufb	%xmm9,%xmm6,%xmm6
 	shrdl	$9,%r14d,%r14d
 	xorl	%r9d,%r13d
 	xorl	%r11d,%r12d
@@ -490,6 +499,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	movl	%edx,%r12d
 	shrdl	$9,%r14d,%r14d
 	xorl	%ecx,%r13d
+	vpshufb	%xmm8,%xmm6,%xmm6
 	xorl	%r8d,%r12d
 	shrdl	$5,%r13d,%r13d
 	xorl	%r10d,%r14d
@@ -521,6 +531,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	shrdl	$14,%r13d,%r13d
 	movl	%r14d,%r9d
 	movl	%ecx,%r12d
+	vpshufb	%xmm9,%xmm6,%xmm6
 	shrdl	$9,%r14d,%r14d
 	xorl	%ebx,%r13d
 	xorl	%edx,%r12d
@@ -623,6 +634,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	movl	%r11d,%r12d
 	shrdl	$9,%r14d,%r14d
 	xorl	%r10d,%r13d
+	vpshufb	%xmm8,%xmm6,%xmm6
 	xorl	%eax,%r12d
 	shrdl	$5,%r13d,%r13d
 	xorl	%ecx,%r14d
@@ -654,6 +666,7 @@ ENTRY(sha2_256_cryptogams_avx_xform_le)
 	shrdl	$14,%r13d,%r13d
 	movl	%r14d,%ebx
 	movl	%r10d,%r12d
+	vpshufb	%xmm9,%xmm6,%xmm6
 	shrdl	$9,%r14d,%r14d
 	xorl	%r9d,%r13d
 	xorl	%r11d,%r12d
