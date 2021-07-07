@@ -12,6 +12,7 @@
 
 #include "../../llhash.h"
 #include "../../gen/md/md5/hash.h"
+#include "../../src/md/md5/param.h"
 #else
 _H include <stddef.h>
 _H include <stdint.h>
@@ -19,6 +20,7 @@ _H include <signal.h>
 _H include <stdio.h>
 
 _H include "../../../llhash.h"
+_H include STR(../../../gen/md/HASH_name/hash.h)
 _H include STR(../../../src/md/HASH_name/param.h)
 #endif
 
@@ -48,18 +50,19 @@ static void JOIN(HASH_name,xform_default)(uintWS_t *a, const void *b, uint32_t c
 
 void (*HASH(Transform))(uintWS_t *, const void *, uint32_t) = JOIN(HASH_name,xform_default);
 
-#if HASH_ENDIAN == __BYTE_ORDER__
-static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t c)
-__attribute__((alias(STR(JOIN(HASH_name,xform_default)))));
-#else
-static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t c) {
+#if HASH_ENDIAN != __BYTE_ORDER__
+static void JOIN(HASH_name,native_default)(uintWS_t *a, const uintWS_t *b, uint32_t c) {
   if (HASH(Register)(-1) < 0) {
     fprintf(stderr, "No `" STR(HASH_NAME) "_Native` implementation available!\n");
-    HASH(Transform) = md5_xform_invalid;
+    HASH(Transform) = JOIN(HASH_name,xform_invalid);
     HASH(Native) = (JOIN(HASH_name,native_t))JOIN(HASH_name,xform_invalid);
   }
   HASH(Native)(a, b, c);
 }
+
+void (*HASH(Native))(uintWS_t *, const uintWS_t *, uint32_t) = JOIN(HASH_name,native_default);
+#else
+void (*HASH(Native))(uintWS_t *, const uintWS_t *, uint32_t) = (JOIN(HASH_name,native_t))JOIN(HASH_name,xform_default);
 #endif
 
 #if EQUAL(HASH_NAME,SHA2_224)
@@ -76,7 +79,7 @@ static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t 
   extern int JOIN(BASE_IMPL,FIRST I,xform_built)(); \
   extern void JOIN(BASE_IMPL,FIRST I,xform)(uintWS_t *, const void *, uint32_t)
 #define CHECK_BUILT(I) \
-  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) e |= 1
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) { e |= 1; }
 #elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define NATIVE_SUFFIX _le
 #define IMPL_DEFS(I) \
@@ -85,8 +88,8 @@ static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t 
   extern int JOIN(BASE_IMPL,FIRST I,xform_le_built)(); \
   extern void JOIN(BASE_IMPL,FIRST I,xform_le)(uintWS_t *, const uintWS_t *, uint32_t)
 #define CHECK_BUILT(I) \
-  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) e |= 1; \
-  if (!JOIN(BASE_IMPL,FIRST I,xform_built_le)()) e |= 1
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) { e |= 1; } \
+  if (!JOIN(BASE_IMPL,FIRST I,xform_le_built)()) { e |= 1; }
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define NATIVE_SUFFIX _be
 #define IMPL_DEFS(I) \
@@ -95,8 +98,8 @@ static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t 
   extern int JOIN(BASE_IMPL,FIRST I,xform_be_built)(); \
   extern void JOIN(BASE_IMPL,FIRST I,xform_be)(uintWS_t *, const uintWS_t *, uint32_t)
 #define CHECK_BUILT(I) \
-  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) e |= 1; \
-  if (!JOIN(BASE_IMPL,FIRST I,xform_built_be)()) e |= 1
+  if (!JOIN(BASE_IMPL,FIRST I,xform_built)()) { e |= 1; } \
+  if (!JOIN(BASE_IMPL,FIRST I,xform_be_built)()) { e |= 1; }
 #endif
 
 #define MAYBE_REGISTER(I) \
@@ -105,12 +108,12 @@ static void JOIN(HASH_name,native_default)(uintWS_t *a, const void *b, uint32_t 
   if (enable & JOIN(HASH_NAME,ENABLE,SECOND I)) { \
     int e = 0; \
     CHECK_BUILT(I); \
-    if (!JOIN(can,FIRST I)()) e |= 2; \
+    if (!JOIN(can,FIRST I)()) { e |= 2; } \
     if (e) { \
       err |= ~e; \
     } else { \
       HASH(Transform) = JOIN(BASE_IMPL,FIRST I,xform); \
-      HASH(Native) = (JOIN(BASE_IMPL,native_t))CONCAT(BASE_IMPL,_,FIRST I,_xform,NATIVE_SUFFIX); \
+      HASH(Native) = (JOIN(HASH_name,native_t))CONCAT(BASE_IMPL,_,FIRST I,_xform,NATIVE_SUFFIX); \
       return JOIN(HASH_NAME,USING,SECOND I); \
     } \
   }
