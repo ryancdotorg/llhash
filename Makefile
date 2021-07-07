@@ -236,7 +236,7 @@ vectors: vectors.o obj/test_vectors.o obj/llhash.o
 
 # run test programs
 run_test: test
-	./test
+	./test nobench
 
 run_vectors: vectors
 	./vectors

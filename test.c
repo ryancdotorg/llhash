@@ -254,6 +254,12 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 } while(0)
 
 int main(int argc, char *argv[]) {
+  int nobench = 0;
+  if (argc > 1 && strcmp(argv[1], "nobench") == 0) {
+    nobench = 1;
+    ++argv; --argc;
+  }
+
   /*
   HMAC_SHA1_CTX *dst = malloc(sizeof(HMAC_SHA1_CTX));
   printf("sz struct %lu\n", sizeof(HMAC_SHA1_CTX));
@@ -323,12 +329,14 @@ int main(int argc, char *argv[]) {
     TEST_DATA(SHA2_512, n, 64);
   }
 
-  BENCH_DATA(MD4, 64, 16);
-  BENCH_DATA(MD5, 64, 16);
-  BENCH_DATA(RIPEMD160, 64, 20);
-  BENCH_DATA(SHA1, 64, 20);
-  BENCH_DATA(SHA2_256, 64, 32);
-  BENCH_DATA(SHA2_512, 128, 64);
+  if (!nobench) {
+    BENCH_DATA(MD4, 64, 16);
+    BENCH_DATA(MD5, 64, 16);
+    BENCH_DATA(RIPEMD160, 64, 20);
+    BENCH_DATA(SHA1, 64, 20);
+    BENCH_DATA(SHA2_256, 64, 32);
+    BENCH_DATA(SHA2_512, 128, 64);
+  }
 
   printf("\n");
   printf("Runtime Default MD4:       %s\n", MD4_Describe(MD4_Register(-1)));
