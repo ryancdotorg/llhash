@@ -85,6 +85,9 @@ XTMP4 = %ymm8
 XFER  = %ymm9
 XTMP5 = %ymm11
 
+SHUF_00BA =	%ymm10 # shuffle xBxA -> 00BA
+SHUF_DC00 =	%ymm12 # shuffle xDxC -> DC00
+
 NUM_BLKS = %rdx	# 3rd arg
 INP	= %rsi  # 2nd arg
 CTX	= %rdi	# 1st arg
