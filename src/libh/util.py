@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import io
+import re
 import sys
 
 from functools import reduce
-from collections.abc import Iterable
+from itertools import chain, product
+from collections.abc import Iterable, Iterator
 from collections import OrderedDict
 
 __all__ = ['LineWrapper', 'Appender', 'irange', 'placeholders']
@@ -40,6 +42,19 @@ class Appender:
         self._d = OrderedDict()
         self._s = 0
 
+    def __getattr__(self, name):
+        return self.section(name)
+
+    def __call__(self, s):
+        self.append(s)
+
+    def __str__(self):
+        return self._f.getvalue()
+
+    def _writeln(self, s):
+        self._f.write(s.strip('\n')+'\n')
+
+    # basic stuff
     def section(self, name=None):
         if name is None:
             name = (id(self), self._s)
@@ -47,28 +62,35 @@ class Appender:
 
         return self._d.setdefault(name, Appender())
 
-    def __getattr__(self, name):
-        return self.section(name)
-
-    def __call__(self, s):
-        self._writeln(s.strip('\n'))
-
-    def __str__(self):
-        return self._f.getvalue()
-
-    def _writeln(self, s):
-        self._f.write(s+'\n')
+    def append(self, s):
+        if isinstance(s, (list, tuple, Iterator)):
+            for line in s:
+                self._writeln(line)
+        else:
+            self._writeln(s)
 
     # helpers
     def define(self, k, v):
-        self._writeln(f'#define {k} {v}')
+        self._f.write(f'#define {k} {v}\n')
+
+    def indirect(self, k, v):
+        m = re.match(r'(\w+)\s*[(]([^)]*)[)]', k)
+        if m:
+            name = m.group(1)
+            args = re.split(r',\s*', m.group(2).strip(' \t\r\n'))
+            self.define(k, f'_{name}({", ".join(args)})')
+            if args[-1] != '...':
+                v = re.sub(r'\b'+args[-1]+r'\b', '__VA_ARGS__', v)
+                args[-1] = '...'
+            self.define(f'_{name}({", ".join(args)})', v)
 
     def gettable(self, k, v):
-        self._writeln(f'#define {k}() {v}, ()')
+        self._f.write(f'#define {k}() {v}, ()\n')
 
     def comparable(self, k):
-        self._writeln(f'#define _COMPARE_{k}(x) x')
+        self._f.write(f'#define _COMPARE_{k}(x) x\n')
 
+    # output
     def print(self):
         print(str(self).strip('\n'))
 
@@ -104,22 +126,36 @@ def irange(a, b=None, i=1):
 def placeholders(pfx, a, b=None, i=1):
     return map(lambda x: f'{pfx}{x}', irange(a, b, i))
 
-def OR(*args):
-    if len(args) == 1 and isinstance(args[0], Iterable):
-        args = iter(args[0])
+def first_rest(*args):
+    if len(args) == 1:
+        rest = iter(args[0])
+        return (next(rest), rest)
+    elif len(args) == 3:
+        first, rest, iterable = args
+        i = iter(iterable)
+        first(next(i))
+        rest(i)
+    else:
+        raise TypeError(f'first_rest() takes 1 or 3 arguments ({len(args)} given)')
 
+def lutmacro(name, fn, *args):
+    if len(args) > 26:
+        raise TypeError(f'Too many macro arguments, max 26 ({len(args)} given)')
+    p = list(map(chr, range(65, 65+len(args))))
+    main = (f'{name}({", ".join(p)})', f'_{name}_##{"##_##".join(p)}')
+    helper = lambda a: (f'_{name}_{"_".join(map(str, a))}', fn(*a))
+    return (main, map(helper, product(*args)))
+
+def OR(*args):
+    if len(args) == 1 and isinstance(args[0], Iterable): args = iter(args[0])
     return reduce(lambda a,b: f'OR({a},{b})', args)
 
 def AND(*args):
-    if len(args) == 1 and isinstance(args[0], Iterable):
-        args = iter(args[0])
-
+    if len(args) == 1 and isinstance(args[0], Iterable): args = iter(args[0])
     return reduce(lambda a,b: f'AND({a},{b})', args)
 
 def ELIF(*args):
-    if len(args) == 1 and isinstance(args[0], Iterable):
-        args = iter(args[0])
-
+    if len(args) == 1 and isinstance(args[0], Iterable): args = iter(args[0])
     args = list(reversed(list(args)))
     args[0] = 'IF({})({})'.format(*args[0])
     return reduce(lambda a,b: f'IF_ELSE({b[0]})({b[1]}, {a})', args)

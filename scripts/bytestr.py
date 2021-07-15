@@ -11,6 +11,7 @@ pbkdf2_sha1 = [
     (b"passwordPASSWORDpassword", b"saltSALTsaltSALTsaltSALTsaltSALTsalt", 4096, 25),
     (b"pass\0word", b"sa\0lt", 1, 16),
     (b"password", b"salt", 3, 20),
+    (b"hunter2", b"admin", 67108864, 64),
 ]
 
 def _uchar_literal():

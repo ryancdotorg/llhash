@@ -6,9 +6,12 @@
  * https://github.com/pfultz2/Cloak/wiki/C-Preprocessor-tricks,-tips,-and-idioms
  */
 
+
 #define EMPTY()
 #define COMMA() ,
 #define SEMICOLON() ;
+#define _POUND #
+#define POUND() _POUND
 
 // excessive nesting here makes my syntax checker slow
 #define EVAL(...)   _EVAL3(_EVAL3(_EVAL3(__VA_ARGS__)))
@@ -33,10 +36,13 @@
 
 //#define OBSTRUCT(...) __VA_ARGS__ DEFER1(EMPTY)()
 
+#define __(X) DEFER1(CAT3)(__,X,__)
+#define h(...) POUND()__VA_ARGS__
 #define APPLY(fn, ...) fn(__VA_ARGS__)
 #define FIRST(a, ...) a
 #define SECOND(a, b, ...) b
 #define THIRD(a, b, c, ...) c
+#define REST(a, ...) __VA_ARGS__
 
 #define IS_PROBE(...) SECOND(__VA_ARGS__, 0)
 #define PROBE() ~, 1,
@@ -145,6 +151,6 @@
   __VA_ARGS__ \
 )
 #define _WHILE_INNER() WHILE_INNER
-*/
+//*/
 
 #define REMOVE_TRAILING_COMMAS(...) MAP(PASS, COMMA, __VA_ARGS__)

@@ -2,13 +2,10 @@
 #include "libh/libh.h"
 
 /* assorted utility functions */
-#define _STR(S) #S
 #define STR(S) _STR(S)
+#define _STR(S) #S
 
 #define IDENTITY(S) S
-
-#define _H #
-#define DIRECTIVE(S) _H S
 
 /* help keep things short */
 #define HASH(A)   JOIN(HASH_NAME,A)
@@ -28,7 +25,7 @@
 #define HASH_WORD_BITS HASH_WORD_SIZE
 #define HASH_WORD_BYTES BYTES(HASH_WORD_BITS)
 #define HASH_STATE_BYTES (HASH_WORD_BYTES*HASH_STATE_WORDS)
-#define HASH_BLOCK_WORDS IDIV(HASH_BLOCK_LENGTH,IDIV(HASH_WORD_BITS,8))
+#define HASH_BLOCK_WORDS IDIV(HASH_BLOCK_LENGTH,BYTES(HASH_WORD_BITS))
 #define HASH_ENDIAN HASH(ENDIAN)
 
 /* type/size definition macro */
@@ -60,7 +57,13 @@
 #define ROL64(x,n) __extension__({ uint64_t _x=(x), _n=(n); (_x << _n) | (_x >> (64-_n)); })
 #define ROR64(x,n) __extension__({ uint64_t _x=(x), _n=(n); (_x >> _n) | (_x << (64-_n)); })
 
-#define PTR_ADD(P, N) (typeof(P))(((unsigned char *)(P)) + (N))
+#define PTR_ADD(P, N) ((typeof(P))(((unsigned char *)(P)) + (N)))
+#define PTR_SUB(P, N) ((typeof(P))(((unsigned char *)(P)) - (N)))
+#define TAILCPY(D, S, O, N) memcpy(((unsigned char *)(D)) + (O), ((unsigned char *)(S)) + (O), (N)-(O))
+
+#define _OFFSETCPY4(D, DO, S, N) memcpy(((unsigned char *)(D)) + (DO), S, N)
+#define _OFFSETCPY5(D, DO, S, SO, N) memcpy(((unsigned char *)(D)) + (DO), ((unsigned char *)(S)) + (SO), N)
+#define OFFSETCPY(D, DO, S, ...) VA_SELECT((D, DO, S), (__VA_ARGS__), _OFFSETCPY4, _OFFSETCPY5)
 
 #if HASH_ENDIAN == __ORDER_BIG_ENDIAN__ && HASH_WORD_SIZE == 64
 #define NTH_BYTE_OF_WORD(W, N) (((W) >> (56-BITS(N))) & 0xff)
