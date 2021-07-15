@@ -1,10 +1,19 @@
 #include "../../macros.h"
-_H pragma once
+h(pragma once)
 
-_H include <stddef.h>
-_H include <stdint.h>
+h(include <stddef.h>)
+h(include <stdint.h>)
 
-_H include STR(../../../src/md/HASH_name/param.h)
+h(include STR(../../../src/md/HASH_name/param.h))
+
+h(ifdef HASH(HASH_C))
+h(ifdef SERIALIZE)
+h(undef SERIALIZE)
+h(endif)
+h(define SERIALIZE(A, B) serialize(A, B))
+h(elif !defined(SERIALIZE))
+h(define SERIALIZE(A, B) HASH(Serialize)(A, B))
+h(endif)
 
 typedef void (*JOIN(HASH_name,xform_t))(uintWS_t *, const void *, uint32_t);
 typedef void (*JOIN(HASH_name,native_t))(uintWS_t *, const uintWS_t *, uint32_t);
@@ -32,6 +41,7 @@ typedef struct {
 typedef HASH(CTX) ALIAS(CTX);
 #endif
 
+void HASH(Set_IV)(uintWS_t state[]);
 void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src);
 void HASH(Init)(HASH(CTX) *ctx);
 void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len);
@@ -39,6 +49,7 @@ void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx);
 uint8_t * IDENTITY(HASH_NAME)(const uint8_t data[], size_t len, uint8_t hash[]);
 
 #if HASH_ALIASED
+void ALIAS(Set_IV)(uintWS_t state[]);
 void ALIAS(Clone)(ALIAS(CTX) *dst, const ALIAS(CTX) *src);
 void ALIAS(Init)(ALIAS(CTX) *ctx);
 void ALIAS(Update)(ALIAS(CTX) *ctx, const uint8_t data[], size_t len);

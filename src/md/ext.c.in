@@ -12,28 +12,29 @@
 #include "../../util.h"
 #include "../../gen/md/sha1/ext.h"
 #else
-_H include <stdint.h>
-_H include <stddef.h>
-_H include <string.h>
-_H include <endian.h>
-_H include STR(../../../src/md/HASH_name/param.h)
-_H include STR(../../../util.h)
-_H include STR(ext.h)
-_H define HASH(EXT_C)
-
-_H ifdef HASH(HASH_C)
-_H define SERIALIZE(A, B) serialize(A, B)
-_H else
-_H define SERIALIZE(A, B) HASH(Serialize)(A, B)
-_H endif
+h(include <stdint.h>)
+h(include <stddef.h>)
+h(include <string.h>)
+h(include <endian.h>)
+h(include STR(../../../src/md/HASH_name/param.h))
+h(include STR(../../../util.h))
+h(define HASH(EXT_C))
+h(include STR(ext.h))
 #endif
 
+//#define prblk(a, b) _prblk(a, b, __FILE__, __LINE__)
+#ifndef prblk
+#define prblk(...)
+#endif
+
+/*
 void HKDF(Extract)(
 uint8_t *prk,
 const uint8_t salt[], size_t salt_sz,
 const uint8_t ikm[], size_t ikm_sz) {
   JOIN(HMAC,HASH_NAME)(salt, salt_sz, ikm, ikm_sz, prk);
 }
+*/
 
 /*
 void HKDF(Expand)(
@@ -77,7 +78,7 @@ const uint8_t salt[], size_t salt_sz) {
     otail[ctx->datalen+3] = (block >>  0) & 0xff;
     HASH(Transform)(U, otail, otail_blks);
     SERIALIZE(ctx->hmac + HASH_BLOCK_LENGTH, U);
-    U = (uintWS_t[])HASH(IV);
+    HASH(Set_IV)(U);
     HASH(Transform)(U, ctx->hmac, HMAC_OUTER_BLOCKS);
 
     if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
@@ -115,6 +116,90 @@ uint32_t c) {
   uint32_t block = 1;
 
   memcpy(otail, octx->data, octx->datalen);
+  uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
+  uint8_t itail_blks = HASH(Tail)(itail, HASH_BLOCK_LENGTH + HASH_DIGEST_LENGTH);
+h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
+  HASH(Bswap)(itail, itail_blks);
+h(endif)
+
+  while (nout < dk_sz) {
+    memcpy(U, octx->state, HASH_STATE_BYTES);
+    otail[octx->datalen+0] = (block >> 24) & 0xff;
+    otail[octx->datalen+1] = (block >> 16) & 0xff;
+    otail[octx->datalen+2] = (block >>  8) & 0xff;
+    otail[octx->datalen+3] = (block >>  0) & 0xff;
+    HASH(Transform)(U, otail, otail_blks);
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+    SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
+h(else)
+    memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
+h(endif)
+    prblk(octx->hmac, HMAC_OUTER_BLOCKS);
+    HASH(Set_IV)(U);
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+    HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
+h(else)
+    HASH(Native)(U, octx->hmac, HMAC_OUTER_BLOCKS);
+h(endif)
+    memcpy(T, U, HASH_STATE_BYTES);
+    prblk(T, 1);
+    for (size_t i = 1; i < c; ++i) {
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+      SERIALIZE(itail, U);
+      memcpy(U, ictx->state, HASH_STATE_BYTES);
+      prblk(itail, itail_blks);
+      HASH(Transform)(U, itail, itail_blks);
+      SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
+      HASH(Set_IV)(U);
+      HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
+h(else)
+      memcpy(itail, U, HASH_STATE_BYTES);
+      memcpy(U, ictx->state, HASH_STATE_BYTES);
+      prblk(itail, itail_blks);
+      HASH(Native)(U, itail, itail_blks);
+      memcpy(ictx->hmac + HASH_BLOCK_LENGTH, U, HASH_STATE_BYTES);
+      HASH(Set_IV)(U);
+      HASH(Native)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
+h(endif)
+      for (size_t j = 0; j < HASH_STATE_WORDS; ++j) { T[j] ^= U[j]; }
+    }
+
+    if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
+      SERIALIZE(dk + nout, T);
+      nout += HASH_DIGEST_LENGTH;
+    } else {
+      HASH(Partial)(dk + nout, T, 0, dk_sz - nout);
+      break;
+      nout = dk_sz;
+    }
+    ++block;
+  }
+
+  wipe(scratch);
+}
+
+/*
+void JOIN(PBKDF2_NAME,Offset)(
+uint8_t dk[], size_t dk_sz,
+const uint8_t pass[], size_t pass_sz,
+const uint8_t salt[], size_t salt_sz,
+uint32_t c) {
+  uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 2 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
+  HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
+  HMAC(CTX) *restrict octx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*0);
+  uintWS_t *restrict T = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*0);
+  uintWS_t *restrict U = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*1);
+  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*0;
+  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*2;
+
+  HMAC(Init)(ictx, pass, pass_sz);
+  HMAC(Clone)(octx, ictx);
+  HMAC(Update)(octx, salt, salt_sz);
+
+  size_t nout = 0;
+  uint32_t block = 1;
+
+  memcpy(otail, octx->data, octx->datalen);
   //memcpy(itail, ictx->data, ictx->datalen);
   uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
   uint8_t itail_blks = HASH(Tail)(itail, ictx->bytelen + ictx->datalen + HASH_DIGEST_LENGTH);
@@ -127,7 +212,7 @@ uint32_t c) {
     otail[octx->datalen+3] = (block >>  0) & 0xff;
     HASH(Transform)(U, otail, otail_blks);
     SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
-    U = (uintWS_t[])HASH(IV);
+    HASH(Set_IV)(U);
     HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
     memcpy(T, U, HASH_STATE_BYTES);
     for (size_t i = 1; i < c; ++i) {
@@ -135,7 +220,7 @@ uint32_t c) {
       memcpy(U, ictx->state, HASH_STATE_BYTES);
       HASH(Transform)(U, itail, itail_blks);
       SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
-      U = (uintWS_t[])HASH(IV);
+      HASH(Set_IV)(U);
       HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
       for (size_t j = 0; j < HASH_STATE_WORDS; ++j) { T[j] ^= U[j]; }
     }
@@ -153,3 +238,4 @@ uint32_t c) {
 
   wipe(scratch);
 }
+*/

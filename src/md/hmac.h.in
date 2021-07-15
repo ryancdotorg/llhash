@@ -1,14 +1,14 @@
 #include "../../macros.h"
-_H pragma once
-_H include "hash.h"
+h(pragma once)
+h(include "hash.h")
 
-_H include STR(../../../src/md/HASH_name/param.h)
+h(include STR(../../../src/md/HASH_name/param.h))
 
-_H if ((HASH_BLOCK_LENGTH+HASH_DIGEST_LENGTH)&(HASH_BLOCK_LENGTH-1))<(HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))
-_H define HMAC_OUTER_BLOCKS 2
-_H else
-_H define HMAC_OUTER_BLOCKS 3
-_H endif
+h(if ((HASH_BLOCK_LENGTH+HASH_DIGEST_LENGTH)&(HASH_BLOCK_LENGTH-1))<(HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4)))
+h(define HMAC_OUTER_BLOCKS 2)
+h(else)
+h(define HMAC_OUTER_BLOCKS 3)
+h(endif)
 
 typedef struct {
   uint8_t data[HASH_BLOCK_LENGTH];

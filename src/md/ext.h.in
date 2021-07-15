@@ -1,8 +1,8 @@
 #include "../../macros.h"
-_H pragma once
-_H include "hmac.h"
+h(pragma once)
+h(include "hmac.h")
 
-_H include STR(../../../src/md/HASH_name/param.h)
+h(include STR(../../../src/md/HASH_name/param.h))
 
 void JOIN(PBKDF2,HMAC,HASH_NAME)(
   uint8_t dk[], size_t dk_sz,

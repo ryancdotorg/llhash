@@ -11,13 +11,13 @@
 #include <endian.h>
 #include "../../gen/md/sha1/hash.h"
 #else
-_H include <stdint.h>
-_H include <stddef.h>
-_H include <string.h>
-_H include <endian.h>
-_H include STR(../../../src/md/HASH_name/param.h)
-_H include "hash.h"
-_H define HASH(HASH_C)
+h(include <stdint.h>)
+h(include <stddef.h>)
+h(include <string.h>)
+h(include <endian.h>)
+h(include STR(../../../src/md/HASH_name/param.h))
+h(define HASH(HASH_C))
+h(include "hash.h")
 #endif
 
 #if HASH_WORD_SIZE != 32 && HASH_WORD_SIZE != 64
@@ -67,6 +67,15 @@ uint8_t * HASH_NAME(const uint8_t data[], size_t len, uint8_t hash[]) {
 }
 
 #if HASH_ALIASED
+void ALIAS(Set_IV)(uintWS_t state[])
+__attribute__((alias(STR(HASH(Set_IV)))));
+#endif
+inline void HASH(Set_IV)(uintWS_t state[]) {
+  static uintWS_t iv[] = HASH(IV);
+  memcpy(state, iv, HASH_STATE_WORDS * HASH_WORD_BYTES);
+}
+
+#if HASH_ALIASED
 void ALIAS(Clone)(ALIAS(CTX) *dst, const ALIAS(CTX) *src)
 __attribute__((alias(STR(HASH(Clone)))));
 #endif
@@ -76,7 +85,7 @@ void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src) {
     memcpy(dst, src, sizeof(HASH(CTX)));
   } else {
     // don't copy the data if there isn't any
-    memcpy(PTR_ADD(dst, HASH_BLOCK_LENGTH), PTR_ADD(src, HASH_BLOCK_LENGTH), sizeof(HASH(CTX)) - HASH_BLOCK_LENGTH);
+    TAILCPY(dst, src, HASH_BLOCK_LENGTH, sizeof(HASH(CTX)));
   }
 }
 
@@ -101,11 +110,13 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
   if (ctx->datalen > 0) {
     i = HASH_BLOCK_LENGTH - ctx->datalen;
     if (i > len) {
-      memcpy(ctx->data + ctx->datalen, input, len);
+      //memcpy(ctx->data + ctx->datalen, input, len);
+      OFFSETCPY(ctx->data, ctx->datalen, input, len);
       ctx->datalen += len;
       return;
     } else {
-      memcpy(ctx->data + ctx->datalen, input, i);
+      //memcpy(ctx->data + ctx->datalen, input, i);
+      OFFSETCPY(ctx->data, ctx->datalen, input, i);
       HASH(Transform)(ctx->state, ctx->data, 1);
       ctx->bytelen += HASH_BLOCK_LENGTH;
       ctx->datalen = 0;
@@ -233,8 +244,8 @@ void HASH(Bswap)(uintWS_t data[], uint64_t nblk) {
 /* do nothing */
 #else
   for (const uintWS_t *end=data+nblk*HASH_BLOCK_WORDS; data < end; data += HASH_BLOCK_WORDS) {
-#define _BSWAP(n, _) data[n] = htoDeWS(data[n]);
-    REPEAT_WITH_COUNTER(16, EMPTY, _BSWAP);
+#define _BSWAP(n, _) data[n] = htoDeWS(data[n])
+    REPEAT_WITH_COUNTER(HASH_BLOCK_WORDS, SEMICOLON, _BSWAP);
 #undef _BSWAP
   }
 #endif
