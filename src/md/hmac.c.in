@@ -95,9 +95,9 @@ void HMAC_Init(HMAC_CTX *ctx, const void *key, size_t len) {
     ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(len*8);
     HASH(Transform)(state, ctx->data, 1);
 h(ifndef NATIVE_ENDIAN)
-#define _BSWAP(n, _) state[n] = htoDeWS(state[n])
+    #define _BSWAP(n, _) state[n] = htoDeWS(state[n])
     REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _BSWAP);
-#undef _BSWAP
+    #undef _BSWAP
 h(endif)
 
     // generate ipad
@@ -190,9 +190,9 @@ h(else)
 h(endif)
 
 h(ifndef NATIVE_ENDIAN)
-#define _BSWAP(n, _) ctx->state[n] = htoDeWS(ctx->state[n])
+  #define _BSWAP(n, _) ctx->state[n] = htoDeWS(ctx->state[n])
   REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _BSWAP);
-#undef _BSWAP
+  #undef _BSWAP
 h(endif)
   memcpy(ctx->hmac + HASH_BLOCK_LENGTH, ctx->state, HASH_DIGEST_LENGTH);
 

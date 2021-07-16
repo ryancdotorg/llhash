@@ -244,9 +244,9 @@ void HASH(Bswap)(uintWS_t data[], uint64_t nblk) {
 /* do nothing */
 #else
   for (const uintWS_t *end=data+nblk*HASH_BLOCK_WORDS; data < end; data += HASH_BLOCK_WORDS) {
-#define _BSWAP(n, _) data[n] = htoDeWS(data[n])
+    #define _BSWAP(n, _) data[n] = htoDeWS(data[n])
     REPEAT_WITH_COUNTER(HASH_BLOCK_WORDS, SEMICOLON, _BSWAP);
-#undef _BSWAP
+    #undef _BSWAP
   }
 #endif
 }
