@@ -100,17 +100,25 @@ uint8_t dk[], size_t dk_sz,
 const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz,
 uint32_t c) {
-  uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 2 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
+  uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 3 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
   HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
   HMAC(CTX) *restrict octx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*0);
   uintWS_t *restrict T = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*0);
   uintWS_t *restrict U = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*1);
-  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*0;
-  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*2;
+  uintWS_t *restrict W = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2);
+  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*0;
+  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*2;
 
   HMAC(Init)(ictx, pass, pass_sz);
   HMAC(Clone)(octx, ictx);
   HMAC(Update)(octx, salt, salt_sz);
+
+  HASH(Set_IV)(W);
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+  HASH(Transform)(W, ictx->hmac, 1);
+h(else)
+  HASH(Native)(W, ictx->hmac, 1);
+h(endif)
 
   size_t nout = 0;
   uint32_t block = 1;
@@ -145,23 +153,29 @@ h(endif)
     prblk(T, 1);
     for (size_t i = 1; i < c; ++i) {
 h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+      /* inner hash with previous U */
       SERIALIZE(itail, U);
       memcpy(U, ictx->state, HASH_STATE_BYTES);
       prblk(itail, itail_blks);
       HASH(Transform)(U, itail, itail_blks);
+      /* outer hash with inner result */
       SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
       HASH(Set_IV)(U);
       HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
 h(else)
+      /* inner hash with previous U */
       memcpy(itail, U, HASH_STATE_BYTES);
       memcpy(U, ictx->state, HASH_STATE_BYTES);
       prblk(itail, itail_blks);
       HASH(Native)(U, itail, itail_blks);
-      memcpy(ictx->hmac + HASH_BLOCK_LENGTH, U, HASH_STATE_BYTES);
-      HASH(Set_IV)(U);
-      HASH(Native)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
+      memcpy(itail, U, HASH_STATE_BYTES);
+      /* outer hash with inner result */
+      memcpy(U, W, HASH_STATE_BYTES);
+      HASH(Native)(U, itail, itail_blks);
 h(endif)
-      for (size_t j = 0; j < HASH_STATE_WORDS; ++j) { T[j] ^= U[j]; }
+      #define _XOR(n, _) T[n] ^= U[n]
+      REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _XOR);
+      #undef _XOR
     }
 
     if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
