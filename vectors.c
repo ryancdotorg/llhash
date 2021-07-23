@@ -46,6 +46,33 @@
 #include "gen/md/sha2_512/hmac.h"
 #include "gen/md/sha2_512/hash.h"
 
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/times.h>
+
+typedef clock_t proctime;
+
+static clock_t cpu_now(void)
+{
+  struct tms tms;
+  times(&tms);
+  return tms.tms_utime;
+}
+
+static double proctime2secs(clock_t start, clock_t end)
+{
+  return (end - start) / (double) sysconf(_SC_CLK_TCK);
+}
+
+static double wall_now(void)
+{
+  struct timeval tv = { 0, 0 };
+  gettimeofday(&tv, NULL);
+  double r = tv.tv_sec;
+  r += (double) tv.tv_usec * 1e-6;
+  return r;
+}
+
 static char * hex(char *out, const void *in, size_t len, int color) {
   char *ret = out;
   uint8_t p = 1;
@@ -198,6 +225,7 @@ int main() {
   unsigned char _v0x0005[] = {0x73, 0x61, 0x00, 0x6c, 0x74};
   unsigned char _v0x0006[] = {0x68, 0x75, 0x6e, 0x74, 0x65, 0x72, 0x32};
   unsigned char _v0x0007[] = {0x61, 0x64, 0x6d, 0x69, 0x6e};
+  unsigned char _v0x0008[] = {0x73, 0x61, 0x6c, 0x74, 0x73, 0x61, 0x6c, 0x74};
 
   unsigned char dk[1024];
   unsigned char dk0[] = {0x0c, 0x60, 0xc8, 0x0f, 0x96, 0x1f, 0x0e, 0x71, 0xf3, 0xa9, 0xb5, 0x24, 0xaf, 0x60, 0x12, 0x06, 0x2f, 0xe0, 0x37, 0xa6};
@@ -249,6 +277,7 @@ int main() {
     printf("ref: %s\n", hex(buf, dk5, 16, 1));
     return 1;
   }
+  /*
   unsigned char dk7[] = {0x14, 0x4c, 0x12, 0xea, 0xf5, 0xba, 0x29, 0x3c, 0x45, 0x44, 0x2b, 0xec, 0xb5, 0xe6, 0xa5, 0x77, 0xa7, 0x73, 0x06, 0xdb, 0x6f, 0x22, 0xba, 0x3f, 0xf6, 0x89, 0xa1, 0x7b, 0x72, 0x67, 0xea, 0x78, 0x22, 0x40, 0x8d, 0xb7, 0x56, 0xdb, 0x0d, 0x32, 0x05, 0x06, 0xd2, 0xf0, 0x4c, 0x17, 0xa0, 0x40, 0xb3, 0xfa, 0xfe, 0x4b, 0x01, 0x6e, 0xa8, 0xf5, 0xf5, 0x1d, 0x3c, 0xa1, 0xbb, 0xb8, 0x56, 0xba};
   PBKDF2_HMAC_SHA1(dk, 20, _v0x0006, 7, _v0x0007, 5, 67108864);
   printf("dk7: %s\n", hex(buf, dk, 20, 1));
@@ -256,6 +285,22 @@ int main() {
     printf("ref: %s\n", hex(buf, dk7, 20, 1));
     return 1;
   }
+  */
+
+  SHA1_Register(SHA1_ENABLE_CRYPTOGAMS_SSSE3);
+  proctime end, start;
+  start = cpu_now();
+  PBKDF2_HMAC_SHA1(dk, 20, _v0x0000, 8, _v0x0008, 8, 67108864);
+  end = cpu_now();
+  printf("llhash,sha1,%u,%u,%.3f\n", 67108864, 1, proctime2secs(start, end));
+  start = cpu_now();
+  PBKDF2_HMAC_SHA2_256(dk, 32, _v0x0000, 8, _v0x0008, 8, 67108864);
+  end = cpu_now();
+  printf("llhash,sha256,%u,%u,%.3f\n", 67108864, 1, proctime2secs(start, end));
+  start = cpu_now();
+  PBKDF2_HMAC_SHA2_512(dk, 64, _v0x0000, 8, _v0x0008, 8, 67108864);
+  end = cpu_now();
+  printf("llhash,sha512,%u,%u,%.3f\n", 67108864, 1, proctime2secs(start, end));
 
 
 

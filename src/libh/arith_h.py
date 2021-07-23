@@ -2,15 +2,15 @@
 
 import sys
 
-from util import ELIF, MAX, Appender, lutmacro, header
+from util import *
+from util import ELIF, MAX, lutmacro, header
 
 def ALTER(x):
     return ELIF(map(lambda n: (f'EQUAL(_MOD(r,{x}),{n})',chr(97+n)),range(x)))
 
 h = Appender()
 
-macros = h.section('macros')
-helpers = h.section('helpers')
+macros, helpers, compare = h.sections(3)
 
 def lut(name, fn, *args):
     main, entry = lutmacro(name, fn, *args)
@@ -27,17 +27,18 @@ lut('IDIV', lambda a, b: a // b, range(MAX), div)
 
 #lut('MULT', lambda a, b: a * b, range(MAX), div)
 
-h.macros('#define ODD(a) _MOD(a, 2)')
-h.macros('#define EVEN(a) COMPL(_MOD(a, 2))')
-h.macros('#define ODD_EVEN(r, a, b) IF_ELSE(_MOD(r, 2))(a, b)')
-h.macros('#define EVEN_ODD(r, a, b) IF_ELSE(_MOD(r, 2))(b, a)')
-h.macros('#define ALTER2(r, a, b) EVEN_ODD(r, a, b)')
-h.macros('#define ALTER3(r, a, b, c) ' + ALTER(3))
-h.macros('#define ALTER4(r, a, b, c, d) ' + ALTER(4))
-#h.macros('#define MODX(a, b) EQUAL(MOD(a, b), DEC(b))')
-#h.macros('#define MOD0(a, b) NOT(MOD(a, b))')
+macros('#define ODD(a) _MOD(a, 2)')
+macros('#define EVEN(a) COMPL(_MOD(a, 2))')
+macros('#define ODD_EVEN(r, a, b) IF_ELSE(_MOD(r, 2))(a, b)')
+macros('#define EVEN_ODD(r, a, b) IF_ELSE(_MOD(r, 2))(b, a)')
+macros('#define ALTER2(r, a, b) EVEN_ODD(r, a, b)')
+macros('#define ALTER3(r, a, b, c) ' + ALTER(3))
+macros('#define ALTER4(r, a, b, c, d) ' + ALTER(4))
+#macros('#define MODX(a, b) EQUAL(MOD(a, b), DEC(b))')
+#macros('#define MOD0(a, b) NOT(MOD(a, b))')
 
+compare = h.section()
 for i in range(5):
-    h.compare.comparable(i)
+    compare.comparable(i)
 
-h.print_all()
+h.print()

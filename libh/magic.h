@@ -6,7 +6,6 @@
  * https://github.com/pfultz2/Cloak/wiki/C-Preprocessor-tricks,-tips,-and-idioms
  */
 
-
 #define EMPTY()
 #define COMMA() ,
 #define SEMICOLON() ;
@@ -26,7 +25,6 @@
 
 #define DEFER1(id) id EMPTY()
 #define DEFER2(id) id EMPTY EMPTY()()
-#define DEFER3(id) id EMPTY EMPTY EMPTY()()()
 
 #define CONSUME(...)
 #define EXPAND(...) __VA_ARGS__
@@ -110,39 +108,58 @@
 #define HAS_ARGS(...) BOOL(FIRST(_END_OF_ARGUMENTS_ __VA_ARGS__)(0))
 #define _END_OF_ARGUMENTS_(...) BOOL(FIRST(__VA_ARGS__))
 
-#define MAP(...) \
-   IF(HAS_ARGS(__VA_ARGS__))(EVAL(MAP_INNER(__VA_ARGS__)))
-#define MAP_INNER(op,sep,val, ...) \
+#define REMOVE_TRAILING_COMMAS(...) MAP(PASS, COMMA, __VA_ARGS__)
+
+#define MAP(...) IF(HAS_ARGS(__VA_ARGS__))(EVAL( \
+  _MAP_INNER(__VA_ARGS__)) \
+)
+#define _MAP_DEFER() _MAP_INNER
+#define _MAP_INNER(op,sep,val, ...) \
   op(val) \
   IF(HAS_ARGS(__VA_ARGS__))( \
-    sep() DEFER2(_MAP_INNER)()(op, sep, ##__VA_ARGS__) \
+    sep() DEFER2(_MAP_DEFER)()(op, sep, ##__VA_ARGS__) \
   )
-#define _MAP_INNER() MAP_INNER
 
-#define MAP_WITH_COUNTER(op,start,sep,...) \
-  IF(HAS_ARGS(__VA_ARGS__))(EVAL(MAP_WITH_COUNTER_INNER(op,sep,start, ##__VA_ARGS__)))
-#define MAP_WITH_COUNTER_INNER(op,sep,n,val, ...) \
+#define MAP_WITH_COUNTER(op,start,sep,...) IF(HAS_ARGS(__VA_ARGS__))(EVAL( \
+  _MAP_WITH_COUNTER_INNER(op,sep,start, ##__VA_ARGS__)) \
+)
+#define _MAP_WITH_COUNTER_DEFER() _MAP_WITH_COUNTER_INNER
+#define _MAP_WITH_COUNTER_INNER(op,sep,n,val, ...) \
   op(n,val) \
   IF(HAS_ARGS(__VA_ARGS__))( \
-    sep() DEFER2(_MAP_WITH_COUNTER_INNER)()(op, sep, INC(n), ##__VA_ARGS__) \
+    sep() DEFER2(_MAP_WITH_COUNTER_DEFER)()(op, sep, INC(n), ##__VA_ARGS__) \
   )
-#define _MAP_WITH_COUNTER_INNER() MAP_WITH_COUNTER_INNER
 
-#define REPEAT(...) IF(HAS_ARGS(__VA_ARGS__))(EVAL(REPEAT_INNER(__VA_ARGS__)))
-#define REPEAT_INNER(n, sep, ...) IF(n) ( \
-  DEFER2(_REPEAT_INNER)()(DEC(n), sep, __VA_ARGS__) \
+#define REPEAT(...) IF(HAS_ARGS(__VA_ARGS__))(EVAL( \
+  _REPEAT_INNER(__VA_ARGS__)) \
+)
+#define _REPEAT_DEFER() _REPEAT_INNER
+#define _REPEAT_INNER(n, sep, ...) IF(n) ( \
+  DEFER2(_REPEAT_DEFER)()(DEC(n), sep, __VA_ARGS__) \
   IF(DEC(n))(sep()) __VA_ARGS__ \
 )
-#define _REPEAT_INNER() REPEAT_INNER
 
-#define REPEAT_WITH_COUNTER(...) \
-  IF(HAS_ARGS(__VA_ARGS__))(EVAL(REPEAT_WITH_COUNTER_INNER(__VA_ARGS__)))
-#define REPEAT_WITH_COUNTER_INNER(n, sep, op, ...) IF(n) ( \
-  DEFER2(_REPEAT_WITH_COUNTER_INNER)()(DEC(n), sep, op, __VA_ARGS__) \
+#define REPEAT_WITH_COUNTER(...) IF(HAS_ARGS(__VA_ARGS__))(EVAL( \
+  _REPEAT_WITH_COUNTER_INNER(__VA_ARGS__)) \
+)
+#define _REPEAT_WITH_COUNTER_DEFER() _REPEAT_WITH_COUNTER_INNER
+#define _REPEAT_WITH_COUNTER_INNER(n, sep, op, ...) IF(n) ( \
+  DEFER2(_REPEAT_WITH_COUNTER_DEFER)()(DEC(n), sep, op, __VA_ARGS__) \
   IF(DEC(n))(sep()) \
   DEFER2(op)(DEC(n), __VA_ARGS__) \
 )
-#define _REPEAT_WITH_COUNTER_INNER() REPEAT_WITH_COUNTER_INNER
+
+#define REDUCE(op, ...) IF(HAS_ARGS(__VA_ARGS__))( \
+  IF_ELSE(HAS_ARGS(REST(__VA_ARGS__)))( \
+    EVAL(_REDUCE_INNER(op, __VA_ARGS__)), \
+    FIRST(__VA_ARGS__) \
+  ) \
+)
+#define _REDUCE_DEFER() _REDUCE_INNER
+#define _REDUCE_INNER(op, a, b, ...) IF_ELSE(HAS_ARGS(__VA_ARGS__))( \
+  DEFER2(_REDUCE_DEFER)()(op, op(a, b),  __VA_ARGS__), \
+  op(a, b) \
+)
 
 /*
 #define WHILE(...) IF(HAS_ARGS(__VA_ARGS__))(EVAL(WHILE_INNER(__VA_ARGS)))
@@ -152,5 +169,3 @@
 )
 #define _WHILE_INNER() WHILE_INNER
 //*/
-
-#define REMOVE_TRAILING_COMMAS(...) MAP(PASS, COMMA, __VA_ARGS__)

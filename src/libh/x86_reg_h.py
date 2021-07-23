@@ -1,48 +1,54 @@
 #!/usr/bin/env python3
 
-from util import OR, AND, Appender, header
+from util import *
+from util import OR, AND, header
 
-pr32 = Appender()
-pr64 = Appender()
+h = Appender()
+h.define('SAME_REG(a,b)', 'EQUAL(REG32(a),REG32(b))')
+h.define('DIFF_REG(a,b)', 'NOT_EQUAL(REG32(a),REG32(b))')
 
-pr64('#define REG64(x) CAT(_REG64_,x)')
+h.section()('#if __i386__ || __x86_64__')
+
+pr32 = h.section()
+
+h.section()('#endif\n\n#if __x86_64__')
+
+pr64 = h.section()
+
+h.section()('#endif')
+
+pr64.indirect('REG64(x)', '_REG_64_##x')
+pr32.indirect('REG32(x)', '_REG_32_##x')
+pr32.indirect('REG16(x)', '_REG_16_##x')
+pr32.indirect('REG8(x)',  '_REG_8_##x')
+
 callee_saved = ('rsp', 'rbp', 'rbx', 'r12', 'r13', 'r14', 'r15')
-same_reg = lambda r: f'SAME_REG(r,{r})'
-pr64('#define CALLEE_SAVED(r) '+OR(map(same_reg, callee_saved)))
-pr64('#define CALLER_SAVED(r) COMPL(CALLEE_SAVED(r))')
-pr32('''
-#define REG32(x) CAT(_REG32_,x)
-#define REG16(x) CAT(_REG16_,x)
-#define REG8(x) CAT(_REG8_,x)
-''')
+pr64.define('CALLEE_SAVED(r)', OR(map(lambda r: f'SAME_REG(r,{r})', callee_saved)))
+pr64.define('CALLER_SAVED(r)', 'COMPL(CALLEE_SAVED(r))')
 
 def prdef(x, w, reg):
         if reg.startswith('r'):
-            pr64.comparable(f)
+            pr64.compare.comparable(reg)
         else:
-            pr32.comparable(f)
-        pr64('#define _REG{}_{} {}'.format(64, reg, w[0]))
+            pr32.compare.comparable(reg)
+
+        pr64.define(f'_REG_64_{reg}', w[0])
         for bits, n in ((32, 1), (16, 2), (8, 3)):
-            pr32('#define _REG{}_{} {}'.format(bits, reg, w[n]))
+            if bits == 8 and reg.endswith('h'):
+                pr32.define(f'_REG_{bits}_{reg}', reg)
+            else:
+                pr32.define(f'_REG_{bits}_{reg}', w[n])
 
 for x in ('si', 'di', 'sp', 'bp'):
     w = (f'r{x}', f'e{x}', f'{x}', f'{x}l')
-    for f in w:
-        prdef(x, w, f)
+    for_each(lambda f: prdef(x, w, f), w)
 
 for x in ('a', 'b', 'c', 'd'):
     w = (f'r{x}x', f'e{x}x', f'{x}x', f'{x}l', f'{x}h')
-    for f in w:
-        prdef(x, w, f)
+    for_each(lambda f: prdef(x, w, f), w)
 
 for x in range(8, 16):
     w = (f'r{x}', f'r{x}d', f'r{x}w', f'r{x}l')
-    for f in w:
-        prdef(x, w, f)
+    for_each(lambda f: prdef(x, w, f), w)
 
-print('\n'.join([
-'#define SAME_REG(a,b) EQUAL(REG32(a),REG32(b))',
-'#define DIFF_REG(a,b) NOT_EQUAL(REG32(a),REG32(b))',
-f'#if __i386__ || __x86_64__\n{pr32}#endif',
-f'#if __x86_64__\n{pr64}#endif',
-]))
+h.print()

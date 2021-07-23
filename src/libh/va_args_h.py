@@ -2,46 +2,39 @@
 
 import sys
 
-from util import Appender, LineWrapper, irange, placeholders, header
-
-h = Appender()
+from util import *
+from util import header
 
 MAX_ARGS = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 
-h.helpers(f'#define _VEXP(...) __VA_ARGS__')
+h = Appender()
+
+helpers, macros = h.sections(2)
+
+helpers.define('_VEXP(...)', '__VA_ARGS__')
 
 def va_reverse_n(n):
     r = LineWrapper()
 
     if n == 1:
-        h.helpers('#define _VREV1(_1) _1')
+        helpers.define('_VREV1(_1)', '_1')
     else:
         r(f'#define _VREV{n}(_{n}, ')
-        for x in irange(n-1, 1):
-            if x != 1:
-                r(f'_{x}, ')
-            else:
-                r(f'_{x}) ', '_1, ')
-        for x in irange(2, n):
-            if x != n:
-                r(f'_{x}, ')
-            else:
-                r(f'_{x}')
-
-        h.helpers(str(r))
+        for_each(lambda x: r(f'_{x}) ', '_1, ') if x == 1 else r(f'_{x}, '), irange(n-1, 1))
+        for_each(lambda x: r(f'_{x}') if x == n else r(f'_{x}, '), irange(2, n))
+        helpers(str(r))
 
 def va_select_n(n):
     d = LineWrapper()
 
     if n == 1:
-        h.helpers('#define _VSEL1(_1, NAME, ...) NAME')
+        helpers('#define _VSEL1(_1, NAME, ...) NAME')
     else:
         d(f'#define _VSEL{n}(_{n}, ')
-        for x in irange(n-1, 1):
-            d(f'_{x}, ')
+        for_each(lambda x: d(f'_{x}, '), irange(n-1, 1))
 
         d('NAME, ', '...) ', 'NAME')
-        h.helpers(str(d))
+        helpers(str(d))
 
 def va_select():
     for n in irange(1, MAX_ARGS):
@@ -50,12 +43,9 @@ def va_select():
 
     va_select_n(MAX_ARGS + 1)
 
-    d = LineWrapper()
-    d(f'#define _VSEL(...) _VSEL{MAX_ARGS}(__VA_ARGS__, ')
-    r = LineWrapper()
-    r(f'#define _VREV(...) _VSEL{MAX_ARGS}(__VA_ARGS__, ')
-    c = LineWrapper()
-    c(f'#define _VCNT(...) _VSEL{MAX_ARGS+1}(__VA_ARGS__, ')
+    d = LineWrapper(f'#define _VSEL(...) _VSEL{MAX_ARGS}(__VA_ARGS__, ')
+    r = LineWrapper(f'#define _VREV(...) _VSEL{MAX_ARGS}(__VA_ARGS__, ')
+    c = LineWrapper(f'#define _VCNT(...) _VSEL{MAX_ARGS+1}(__VA_ARGS__, ')
 
     for n in irange(MAX_ARGS, 1):
         if n != 1:
@@ -67,29 +57,27 @@ def va_select():
             r(f'_VREV{n}', ')(__VA_ARGS__)')
             c('1, ', '0', ')')
 
-    h.helpers(str(d))
-    h.helpers(str(r))
-    h.helpers(str(c))
-    h.helpers('#define _VA2(a, b, ...) b')
-    h.helpers('#define _VSEP(...) _VA2(__VA_ARGS__, _VEXP(,))')
-    h.helpers('#define _VTPX(...) ~,')
-    h.helpers('#define _VCOMMA(...) _VSEP(_VEXP(_VTPX _VA2(,__VA_ARGS__)())) __VA_ARGS__')
-    h.macros('')
+    helpers(map(str, (d, r, c)))
+    helpers.define('_VA2(a, b, ...)', 'b')
+    helpers.define('_VSEP(...)', '_VA2(__VA_ARGS__, _VEXP(,))')
+    helpers.define('_VTPX(...)', '~,')
+    helpers.define('_VCOMMA(...)', '_VSEP(_VEXP(_VTPX _VA2(,__VA_ARGS__)())) __VA_ARGS__')
+    macros('')
 
 va_select()
 
-h.macros('#define VA_REVERSE(...) _VREV(__VA_ARGS__)')
-h.macros('#define VA_COUNT(...) _VCNT(_ _VCOMMA(__VA_ARGS__))')
-h.macros('#define VA_SEP(A, ...) A _VCOMMA(__VA_ARGS__)')
+macros.define('VA_REVERSE(...)', '_VREV(__VA_ARGS__)')
+macros.define('VA_COUNT(...)', '_VCNT(_ _VCOMMA(__VA_ARGS__))')
+macros.define('VA_SEP(A, ...)', 'A _VCOMMA(__VA_ARGS__)')
 # The c preprocessor needs to be forced to do some extra expansion passes over
 # this monstrosity of a macro via _VEXP in order to make it work properly.
-h.macros('''#define VA_SELECT(F, V, ...) _VEXP( \\
+macros.define('VA_SELECT(F, V, ...)', '''_VEXP( \\
   _VSEL(__VA_ARGS__) \\
   _VEXP(( _VEXP V, _VREV(__VA_ARGS__) )) \\
   (_VEXP F, _VEXP V) \\
 )''')
-h.macros('')
-h.macros('''
+macros('')
+macros('''
 /* EXAMPLES:
 #define _SUM2(a, b) _sum2((a), (b))
 #define _SUM3(a, b, c) _sum3((a), (b), (c))
@@ -112,4 +100,4 @@ VA_COUNT()                     // count 0
 //*/
 ''')
 
-h.print_all()
+h.print()
