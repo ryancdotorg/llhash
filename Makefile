@@ -56,7 +56,7 @@ ASSEMBLE = $(AS) $(LICENSES) -O3 -ggdb
 
 all: obj/llhash.o
 
-libh: libh/libh.h $(LIBH)
+libh: libh/libh.h libh/magic.h $(LIBH)
 asm: $(OBJ_ASM)
 native: $(OBJ_NATIVE)
 generic: $(OBJ_GENERIC)

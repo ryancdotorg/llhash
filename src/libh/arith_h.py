@@ -38,7 +38,7 @@ macros('#define ALTER4(r, a, b, c, d) ' + ALTER(4))
 #macros('#define MOD0(a, b) NOT(MOD(a, b))')
 
 compare = h.section()
-for i in range(5):
+for i in range(64):
     compare.comparable(i)
 
 h.print()

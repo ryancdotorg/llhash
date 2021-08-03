@@ -94,8 +94,8 @@ class Appender:
         self._f.write(f'#define {k} {v}\n')
 
     def indirect(self, k, v):
-        decl, body = indirect(k, v)
-        self.define(k, decl)
+        call, decl, body = indirect(k, v)
+        self.define(k, call)
         self.define(decl, body)
 
     def gettable(self, k, v):
@@ -127,11 +127,12 @@ def indirect(decl, body):
     if m:
         name = m.group(1)
         args = re.split(r',\s*', m.group(2).strip(' \t\r\n'))
-        decl = f'_{name}({", ".join(args)})'
+        call = f'_{name}({", ".join(args)})'
         if args[-1] != '...':
             body = re.sub(r'\b'+args[-1]+r'\b', '__VA_ARGS__', body)
             args[-1] = '...'
-        return (decl, body)
+        decl = f'_{name}({", ".join(args)})'
+        return (call, decl, body)
 
 def for_each(func, *iterables):
     for args in zip(*iterables): func(*args)
