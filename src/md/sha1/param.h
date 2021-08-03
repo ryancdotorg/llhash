@@ -15,8 +15,9 @@
 #define SHA1_IMPL_PRIO \
 (cryptogams_shaext, CRYPTOGAMS_SHAEXT), \
 (intel_shaext, INTEL_SHAEXT), \
-(dispatch, DISPATCH), \
+(cryptogams_avx2, CRYPTOGAMS_AVX2), \
 (intel_avx2, INTEL_AVX2), \
+(cryptogams_avx, CRYPTOGAMS_AVX), \
 (intel_avx, INTEL_AVX), \
 (cryptogams_ssse3, CRYPTOGAMS_SSSE3), \
 (intel_ssse3, INTEL_SSSE3), \
@@ -34,8 +35,9 @@
 #define SHA1_USING_INTEL_SHAEXT        6
 #define SHA1_USING_CRYPTOGAMS_GEN      7
 #define SHA1_USING_CRYPTOGAMS_SSSE3    8
-#define SHA1_USING_CRYPTOGAMS_SHAEXT   9
-#define SHA1_USING_DISPATCH           10
+#define SHA1_USING_CRYPTOGAMS_AVX      9
+#define SHA1_USING_CRYPTOGAMS_AVX2    10
+#define SHA1_USING_CRYPTOGAMS_SHAEXT  11
 
 #define SHA1_ENABLE_GENERIC           (1<<SHA1_USING_GENERIC)
 #define SHA1_ENABLE_NATIVE            (1<<SHA1_USING_NATIVE)
@@ -46,8 +48,9 @@
 #define SHA1_ENABLE_INTEL_SHAEXT      (1<<SHA1_USING_INTEL_SHAEXT)
 #define SHA1_ENABLE_CRYPTOGAMS_GEN    (1<<SHA1_USING_CRYPTOGAMS_GEN)
 #define SHA1_ENABLE_CRYPTOGAMS_SSSE3  (1<<SHA1_USING_CRYPTOGAMS_SSSE3)
+#define SHA1_ENABLE_CRYPTOGAMS_AVX    (1<<SHA1_USING_CRYPTOGAMS_AVX)
+#define SHA1_ENABLE_CRYPTOGAMS_AVX2   (1<<SHA1_USING_CRYPTOGAMS_AVX2)
 #define SHA1_ENABLE_CRYPTOGAMS_SHAEXT (1<<SHA1_USING_CRYPTOGAMS_SHAEXT)
-#define SHA1_ENABLE_DISPATCH          (1<<SHA1_USING_DISPATCH)
 
 #define SHA1_DESC_GENERIC             "llhash (C)"
 #define SHA1_DESC_NATIVE              "llhash (C, -march=native)"
@@ -58,5 +61,6 @@
 #define SHA1_DESC_INTEL_SHAEXT        "Intel SHA-NI (x64 asm)"
 #define SHA1_DESC_CRYPTOGAMS_GEN      "Cryptogams Generic (x64 asm)"
 #define SHA1_DESC_CRYPTOGAMS_SSSE3    "Cryptogams SSSE3 (x64 asm)"
+#define SHA1_DESC_CRYPTOGAMS_AVX      "Cryptogams AVX (x64 asm)"
+#define SHA1_DESC_CRYPTOGAMS_AVX2     "Cryptogams AVX2 (x64 asm)"
 #define SHA1_DESC_CRYPTOGAMS_SHAEXT   "Cryptogams SHA-NI (x64 asm)"
-#define SHA1_DESC_DISPATCH            "Cryptogams SSSE3/Intel AVX2"
