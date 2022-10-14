@@ -142,7 +142,7 @@ h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
 h(else)
     memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
 h(endif)
-    prblk(octx->hmac, HMAC_OUTER_BLOCKS);
+    //prblk(octx->hmac, HMAC_OUTER_BLOCKS);
     HASH(Set_IV)(U);
 h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
     HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
@@ -150,13 +150,12 @@ h(else)
     HASH(Native)(U, octx->hmac, HMAC_OUTER_BLOCKS);
 h(endif)
     memcpy(T, U, HASH_STATE_BYTES);
-    prblk(T, 1);
+    //prblk(T, 1);
     for (size_t i = 1; i < c; ++i) {
 h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
       /* inner hash with previous U */
       SERIALIZE(itail, U);
       memcpy(U, ictx->state, HASH_STATE_BYTES);
-      prblk(itail, itail_blks);
       HASH(Transform)(U, itail, itail_blks);
       /* outer hash with inner result */
       SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
@@ -166,7 +165,6 @@ h(else)
       /* inner hash with previous U */
       memcpy(itail, U, HASH_STATE_BYTES);
       memcpy(U, ictx->state, HASH_STATE_BYTES);
-      prblk(itail, itail_blks);
       HASH(Native)(U, itail, itail_blks);
       memcpy(itail, U, HASH_STATE_BYTES);
       /* outer hash with inner result */

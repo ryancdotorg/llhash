@@ -24,7 +24,7 @@ lut('INC', lambda x: x+1, range(MAX))
 lut('DEC', lambda x: x-1, range(1, MAX+1))
 lut('MOD', lambda a, b: a % b, range(MAX), div)
 lut('IDIV', lambda a, b: a // b, range(MAX), div)
-
+#lut('ADD', lambda a, b: a + b, range(MAX), range(MAX))
 #lut('MULT', lambda a, b: a * b, range(MAX), div)
 
 macros('#define ODD(a) _MOD(a, 2)')
