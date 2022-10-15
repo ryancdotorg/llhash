@@ -53,6 +53,10 @@ const uint8_t info[], size_t info_sz) {
 
 #define PBKDF2_NAME_1 JOIN(PBKDF2_NAME,1)
 
+#define PBKDF2_NAME_Range JOIN(PBKDF2_NAME,Range)
+
+#define PBKDF2_NAME_Block JOIN(PBKDF2_NAME,Block)
+
 void PBKDF2_NAME_1(
 uint8_t dk[], size_t dk_sz,
 const uint8_t pass[], size_t pass_sz,
@@ -96,19 +100,71 @@ const uint8_t salt[], size_t salt_sz) {
   wipe(scratch);
 }
 
+static inline void PBKDF2_NAME_Block(
+HMAC(CTX) *restrict octx, HMAC(CTX) *restrict ictx,
+uint8_t *restrict otail, uint8_t *restrict itail,
+uint8_t otail_blks, uint8_t itail_blks,
+uintWS_t *restrict T, uintWS_t *restrict U,
+uint32_t c, uint32_t block) {
+  memcpy(U, octx->state, HASH_STATE_BYTES);
+  otail[octx->datalen+0] = (block >> 24) & 0xff;
+  otail[octx->datalen+1] = (block >> 16) & 0xff;
+  otail[octx->datalen+2] = (block >>  8) & 0xff;
+  otail[octx->datalen+3] = (block >>  0) & 0xff;
+  HASH(Transform)(U, otail, otail_blks);
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+  SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
+h(else)
+  memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
+h(endif)
+  //prblk(octx->hmac, HMAC_OUTER_BLOCKS);
+  HASH(Set_IV)(U);
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+  HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
+h(else)
+  HASH(Native)(U, octx->hmac, HMAC_OUTER_BLOCKS);
+h(endif)
+  memcpy(T, U, HASH_STATE_BYTES);
+  //prblk(T, 1);
+  for (size_t i = 1; i < c; ++i) {
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+    /* inner hash with previous U */
+    SERIALIZE(itail, U);
+    memcpy(U, ictx->state, HASH_STATE_BYTES);
+    HASH(Transform)(U, itail, itail_blks);
+    /* outer hash with inner result */
+    SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
+    HASH(Set_IV)(U);
+    HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
+h(else)
+    /* inner hash with previous U */
+    memcpy(itail, U, HASH_STATE_BYTES);
+    memcpy(U, ictx->state, HASH_STATE_BYTES);
+    HASH(Native)(U, itail, itail_blks);
+    memcpy(itail, U, HASH_STATE_BYTES);
+    /* outer hash with inner result */
+    memcpy(U, W, HASH_STATE_BYTES);
+    HASH(Native)(U, itail, itail_blks);
+h(endif)
+    #define _XOR(n, _) T[n] ^= U[n]
+    REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _XOR);
+    #undef _XOR
+  }
+}
+
 void PBKDF2_NAME(
 uint8_t dk[], size_t dk_sz,
 const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz,
 uint32_t c) {
   uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 3 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
-  HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
   HMAC(CTX) *restrict octx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*0);
+  HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
+  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*0;
+  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*2;
   uintWS_t *restrict T = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*0);
   uintWS_t *restrict U = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*1);
   uintWS_t *restrict W = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2);
-  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*0;
-  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*2;
 
   HMAC(Init)(ictx, pass, pass_sz);
   HMAC(Clone)(octx, ictx);
@@ -132,50 +188,7 @@ h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
 h(endif)
 
   while (nout < dk_sz) {
-    memcpy(U, octx->state, HASH_STATE_BYTES);
-    otail[octx->datalen+0] = (block >> 24) & 0xff;
-    otail[octx->datalen+1] = (block >> 16) & 0xff;
-    otail[octx->datalen+2] = (block >>  8) & 0xff;
-    otail[octx->datalen+3] = (block >>  0) & 0xff;
-    HASH(Transform)(U, otail, otail_blks);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-    SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
-h(else)
-    memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
-h(endif)
-    //prblk(octx->hmac, HMAC_OUTER_BLOCKS);
-    HASH(Set_IV)(U);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-    HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
-h(else)
-    HASH(Native)(U, octx->hmac, HMAC_OUTER_BLOCKS);
-h(endif)
-    memcpy(T, U, HASH_STATE_BYTES);
-    //prblk(T, 1);
-    for (size_t i = 1; i < c; ++i) {
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-      /* inner hash with previous U */
-      SERIALIZE(itail, U);
-      memcpy(U, ictx->state, HASH_STATE_BYTES);
-      HASH(Transform)(U, itail, itail_blks);
-      /* outer hash with inner result */
-      SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
-      HASH(Set_IV)(U);
-      HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
-h(else)
-      /* inner hash with previous U */
-      memcpy(itail, U, HASH_STATE_BYTES);
-      memcpy(U, ictx->state, HASH_STATE_BYTES);
-      HASH(Native)(U, itail, itail_blks);
-      memcpy(itail, U, HASH_STATE_BYTES);
-      /* outer hash with inner result */
-      memcpy(U, W, HASH_STATE_BYTES);
-      HASH(Native)(U, itail, itail_blks);
-h(endif)
-      #define _XOR(n, _) T[n] ^= U[n]
-      REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _XOR);
-      #undef _XOR
-    }
+    PBKDF2_NAME_Block(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
 
     if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
       SERIALIZE(dk + nout, T);
@@ -185,70 +198,78 @@ h(endif)
       break;
       nout = dk_sz;
     }
+
     ++block;
   }
 
   wipe(scratch);
 }
 
-/*
-void JOIN(PBKDF2_NAME,Offset)(
-uint8_t dk[], size_t dk_sz,
+void PBKDF2_NAME_Range(
+uint8_t dk[], size_t dk_off, size_t dk_end,
 const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz,
 uint32_t c) {
-  uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 2 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
+  uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 3 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
   HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
   HMAC(CTX) *restrict octx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*0);
   uintWS_t *restrict T = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*0);
   uintWS_t *restrict U = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*1);
-  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*0;
-  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2 + HASH_BLOCK_LENGTH*2;
+  uintWS_t *restrict W = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2);
+  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*0;
+  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*2;
 
   HMAC(Init)(ictx, pass, pass_sz);
   HMAC(Clone)(octx, ictx);
   HMAC(Update)(octx, salt, salt_sz);
 
-  size_t nout = 0;
-  uint32_t block = 1;
+  HASH(Set_IV)(W);
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+  HASH(Transform)(W, ictx->hmac, 1);
+h(else)
+  HASH(Native)(W, ictx->hmac, 1);
+h(endif)
+
+  size_t dk_pos = 0;
+  size_t nout = dk_off - (dk_off % HASH_DIGEST_LENGTH);
+  uint32_t block = (dk_off / HASH_DIGEST_LENGTH) + 1;
 
   memcpy(otail, octx->data, octx->datalen);
-  //memcpy(itail, ictx->data, ictx->datalen);
   uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
-  uint8_t itail_blks = HASH(Tail)(itail, ictx->bytelen + ictx->datalen + HASH_DIGEST_LENGTH);
+  uint8_t itail_blks = HASH(Tail)(itail, HASH_BLOCK_LENGTH + HASH_DIGEST_LENGTH);
+h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
+  HASH(Bswap)(itail, itail_blks);
+h(endif)
 
-  while (nout < dk_sz) {
-    memcpy(U, octx->state, HASH_STATE_BYTES);
-    otail[octx->datalen+0] = (block >> 24) & 0xff;
-    otail[octx->datalen+1] = (block >> 16) & 0xff;
-    otail[octx->datalen+2] = (block >>  8) & 0xff;
-    otail[octx->datalen+3] = (block >>  0) & 0xff;
-    HASH(Transform)(U, otail, otail_blks);
-    SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
-    HASH(Set_IV)(U);
-    HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
-    memcpy(T, U, HASH_STATE_BYTES);
-    for (size_t i = 1; i < c; ++i) {
-      SERIALIZE(itail + ictx->datalen, U);
-      memcpy(U, ictx->state, HASH_STATE_BYTES);
-      HASH(Transform)(U, itail, itail_blks);
-      SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
-      HASH(Set_IV)(U);
-      HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
-      for (size_t j = 0; j < HASH_STATE_WORDS; ++j) { T[j] ^= U[j]; }
-    }
+  while (nout < dk_end) {
+    //printf(">>> %s[%zu:%zu] block %u, nout %4zu, dk_pos %4zu\n", __func__, dk_off, dk_end, block, nout, dk_pos);
+    PBKDF2_NAME_Block(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
 
-    if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
-      SERIALIZE(dk + nout, T);
+    if (nout < dk_off) {
+      if (dk_end < nout + HASH_DIGEST_LENGTH) {
+        //printf("A dk[%zu] <- HASH[%zu:%zu]\n", dk_pos, dk_off - nout, dk_end - nout);
+        HASH(Partial)(dk + dk_pos, T, dk_off - nout, dk_end - nout);
+        break;
+      } else {
+        //printf("B dk[%zu] <- HASH[%zu:%d]\n", dk_pos, dk_off - nout, HASH_DIGEST_LENGTH);
+        HASH(Partial)(dk + dk_pos, T, dk_off - nout, HASH_DIGEST_LENGTH);
+        //printf("dk_pos += %d\n", HASH_DIGEST_LENGTH - (dk_off - nout));
+        dk_pos += HASH_DIGEST_LENGTH - (dk_off - nout);
+        nout += HASH_DIGEST_LENGTH;
+      }
+    } else if (nout + HASH_DIGEST_LENGTH <= dk_end) {
+      //printf("C dk[%zu] <- HASH[%d:%d]\n", dk_pos, 0, HASH_DIGEST_LENGTH);
+      SERIALIZE(dk + dk_pos, T);
+      dk_pos += HASH_DIGEST_LENGTH;
       nout += HASH_DIGEST_LENGTH;
     } else {
-      HASH(Partial)(dk + nout, T, 0, dk_sz - nout);
+      //printf("D dk[%zu] <- HASH[%d:%zu]\n", dk_pos, 0, dk_end - nout);
+      HASH(Partial)(dk + dk_pos, T, 0, dk_end - nout);
       break;
-      nout = dk_sz;
     }
+
     ++block;
   }
 
   wipe(scratch);
 }
-*/
