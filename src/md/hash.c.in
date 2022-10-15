@@ -266,16 +266,19 @@ __attribute__((alias(STR(HASH(Partial)))));
 #endif
 void HASH(Partial)(uint8_t *restrict out, const uintWS_t *restrict _state, size_t start, size_t end) {
   const uintWS_t *state = __builtin_assume_aligned(_state, HASH_WORD_BYTES);
-  state += (start / HASH_WORD_BYTES);
   if (start > end || start > HASH_DIGEST_LENGTH || end > HASH_DIGEST_LENGTH) __builtin_unreachable();
 #if HASH_ENDIAN == __BYTE_ORDER__
-  memcpy(out, ((uint8_t *)state)+start, end);
+  memcpy(out, ((uint8_t *)state)+start, end-start);
 #else
+  state += (start / HASH_WORD_BYTES);
   size_t pos = start;
-  if (start & (HASH_WORD_BYTES-1)) {
+  if (pos & (HASH_WORD_BYTES-1)) {
 # if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
-      for (char i = (HASH_WORD_SIZE-8) - (pos<<3); i >= 0 && pos > end; i -= 8, ++pos) {
+      char i = (HASH_WORD_SIZE-8) - ((pos & (HASH_WORD_BYTES-1))<<3);
+      while (i >= 0 && pos < end) {
         *out++ = (*state >> i) & 0xff;
+        i -= 8;
+        ++pos;
       }
 # elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
       for (char i = (pos<<3); pos > end && i < HASH_WORD_SIZE; i += 8, ++pos) {
