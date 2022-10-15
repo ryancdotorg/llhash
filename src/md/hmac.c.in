@@ -1,10 +1,9 @@
 /* c preprocessor template for Merkle–Damgård hmac functions */
-#include "../../macros.h"
-
 #ifndef HASH_NAME
 /* this exists to keep the linter happy */
 #define HASH_NAME SHA1
 
+#include "../../macros.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -13,6 +12,7 @@
 #include "sha1/param.h"
 #include "../../gen/md/sha1/hmac.h"
 #else
+#include "../../macros.h"
 h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
@@ -36,6 +36,8 @@ h(include "hmac.h")
 #define prblk(...)
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static void _prblk(uintWS_t blk[HASH_BLOCK_WORDS], size_t n, char *f, unsigned int l) {
   size_t z = 0;
 h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
@@ -43,22 +45,24 @@ h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
 h(else)
   printf("blocks: (native)  %s:%u\n", f, l);
 h(endif)
-  while (n--) { printf("%d\n", n); int i = 0; while (i < HASH_BLOCK_WORDS) {
+  while (n--) { printf("%zd\n", n); int i = 0; while (i < HASH_BLOCK_WORDS) {
 h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
 #if HASH_WORD_SIZE == 64
-    printf("  %016zx %016zx %016zx %016zx\n", blk[z+i++], blk[z+i++], blk[z+i++], blk[z+i++]);
+    printf("  %016zx %016zx %016zx %016zx\n", blk[z+i+0], blk[z+i+1], blk[z+i+2], blk[z+i+3]);
 #else
-    printf("  %08x %08x %08x %08x\n", blk[z+i++], blk[z+i++], blk[z+i++], blk[z+i++]);
+    printf("  %08x %08x %08x %08x\n", blk[z+i+1], blk[z+i+2], blk[z+i+3], blk[z+i+4]);
 #endif
 h(else)
 #if HASH_WORD_SIZE == 64
-    printf("  %016zx %016zx %016zx %016zx\n", blk[z+i++], blk[z+i++], blk[z+i++], blk[z+i++]);
+    printf("  %016zx %016zx %016zx %016zx\n", blk[z+i+0], blk[z+i+1], blk[z+i+2], blk[z+i+3]);
 #else
-    printf("  %08x %08x %08x %08x\n", blk[z+i++], blk[z+i++], blk[z+i++], blk[z+i++]);
+    printf("  %08x %08x %08x %08x\n", blk[z+i+0], blk[z+i+1], blk[z+i+2], blk[z+i+3]);
 #endif
 h(endif)
+    i += 4;
   } z += HASH_BLOCK_WORDS; printf("\n"); }
 }
+#pragma GCC diagnostic pop
 
 void HMAC_Clone(HMAC_CTX *dst, const HMAC_CTX *src) {
   // relies on .data being first

@@ -1,9 +1,9 @@
-#include "../../macros.h"
-
+/* c preprocessor template for Merkle–Damgård hash functions */
 #ifndef HASH_NAME
 /* this exists to keep the linter happy */
 #define HASH_NAME SHA1
 
+#include "../../macros.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -12,6 +12,7 @@
 #include "../../util.h"
 #include "../../gen/md/sha1/ext.h"
 #else
+#include "../../macros.h"
 h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
