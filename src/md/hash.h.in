@@ -4,6 +4,8 @@ h(pragma once)
 h(include <stddef.h>)
 h(include <stdint.h>)
 
+h(include STR(../../../src/md/HASH_name/param.h))
+
 h(ifdef HASH(HASH_C))
 h(ifdef SERIALIZE)
 h(undef SERIALIZE)
