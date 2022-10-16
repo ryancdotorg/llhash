@@ -49,15 +49,7 @@ const uint8_t info[], size_t info_sz) {
 }
 */
 
-#define PBKDF2_NAME JOIN(PBKDF2,HMAC,HASH_NAME)
-
-#define PBKDF2_NAME_1 JOIN(PBKDF2_NAME,1)
-
-#define PBKDF2_NAME_Range JOIN(PBKDF2_NAME,Range)
-
-#define PBKDF2_NAME_Block JOIN(PBKDF2_NAME,Block)
-
-void PBKDF2_NAME_1(
+void PBKDF2(1)(
 uint8_t dk[], size_t dk_sz,
 const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz) {
@@ -100,7 +92,7 @@ const uint8_t salt[], size_t salt_sz) {
   wipe(scratch);
 }
 
-static inline void PBKDF2_NAME_Block(
+static inline void PBKDF2(Block)(
 HMAC(CTX) *restrict octx, HMAC(CTX) *restrict ictx,
 uint8_t *restrict otail, uint8_t *restrict itail,
 uint8_t otail_blks, uint8_t itail_blks,
@@ -188,7 +180,7 @@ h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
 h(endif)
 
   while (nout < dk_sz) {
-    PBKDF2_NAME_Block(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
+    PBKDF2(Block)(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
 
     if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
       SERIALIZE(dk + nout, T);
@@ -205,7 +197,7 @@ h(endif)
   wipe(scratch);
 }
 
-void PBKDF2_NAME_Range(
+void PBKDF2(Range)(
 uint8_t dk[], size_t dk_off, size_t dk_end,
 const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz,
@@ -243,7 +235,7 @@ h(endif)
 
   while (nout < dk_end) {
     //printf(">>> %s[%zu:%zu] block %u, nout %4zu, dk_pos %4zu\n", __func__, dk_off, dk_end, block, nout, dk_pos);
-    PBKDF2_NAME_Block(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
+    PBKDF2(Block)(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
 
     if (nout < dk_off) {
       if (dk_end < nout + HASH_DIGEST_LENGTH) {

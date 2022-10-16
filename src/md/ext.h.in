@@ -4,14 +4,20 @@ h(include "hmac.h")
 
 h(include STR(../../../src/md/HASH_name/param.h))
 
-void JOIN(PBKDF2,HMAC,HASH_NAME)(
+void PBKDF2_NAME(
   uint8_t dk[], size_t dk_sz,
   const uint8_t pass[], size_t pass_sz,
   const uint8_t salt[], size_t salt_sz,
   uint32_t c
 );
 
-void JOIN(PBKDF2,HMAC,HASH_NAME,Range)(
+void PBKDF2(1)(
+  uint8_t dk[], size_t dk_sz,
+  const uint8_t pass[], size_t pass_sz,
+  const uint8_t salt[], size_t salt_sz
+);
+
+void PBKDF2(Range)(
   uint8_t dk[], size_t dk_off, size_t dk_end,
   const uint8_t pass[], size_t pass_sz,
   const uint8_t salt[], size_t salt_sz,

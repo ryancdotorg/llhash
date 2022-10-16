@@ -8,10 +8,14 @@
 #define IDENTITY(S) S
 
 /* help keep things short */
-#define HASH(A)   JOIN(HASH_NAME,A)
+#define HASH(A)   JOIN(VA_SEP(HASH_NAME,A))
 #define HMAC(A)   JOIN(HMAC,HASH(A))
 #define HKDF(A)   JOIN(HKDF,HASH(A))
 #define PBKDF2(A) JOIN(PBKDF2,HMAC(A))
+
+#define HMAC_NAME   HMAC()
+#define HKDF_NAME   HKDF()
+#define PBKDF2_NAME PBKDF2()
 
 #define HASH_ALIASED IF_ELSE(GETTABLE(JOIN(HASH_NAME,ALIAS)))(1,0)
 #define HASH_ALIAS GET(JOIN(HASH_NAME,ALIAS))

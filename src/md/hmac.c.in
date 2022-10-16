@@ -23,7 +23,6 @@ h(define HASH(HMAC_C))
 h(include "hmac.h")
 #endif
 
-#define HMAC_NAME JOIN(HMAC,HASH_NAME)
 #define HMAC_Clone HMAC(Clone)
 #define HMAC_Init HMAC(Init)
 #define HMAC_Update HMAC(Update)
