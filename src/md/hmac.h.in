@@ -2,8 +2,6 @@
 h(pragma once)
 h(include "hash.h")
 
-h(include STR(../../../src/md/HASH_name/param.h))
-
 h(if ((HASH_BLOCK_LENGTH+HASH_DIGEST_LENGTH)&(HASH_BLOCK_LENGTH-1))<(HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4)))
 h(define HMAC_OUTER_BLOCKS 2)
 h(else)

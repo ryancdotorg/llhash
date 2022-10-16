@@ -8,7 +8,6 @@
 #include <stddef.h>
 #include <string.h>
 #include <endian.h>
-#include "sha1/param.h"
 #include "../../util.h"
 #include "../../gen/md/sha1/ext.h"
 #else
@@ -17,7 +16,6 @@ h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
 h(include <endian.h>)
-h(include STR(../../../src/md/HASH_name/param.h))
 h(include STR(../../../util.h))
 h(define HASH(EXT_C))
 h(include STR(ext.h))

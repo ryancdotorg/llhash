@@ -2,8 +2,6 @@
 h(pragma once)
 h(include "hmac.h")
 
-h(include STR(../../../src/md/HASH_name/param.h))
-
 void PBKDF2_NAME(
   uint8_t dk[], size_t dk_sz,
   const uint8_t pass[], size_t pass_sz,

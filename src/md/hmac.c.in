@@ -9,7 +9,6 @@
 #include <string.h>
 #include <endian.h>
 #include <stdio.h>
-#include "sha1/param.h"
 #include "../../gen/md/sha1/hmac.h"
 #else
 #include "../../macros.h"
@@ -18,7 +17,6 @@ h(include <stddef.h>)
 h(include <string.h>)
 h(include <endian.h>)
 h(include <stdio.h>)
-h(include STR(../../../src/md/HASH_name/param.h))
 h(define HASH(HMAC_C))
 h(include "hmac.h")
 #endif

@@ -15,7 +15,6 @@ h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
 h(include <endian.h>)
-h(include STR(../../../src/md/HASH_name/param.h))
 h(define HASH(HASH_C))
 h(include "hash.h")
 #endif
