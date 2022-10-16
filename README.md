@@ -88,7 +88,7 @@ context.
 
 `void HASH_Clear(HASH_CTX *ctx)`
 
-Clears a `HASH_CTX` structure.
+Securely clears a `HASH_CTX` structure.
 
 `void HASH_Clone(HASH_CTX *dst, const HASH_CTX *src)`
 
@@ -111,3 +111,31 @@ blocks, not number of bytes.
 Reads a hash value from `hash[]` and stores the recreated state as of block
 `nblk` (post padding) in `ctx`. Useful for length extension attacks, not
 available for truncated hashes.
+
+`void HMAC_HASH(const void *key, size_t key_sz, const uint8_t msg[], size_t msg_sz, uint8_t hash[])`
+
+Computes HMAC using `key_sz` bytes of `key` as the key and `msg_sz` bytes of
+`msg[]` as data and stores the result in `hash[]`.
+
+`void HMAC_HASH_Init(HMAC_HASH_CTX *ctx, const void *key, size_t len)`
+
+Initializes a `HMAC_HASH_CTX` using `len` bytes of `key` as the key.
+
+`void HMAC_HASH_Update(HMAC_HASH_CTX *ctx, const uint8_t data[], size_t len)`
+
+Hashes `len` bytes of `data[]` with the context `ctx`. This can be used to
+incrementally process an arbitrarily large message.
+
+`void HMAC_HASH_Final(uint8_t hash[], HMAC_HASH_CTX *ctx)`
+
+Computes the final HMAC value for the context `ctx` and writes it to `hash[]`.
+Note that unlike OpenSSL’s `*_Final` functions, this *does not* clear the
+context.
+
+`void HMAC_HASH_Clear(HMAC_HASH_CTX *ctx)`
+
+Securely clears a `HMAC_HASH_CTX` structure.
+
+`void HMAC_HASH_Clone(HMAC_HASH_CTX *dst, const HMAC_HASH_CTX *src)`
+
+Copies the HMAC context from `src` to `dst`.
