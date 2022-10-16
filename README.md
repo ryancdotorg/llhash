@@ -139,3 +139,46 @@ Securely clears a `HMAC_HASH_CTX` structure.
 `void HMAC_HASH_Clone(HMAC_HASH_CTX *dst, const HMAC_HASH_CTX *src)`
 
 Copies the HMAC context from `src` to `dst`.
+
+```
+void PBKDF2_HMAC_HASH(
+  uint8_t dk[], size_t dk_sz,
+  const uint8_t pass[], size_t pass_sz,
+  const uint8_t salt[], size_t salt_sz,
+  uint32_t c
+);
+```
+
+Derives a key of `dk_sz` bytes using PBKDF2 with `pass_sz` bytes of `pass[]`
+as the password, `salt_sz` bytes of `salt[]` as the salt, and `c` iterations.
+The result is written to `dk[]`.
+
+```
+void PBKDF2_HMAC_HASH_1(
+  uint8_t dk[], size_t dk_sz,
+  const uint8_t pass[], size_t pass_sz,
+  const uint8_t salt[], size_t salt_sz
+);
+```
+
+Derives a key of `dk_sz` bytes using PBKDF2 with `pass_sz` bytes of `pass[]`
+as the password, `salt_sz` bytes of `salt[]` as the salt, and 1 iteration.
+The result is written to `dk[]`.
+
+This function is faster than calling PBKDF2_HMAC_HASH with `c = 1`.
+
+```
+void PBKDF2_HMAC_HASH_Range(
+  uint8_t dk[], size_t dk_off, size_t dk_end,
+  const uint8_t pass[], size_t pass_sz,
+  const uint8_t salt[], size_t salt_sz,
+  uint32_t c
+);
+```
+
+Derives bytes `dk_off` through `dk_end` using PBKDF2 with `pass_sz` bytes of
+`pass[]` as the password, `salt_sz` bytes of `salt[]` as the salt, and `c`
+iterations. The result is written to `dk[]`.
+
+This is faster than calling PBKDF2_HMAC_HASH with `dk_sz = dk_end` and copying
+from `dk_off` because unused preceding blocks of output are not generated.
