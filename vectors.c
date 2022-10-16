@@ -52,6 +52,8 @@
 
 typedef clock_t proctime;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static clock_t cpu_now(void)
 {
   struct tms tms;
@@ -72,6 +74,7 @@ static double wall_now(void)
   r += (double) tv.tv_usec * 1e-6;
   return r;
 }
+#pragma GCC diagnostic pop
 
 static char * hex(char *out, const void *in, size_t len, int color) {
   char *ret = out;
@@ -225,7 +228,7 @@ int main() {
   unsigned char _v0x0005[] = {0x73, 0x61, 0x00, 0x6c, 0x74};
   unsigned char _v0x0006[] = {0x68, 0x75, 0x6e, 0x74, 0x65, 0x72, 0x32};
   unsigned char _v0x0007[] = {0x61, 0x64, 0x6d, 0x69, 0x6e};
-  unsigned char _v0x0008[] = {0x73, 0x61, 0x6c, 0x74, 0x73, 0x61, 0x6c, 0x74};
+  //unsigned char _v0x0008[] = {0x73, 0x61, 0x6c, 0x74, 0x73, 0x61, 0x6c, 0x74};
 
   unsigned char dk[1024];
   unsigned char dk0[] = {0x0c, 0x60, 0xc8, 0x0f, 0x96, 0x1f, 0x0e, 0x71, 0xf3, 0xa9, 0xb5, 0x24, 0xaf, 0x60, 0x12, 0x06, 0x2f, 0xe0, 0x37, 0xa6};
@@ -291,8 +294,10 @@ int main() {
 
 #define RANGE_VECTOR(FN, REF, START, END) \
   memset(dk, 0, sizeof(dk)); \
+  memset(buf, 0x20, sizeof(buf)); \
   FN(dk, START, END, _v0x0006, 7, _v0x0007, 5, 1024); \
-  printf(#REF "[%02d:%02d]: %s\n", START, END, hex(buf, dk, END-START, 1)); \
+  hex(buf+(START*2), dk, END-START, 1); \
+  printf(#REF "[%02d:%02d]: %s\n", START, END, buf); \
   if (memcmp(dk, REF+START, END-START) != 0) { \
     printf("ref:         %s\n", hex(buf, REF+START, END-START, 1)); \
     return 1; \
@@ -308,7 +313,7 @@ int main() {
   RANGE_VECTOR(PBKDF2_HMAC_SHA1_Range, dk7x, 16, 24);
   RANGE_VECTOR(PBKDF2_HMAC_SHA1_Range, dk7x, 16, 48);
 
-  RANGE_VECTOR(PBKDF2_HMAC_MD5_Range,  dk7y,  0, 32);
+  RANGE_VECTOR(PBKDF2_HMAC_MD5_Range,  dk7y,  0, 64);
   RANGE_VECTOR(PBKDF2_HMAC_MD5_Range,  dk7y,  1, 33);
   RANGE_VECTOR(PBKDF2_HMAC_MD5_Range,  dk7y,  5, 37);
   RANGE_VECTOR(PBKDF2_HMAC_MD5_Range,  dk7y, 10, 42);
@@ -318,6 +323,7 @@ int main() {
   RANGE_VECTOR(PBKDF2_HMAC_MD5_Range,  dk7y, 16, 24);
   RANGE_VECTOR(PBKDF2_HMAC_MD5_Range,  dk7y, 16, 48);
 
+  /*
   SHA1_Register(SHA1_ENABLE_CRYPTOGAMS_SSSE3);
   proctime end, start;
   start = cpu_now();
@@ -332,8 +338,7 @@ int main() {
   PBKDF2_HMAC_SHA2_512(dk, 64, _v0x0000, 8, _v0x0008, 8, 67108864);
   end = cpu_now();
   printf("llhash,sha512,%u,%u,%.3f\n", 67108864, 1, proctime2secs(start, end));
-
-
+  */
 
   return 0;
 }
