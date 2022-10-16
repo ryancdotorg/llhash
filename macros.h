@@ -1,4 +1,6 @@
 #pragma once
+
+#include "param.h"
 #include "libh/libh.h"
 
 /* assorted utility functions */
@@ -31,6 +33,22 @@
 #define HASH_STATE_BYTES (HASH_WORD_BYTES*HASH_STATE_WORDS)
 #define HASH_BLOCK_WORDS IDIV(HASH_BLOCK_LENGTH,BYTES(HASH_WORD_BITS))
 #define HASH_ENDIAN HASH(ENDIAN)
+
+#ifdef HASH_NAME
+/* ensure word size is valid */
+#if !defined(HASH_WORD_SIZE)
+#error "undefined HASH_WORD_SIZE"
+#elif HASH_WORD_SIZE != 32 && HASH_WORD_SIZE != 64
+#error "unsupported HASH_WORD_SIZE"
+#endif
+
+/* ensure endianness is valid */
+#if !defined(HASH_ENDIAN)
+#error "undefined HASH_ENDIAN"
+#elif HASH_ENDIAN != __ORDER_BIG_ENDIAN__ && HASH_ENDIAN !=  __ORDER_LITTLE_ENDIAN__
+#error "unsupported HASH_ENDIAN"
+#endif
+#endif
 
 /* type/size definition macro */
 #define uintWS_t CONCAT(uint,HASH_WORD_BITS,_t)

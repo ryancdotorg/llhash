@@ -1,7 +1,7 @@
 /* c preprocessor template for Merkle–Damgård hash functions */
 #ifndef HASH_NAME
 /* this exists to keep the linter happy */
-#define HASH_NAME SHA1
+#define HASH_SHA1
 
 #include "../../macros.h"
 #include <stdint.h>

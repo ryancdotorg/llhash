@@ -1,7 +1,7 @@
 /* c preprocessor template for Merkle–Damgård hash functions */
 #ifndef HASH_NAME
 /* this exists to keep the linter happy */
-#define HASH_NAME SHA1
+#define HASH_SHA1
 
 #include "../../macros.h"
 #include <stdint.h>
@@ -18,12 +18,6 @@ h(include <endian.h>)
 h(include STR(../../../src/md/HASH_name/param.h))
 h(define HASH(HASH_C))
 h(include "hash.h")
-#endif
-
-#if HASH_WORD_SIZE != 32 && HASH_WORD_SIZE != 64
-#error "bad word size"
-#elif HASH_ENDIAN != __ORDER_BIG_ENDIAN__ && HASH_ENDIAN !=  __ORDER_LITTLE_ENDIAN__
-#error "bad endianess"
 #endif
 
 static const uintWS_t iv[] = HASH(IV);
