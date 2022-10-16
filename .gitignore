@@ -5,6 +5,8 @@ gen/
 libh/*.h
 src/libh/__pycache__/
 
+param.h
+
 sha2_iv.c
 
 out

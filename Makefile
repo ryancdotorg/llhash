@@ -30,11 +30,15 @@ OBJ_GENERIC = $(patsubst src/%/xform.c,obj/%/xform/generic.o,$(call rwildcard,sr
 OBJ_HASHES = $(patsubst %,obj/%.o,$(HASHES))
 OBJ_CAN = obj/common/cpuinfo.o obj/common/can_native.o $(patsubst src/common/%.c,obj/common/%.o,$(wildcard src/common/can_*.c))
 OBJ_XFORM = $(patsubst src/%/xform.c,obj/%/xform.o,$(call rwildcard,src,*/xform.c))
+
 LIBH = $(patsubst src/libh/%_h.py,libh/%.h,$(wildcard src/libh/*_h.py))
 
-HEADERS := $(foreach h,$(HASHES),$(patsubst %,gen/%/hash.h,$h))
+HEADERS := util.h llhash.h
+HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/hash.h,$h))
 HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/hmac.h,$h))
 HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/ext.h,$h))
+
+MACROS = macros.h param.h libh/libh.h libh/magic.h $(LIBH)
 
 BINARIES = test vectors sha2t
 #override CFLAGS += -O3 -flto -fPIC -funsigned-char \
@@ -52,15 +56,21 @@ LD := ccache ld
 COMPILE = $(CC) $(CFLAGS)
 ASSEMBLE = $(AS) $(LICENSES) -O3 -ggdb
 
-.PHONY: all libh asm native generic headers clean _clean _nop run_test run_vectors
+.PHONY: all libh macros headers asm native generic \
+	clean_all _clean_all clean _clean _nop \
+	run_test run_vectors
 
 all: obj/llhash.o
 
 libh: libh/libh.h libh/magic.h $(LIBH)
+macros: macros.h param.h libh
+headers: macros $(HEADERS)
 asm: $(OBJ_ASM)
 native: $(OBJ_NATIVE)
 generic: $(OBJ_GENERIC)
-headers: libh $(HEADERS)
+
+param.h: scripts/param.py
+	python3 $< $(HASHES) > $@
 
 # preprocessor magic
 libh/libh.h: $(LIBH)
@@ -73,43 +83,43 @@ libh/%.h: src/libh/%_h.py src/libh/util.py
 	python3 $< > $@
 
 # generated headers
-gen/md/%/hash.h: src/md/%/param.h src/md/hash.h.in | libh/libh.h
+gen/md/%/hash.h: src/md/%/param.h src/md/hash.h.in $(MACROS)
 	@mkdir -p $(@D)
-	$(PP) -P -C -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -P -C -D_INDIRECT=_INDIRECT -DHASH_$(call uc,$*) -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/hash.h.in | \
 	sed -En 's/^\s*#\s+/#/;/pragma once/,$$p' > $@
 
-gen/md/%/hmac.h: src/md/%/param.h src/md/hmac.h.in | libh/libh.h
+gen/md/%/hmac.h: src/md/%/param.h src/md/hmac.h.in $(MACROS)
 	@mkdir -p $(@D)
-	$(PP) -C -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -C -D_INDIRECT=_INDIRECT -DHASH_$(call uc,$*) -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/hmac.h.in | \
 	sed -En 's/^\s*#\s+/#/;/pragma once/,$$p' > $@
 
-gen/md/%/ext.h: src/md/%/param.h src/md/ext.h.in | libh/libh.h
+gen/md/%/ext.h: src/md/%/param.h src/md/ext.h.in $(MACROS)
 	@mkdir -p $(@D)
-	$(PP) -C -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -C -D_INDIRECT=_INDIRECT -DHASH_$(call uc,$*) -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/ext.h.in | \
 	sed -En 's/^\s*#\s+/#/;/pragma once/,$$p' > $@
 
 # generated c hash driver
-gen/md/%/register.c: src/md/%/param.h src/md/register.c.in | libh
+gen/md/%/register.c: src/md/%/param.h src/md/register.c.in $(MACROS)
 	@mkdir -p $(@D)
-	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -P -D_INDIRECT=_INDIRECT -DHASH_$(call uc,$*) -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/register.c.in > $@
 
-gen/md/%/hash.c: src/md/%/param.h src/md/hash.h.in src/md/hash.c.in | libh
+gen/md/%/hash.c: src/md/%/param.h src/md/hash.h.in src/md/hash.c.in $(MACROS)
 	@mkdir -p $(@D)
-	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -P -D_INDIRECT=_INDIRECT -DHASH_$(call uc,$*) -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/hash.c.in > $@
 
-gen/md/%/hmac.c: src/md/%/param.h src/md/hmac.h.in src/md/hmac.c.in | libh
+gen/md/%/hmac.c: src/md/%/param.h src/md/hmac.h.in src/md/hmac.c.in $(MACROS)
 	@mkdir -p $(@D)
-	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -P -D_INDIRECT=_INDIRECT -DHASH_$(call uc,$*) -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/hmac.c.in > $@
 
-gen/md/%/ext.c: src/md/%/param.h src/md/ext.h.in src/md/ext.c.in | libh
+gen/md/%/ext.c: src/md/%/param.h src/md/ext.h.in src/md/ext.c.in $(MACROS)
 	@mkdir -p $(@D)
-	$(PP) -P -D_INDIRECT=_INDIRECT -include $< \
+	$(PP) -P -D_INDIRECT=_INDIRECT -DHASH_$(call uc,$*) -include $< \
 	-DHASH_name=$* -DHASH_NAME=$(call uc,$*) src/md/ext.c.in > $@
 
 # combining these allows a bit more optimization...
@@ -118,51 +128,51 @@ gen/md/%/driver.c: gen/md/%/hash.c gen/md/%/hmac.c gen/md/%/ext.c
 	cat $^ > $@
 
 # c transform implementations
-obj/md/%/xform/generic.o: src/md/%/xform.c | libh
+obj/md/%/xform/generic.o: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -Dc_impl=generic -c $< -o $@
 
-obj/md/%/xform/native.o: src/md/%/xform.c | libh
+obj/md/%/xform/native.o: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -march=native -Dc_impl=native -c $< -o $@
 
-obj/md/%/xform/generic.S: src/md/%/xform.c | libh
+obj/md/%/xform/generic.S: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -Dc_impl=generic -c $< -S -o $@
 
-obj/md/%/xform/native.S: src/md/%/xform.c | libh
+obj/md/%/xform/native.S: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -march=native -Dc_impl=native -c $< -S -o $@
 
 # core hash drivers
-obj/md/%/hash.o: gen/md/%/hash.c gen/md/%/hash.h | libh
+obj/md/%/hash.o: gen/md/%/hash.c gen/md/%/hash.h $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
 # hmac drivers
-obj/md/%/hmac.o: gen/md/%/hmac.c gen/md/%/hmac.h gen/md/%/hash.h
+obj/md/%/hmac.o: gen/md/%/hmac.c gen/md/%/hmac.h gen/md/%/hash.h $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
-obj/md/%/ext.o: gen/md/%/ext.c gen/md/%/ext.h gen/md/%/hmac.h gen/md/%/hash.h
+obj/md/%/ext.o: gen/md/%/ext.c gen/md/%/ext.h gen/md/%/hmac.h gen/md/%/hash.h $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
 # impl registration
-obj/md/%/register.o: gen/md/%/register.c gen/md/%/hash.h | libh
+obj/md/%/register.o: gen/md/%/register.c gen/md/%/hash.h $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
 # misc
-obj/common/%.o: src/common/%.c src/common/%.h | libh
+obj/common/%.o: src/common/%.c src/common/%.h $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
-obj/common/%.o: src/common/%.c | libh
+obj/common/%.o: src/common/%.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
-obj/common/%.o: gen/common/%.c | libh
+obj/common/%.o: gen/common/%.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
@@ -171,7 +181,7 @@ obj/can.o: $(OBJ_CAN)
 	$(LD) -r $^ -o $@
 
 # individual hash module
-obj/md/%/driver.o: gen/md/%/driver.c | gen/md/%/hash.h gen/md/%/hmac.h gen/md/%/ext.h libh
+obj/md/%/driver.o: gen/md/%/driver.c gen/md/%/hash.h gen/md/%/hmac.h gen/md/%/ext.h $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
@@ -187,10 +197,10 @@ obj/llhash.o: obj/can.o obj/xform.o $(OBJ_HASHES)
 	$(LD) -r $^ -o $@
 
 # fallback build rules
-%.o: %.c %.h | headers
+%.o: %.c %.h $(MACROS) $(HEADERS)
 	$(COMPILE) -c $< -o $@
 
-%.o: %.c | headers
+%.o: %.c $(MACROS) $(HEADERS)
 	$(COMPILE) -c $< -o $@
 
 lib%.so: %.o
@@ -234,7 +244,7 @@ gen/test_vectors.h: scripts/vector.py
 	@mkdir -p $(@D)
 	python3 $< h > $@
 
-vectors.o: vectors.c | headers gen/test_vectors.h
+vectors.o: vectors.c $(MACROS) $(HEADERS) gen/test_vectors.h
 	$(COMPILE) -c $< -o $@
 
 vectors: vectors.o obj/test_vectors.o obj/llhash.o
@@ -250,9 +260,14 @@ run_vectors: vectors
 #@awk '/_clean:/{f=1;next}/^([^\t]|$$)/{f=0}f&&sub(/\t/,"")' $(MAKEFILE_LIST)
 # hack to force clean to run first *to completion* even for parallel builds
 # note that $(info ...) prints everything on one line
+clean_all: _nop $(foreach _,$(filter clean_all,$(MAKECMDGOALS)),$(info $(shell $(MAKE) _clean_all)))
+_clean_all: _clean
+	rm -rf param.h libh/libh.h $(LIBH) || /bin/true
+
 clean: _nop $(foreach _,$(filter clean,$(MAKECMDGOALS)),$(info $(shell $(MAKE) _clean)))
 _clean:
-	rm -rf obj gen bin $(BINARIES) libh/libh.h $(LIBH) $(wildcard *.o) || /bin/true
+	rm -rf obj gen bin $(BINARIES) $(wildcard *.o) || /bin/true
+
 _nop:
 	@true
 
@@ -260,13 +275,13 @@ _nop:
 .SECONDEXPANSION:
 # assembly transform implementations
 # if the assembler fails, we fall back to compiling dummy functions in c
-obj/%.o: $$(subst /xform/,/asm/,src/$$*.S) src/common/built.S libh/libh.h
+obj/%.o: $$(subst /xform/,/asm/,src/$$*.S) src/common/built.S $(MACROS)
 	@mkdir -p $(@D)
 	$(ASSEMBLE) -c $< -o $@ || \
 	$(COMPILE) -Wno-unused-parameter -DSTUBBED -x c -c $< -o $@
 
 # c with inline assembly implementations
-obj/%.o: $$(subst /xform/,/asm/,src/$$*.c) libh/libh.h
+obj/%.o: $$(subst /xform/,/asm/,src/$$*.c) $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -O2 -c $< -o $@ || \
 	$(COMPILE) -Wno-unused-parameter -DSTUBBED -c $< -o $@
