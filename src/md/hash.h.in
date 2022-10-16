@@ -40,6 +40,7 @@ typedef HASH(CTX) ALIAS(CTX);
 #endif
 
 void HASH(Set_IV)(uintWS_t state[]);
+void HASH(Clear)(HASH(CTX) *ctx);
 void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src);
 void HASH(Init)(HASH(CTX) *ctx);
 void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len);
@@ -48,6 +49,7 @@ uint8_t * IDENTITY(HASH_NAME)(const uint8_t data[], size_t len, uint8_t hash[]);
 
 #if HASH_ALIASED
 void ALIAS(Set_IV)(uintWS_t state[]);
+void ALIAS(Clear)(ALIAS(CTX) *ctx);
 void ALIAS(Clone)(ALIAS(CTX) *dst, const ALIAS(CTX) *src);
 void ALIAS(Init)(ALIAS(CTX) *ctx);
 void ALIAS(Update)(ALIAS(CTX) *ctx, const uint8_t data[], size_t len);

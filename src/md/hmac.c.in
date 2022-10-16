@@ -9,6 +9,7 @@
 #include <string.h>
 #include <endian.h>
 #include <stdio.h>
+#include "../../util.h"
 #include "../../gen/md/sha1/hmac.h"
 #else
 #include "../../macros.h"
@@ -17,6 +18,7 @@ h(include <stddef.h>)
 h(include <string.h>)
 h(include <endian.h>)
 h(include <stdio.h>)
+h(include STR(../../../util.h))
 h(define HASH(HMAC_C))
 h(include "hmac.h")
 #endif
@@ -205,6 +207,13 @@ h(else)
   HASH(Native)(ctx->state, ctx->hmac, HMAC_OUTER_BLOCKS);
 h(endif)
   SERIALIZE(hash, ctx->state);
+}
+
+void HMAC(Clear)(HMAC(CTX) *ctx) {
+  ctx->bytelen = ctx->datalen = 0;
+  wipe(ctx->data);
+  wipe(ctx->state);
+  wipe(ctx->hmac);
 }
 
 void HMAC_NAME(const void *key, size_t key_sz, const uint8_t msg[], size_t msg_sz, uint8_t hash[]) {

@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <endian.h>
+#include "../../util.h"
 #include "../../gen/md/sha1/hash.h"
 #else
 #include "../../macros.h"
@@ -15,6 +16,7 @@ h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
 h(include <endian.h>)
+h(include STR(../../../util.h))
 h(define HASH(HASH_C))
 h(include "hash.h")
 #endif
@@ -162,7 +164,8 @@ __attribute__((alias(STR(HASH(Clear)))));
 #endif
 void HASH(Clear)(HASH(CTX) *ctx) {
   ctx->bytelen = ctx->datalen = 0;
-  for (int i = 0; i < HASH(STATE_WORDS); ++i) ctx->state[i] = 0;
+  wipe(ctx->data);
+  wipe(ctx->state);
 }
 
 
