@@ -21,7 +21,7 @@ h(include "hash.h")
 #endif
 
 static const uintWS_t iv[] = HASH(IV);
-static uint8_t output[HASH_DIGEST_LENGTH];
+static uint8_t hash_output[HASH_DIGEST_LENGTH];
 
 static inline void __attribute__((always_inline)) serialize(uint8_t hash[], const uintWS_t *state);
 
@@ -55,7 +55,7 @@ uint8_t * HASH_NAME(const uint8_t data[], size_t len, uint8_t hash[]) {
   }
 
   // write out result
-  hash = hash != NULL ? hash : output;
+  hash = hash != NULL ? hash : hash_output;
   serialize(hash, state);
   return hash;
 }
