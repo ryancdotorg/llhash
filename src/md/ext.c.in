@@ -8,6 +8,9 @@
 #include <stddef.h>
 #include <string.h>
 #include <endian.h>
+#ifndef __STDC_NO_ATOMICS__
+#include <stdatomic.h>
+#endif
 #include "../../util.h"
 #include "../../gen/md/sha1/ext.h"
 #else
@@ -16,6 +19,9 @@ h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
 h(include <endian.h>)
+h(ifndef __STDC_NO_ATOMICS__)
+h(include <stdatomic.h>)
+h(endif)
 h(include STR(../../../util.h))
 h(define HASH(EXT_C))
 h(include STR(ext.h))
@@ -26,26 +32,202 @@ h(include STR(ext.h))
 #define prblk(...)
 #endif
 
-/*
+//h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
+// Me: Given a byte position within an array of words, I need to know what the
+// equivalent position will be after I bswap that array, so...
+// (((O)&~(HASH_WORD_BYTES-1))+(HASH_WORD_BYTES-1))-(((O)&(HASH_WORD_BYTES-1)))
+// Optimizer: That just sounds like...
+h(define BSWAP_OFFSET(O) ((O)^(HASH_WORD_BYTES-1)))
+// ...with extra steps.
+//h(else)
+//h(define BSWAP_OFFSET(O) (O))
+//h(endif)
+
+void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]);
+
+h(ifndef __STDC_NO_ATOMICS__)
+static HMAC(CTX) HMAC(EmptyKey) = { .data = {1} };
+h(endif)
+
 void HKDF(Extract)(
 uint8_t *prk,
 const uint8_t salt[], size_t salt_sz,
 const uint8_t ikm[], size_t ikm_sz) {
-  JOIN(HMAC,HASH_NAME)(salt, salt_sz, ikm, ikm_sz, prk);
+  if (salt_sz != 0) {
+    HMAC_NAME(salt, salt_sz, ikm, ikm_sz, prk);
+  } else {
+    HMAC(CTX) ctx;
+
+h(ifdef __STDC_NO_ATOMICS__)
+    HMAC(Init)(&ctx, "", 0);
+h(else)
+    // try to compute data for empty key once...
+    if (HMAC(EmptyKey).data[0] == 0) {
+      HMAC(Clone)(&ctx, &HMAC(EmptyKey));
+    } else {
+      HMAC(Init)(&ctx, "", 0);
+
+      uint8_t init = 1;
+      if (atomic_compare_exchange_strong(&(HMAC(EmptyKey).data[0]), &init, 2)) {
+        HMAC(Init)(&HMAC(EmptyKey), "", 0);
+        HMAC(Clone)(&HMAC(EmptyKey), &ctx);
+        atomic_store(&(HMAC(EmptyKey).data[0]), 0);
+      }
+    }
+h(endif)
+
+    HMAC(Update)(&ctx, ikm, ikm_sz);
+    HMAC(Final)(prk, &ctx);
+  }
+}
+
+/*
+inline void HKDF(Expand_Init)(
+HMAC(CTX) *ctx,
+const uint8_t prk[], size_t prk_sz) {
+  HMAC(Init)(ctx, prk, prk_sz);
+}
+
+inline int HKDF(Expand_CTX)(
+HMAC(CTX) *ctx,
+uint8_t *okm, size_t okm_sz,
+const uint8_t info[], size_t info_sz) {
+  if (okm_sz > HASH_DIGEST_LENGTH * 255) return -1;
+  uint8_t n, block = 1;
+
+  uint8_t scratch[HASH_BLOCK_LENGTH * 2 + sizeof(HMAC(CTX))];
+  uint8_t *restrict tail = scratch;
+  HMAC(CTX) *restrict tctx = (HMAC(CTX)*)(scratch + HASH_BLOCK_LENGTH * 2);
+
+
+  wipe(scratch);
+  return 0;
 }
 */
 
-/*
-void HKDF(Expand)(
+int HKDF(Expand)(
 uint8_t *okm, size_t okm_sz,
 const uint8_t prk[], size_t prk_sz,
 const uint8_t info[], size_t info_sz) {
-  uint8_t scratch[sizeof(HMAC(CTX)) + HASH_BLOCK_LENGTH * 2];
-  uint8_t *restrict tail = scratch;
-  HMAC(CTX) *restrict ctx = (HMAC(CTX)*)(scratch + HASH_BLOCK_LENGTH * 2);
-  HMAC(Init)(ctx, prk, prk_sz);
+  if (okm_sz > HASH_DIGEST_LENGTH * 255) return -1;
+  uint8_t block = 1;
+
+  // single output block case
+  if (okm_sz <= HASH_DIGEST_LENGTH) {
+    HMAC(CTX) quick;
+    HMAC(Init)(&quick, prk, prk_sz);
+    if (info_sz > 0) HMAC(Update)(&quick, info, info_sz);
+    HMAC(Update)(&quick, &block, 1);
+    if (okm_sz == HASH_DIGEST_LENGTH) {
+      HMAC(Final)(okm, &quick);
+    } else {
+      HMAC(Semifinal)(&quick);
+      HASH(Partial)(okm, quick.state, 0, okm_sz);
+    }
+    wipe(&quick, sizeof(quick));
+    return 0;
+  }
+
+  const uint8_t *data;
+  uint8_t scratch[HASH_BLOCK_LENGTH * 3 + sizeof(HMAC(CTX)) * 2];
+  uint8_t *blkptr, *head = scratch;
+  uint8_t *tail = scratch + HASH_BLOCK_LENGTH * 1;
+  HMAC(CTX) *restrict ctx = (HMAC(CTX)*)(scratch + HASH_BLOCK_LENGTH * 3 + sizeof(HMAC(CTX)) * 0);
+  HMAC(CTX) *restrict key = (HMAC(CTX)*)(scratch + HASH_BLOCK_LENGTH * 3 + sizeof(HMAC(CTX)) * 1);
+
+  // ceil(okm_sz / HASH_DIGEST_LENGTH)
+  uint8_t n = (okm_sz+(HASH_DIGEST_LENGTH-1)) / HASH_DIGEST_LENGTH;
+  uint8_t head_blks, data_blks, tail_blks;
+  size_t ioff, irem;
+
+  HMAC(Init)(key, prk, prk_sz);
+  HMAC(Clone)(ctx, key);
+
+  if (info_sz > 0) {
+    HMAC(Update)(ctx, info, info_sz);
+    size_t dlen = HASH_DIGEST_LENGTH + info_sz + 1;
+    if (dlen < (HASH_BLOCK_LENGTH*3-(HASH_WORD_SIZE/4))) {
+      // previous hash output, info, and block number are small enough to fit
+      // in three blocks after padding, set up for a single transform per block
+      ioff = irem = 0; tail = NULL; // head may be overlapping tail
+      memcpy(head + HASH_DIGEST_LENGTH, info, info_sz);
+
+      head_blks = HASH(Pad)(head, dlen);
+      data_blks = 0;
+      tail_blks = 0;
+
+      blkptr = head + HASH_DIGEST_LENGTH + info_sz;
+    } else {
+      // data hashed per block too big for buffers, split for three calls:
+      //
+      // HMAC_Update(T_prev || info[0:HASH_BLOCK_LENGTH-HASH_DIGEST_LENGTH])
+      // HMAC_Update(info[HASH_BLOCK_LENGTH-HASH_DIGEST_LENGTH:...])
+      // HMAC_Update(info[...:] || padding)
+      ioff = ((HASH_DIGEST_LENGTH + info_sz) & ~(HASH_BLOCK_LENGTH-1)) - HASH_DIGEST_LENGTH;
+      irem = info_sz - ioff;
+      memcpy(head + HASH_DIGEST_LENGTH, info, HASH_BLOCK_LENGTH - HASH_DIGEST_LENGTH);
+      data = info + ioff;
+      memcpy(tail, data, irem);
+
+      head_blks = 1;
+      data_blks = (ioff - (HASH_BLOCK_LENGTH - HASH_DIGEST_LENGTH)) / HASH_BLOCK_LENGTH;
+      tail_blks = HASH(Tail)(tail, irem + 1);
+
+      blkptr = tail + irem;
+    }
+  } else {
+    head_blks = HASH(Pad)(head, HASH_DIGEST_LENGTH + 1);
+    data_blks = 0;
+    tail_blks = 0;
+    blkptr = head + HASH_DIGEST_LENGTH + 1;
+  }
+
+  HMAC(Update)(ctx, &block, 1);
+  HMAC(Final)(okm, ctx);
+
+  *blkptr = block;
+
+  if (data_blks == 0) {
+    while (++*blkptr < n) { // middle blocks (full)
+      memcpy(head, okm, HASH_DIGEST_LENGTH);
+      memcpy(ctx->state, key->state, HASH_STATE_BYTES);
+      HASH(Transform)(ctx->state, head, head_blks);
+      HMAC(Outer)(key->hmac, ctx->state);
+      okm += HASH_DIGEST_LENGTH;
+      SERIALIZE(okm, ctx->state);
+    }
+    // last block (potentially partial)
+    memcpy(head, okm, HASH_DIGEST_LENGTH);
+    memcpy(ctx->state, key->state, HASH_STATE_BYTES);
+    HASH(Transform)(ctx->state, head, head_blks);
+    HMAC(Outer)(key->hmac, ctx->state);
+  } else {
+    while (++*blkptr < n) { // middle blocks (full)
+      memcpy(head, okm, HASH_DIGEST_LENGTH);
+      memcpy(ctx->state, key->state, HASH_STATE_BYTES);
+      HASH(Transform)(ctx->state, head, head_blks);
+      HASH(Transform)(ctx->state, data, data_blks);
+      HASH(Transform)(ctx->state, tail, tail_blks);
+      HMAC(Outer)(key->hmac, ctx->state);
+      okm += HASH_DIGEST_LENGTH;
+      SERIALIZE(okm, ctx->state);
+    }
+    // last block (potentially partial)
+    memcpy(head, okm, HASH_DIGEST_LENGTH);
+    memcpy(ctx->state, key->state, HASH_STATE_BYTES);
+    HASH(Transform)(ctx->state, head, head_blks);
+    HASH(Transform)(ctx->state, data, data_blks);
+    HASH(Transform)(ctx->state, tail, tail_blks);
+    HMAC(Outer)(key->hmac, ctx->state);
+  }
+
+  // output final bytes
+  okm += HASH_DIGEST_LENGTH;
+  HASH(Partial)(okm, ctx->state, 0, okm_sz % HASH_DIGEST_LENGTH);
+
+  wipe(scratch);
+  return 0;
 }
-*/
 
 void PBKDF2(1)(
 uint8_t dk[], size_t dk_sz,
