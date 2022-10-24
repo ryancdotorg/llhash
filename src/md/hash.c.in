@@ -18,7 +18,7 @@ h(include <string.h>)
 h(include <endian.h>)
 h(include STR(../../../util.h))
 h(define HASH(HASH_C))
-h(include "hash.h")
+h(include STR(hash.h))
 #endif
 
 static const uintWS_t iv[] = HASH(IV);
@@ -168,14 +168,12 @@ void HASH(Clear)(HASH(CTX) *ctx) {
   wipe(ctx->state);
 }
 
-
 // caller responsible for making sure the buffer is big enough
 #if HASH_ALIASED
 uint64_t ALIAS(Pad)(uint8_t data[], size_t len)
 __attribute__((alias(STR(HASH(Pad)))));
 #endif
 uint64_t HASH(Pad)(uint8_t data[], size_t len) {
-  uint64_t *bitlen_ptr;
   uint64_t nblk = len / HASH_BLOCK_LENGTH;
   int remaining_bytes = len & (HASH_BLOCK_LENGTH-1);
 
@@ -189,8 +187,7 @@ uint64_t HASH(Pad)(uint8_t data[], size_t len) {
     nblk += 2;
   }
 
-  bitlen_ptr = (uint64_t *)(data + (nblk * HASH_BLOCK_LENGTH) - 8);
-  *bitlen_ptr = htoDe64(len * 8);
+  stor64De(data + (nblk * HASH_BLOCK_LENGTH) - 8, len * 8);
 
   return nblk;
 }
