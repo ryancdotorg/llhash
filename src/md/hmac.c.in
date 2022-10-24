@@ -20,15 +20,8 @@ h(include <endian.h>)
 h(include <stdio.h>)
 h(include STR(../../../util.h))
 h(define HASH(HMAC_C))
-h(include "hmac.h")
+h(include STR(hmac.h))
 #endif
-
-#define HMAC_Clone HMAC(Clone)
-#define HMAC_Init HMAC(Init)
-#define HMAC_Update HMAC(Update)
-#define HMAC_Final HMAC(Final)
-
-#define HMAC_CTX HMAC(CTX)
 
 //#define prblk(a, b) _prblk(a, b, __FILE__, __LINE__)
 #ifndef prblk
@@ -63,16 +56,16 @@ h(endif)
 }
 #pragma GCC diagnostic pop
 
-void HMAC_Clone(HMAC_CTX *dst, const HMAC_CTX *src) {
+void HMAC(Clone)(HMAC(CTX) *dst, const HMAC(CTX) *src) {
   // relies on .data being first
   if (src->datalen) {
-    memcpy(dst, src, sizeof(HMAC_CTX));
+    memcpy(dst, src, sizeof(HMAC(CTX)));
   } else {
-    memcpy(PTR_ADD(dst, HASH_BLOCK_LENGTH), PTR_ADD(src, HASH_BLOCK_LENGTH), sizeof(HMAC_CTX) - HASH_BLOCK_LENGTH);
+    memcpy(PTR_ADD(dst, HASH_BLOCK_LENGTH), PTR_ADD(src, HASH_BLOCK_LENGTH), sizeof(HMAC(CTX)) - HASH_BLOCK_LENGTH);
   }
 }
 
-void HMAC_Init(HMAC_CTX *ctx, const void *key, size_t len) {
+void HMAC(Init)(HMAC(CTX) *ctx, const void *key, size_t len) {
   HASH(Init)((HASH(CTX)*)ctx);
 
   // populate padded key
@@ -151,11 +144,11 @@ h(endif)
 #undef ILEN
 }
 
-inline void HMAC_Update(HMAC_CTX *ctx, const uint8_t data[], size_t len) {
+inline void HMAC(Update)(HMAC(CTX) *ctx, const uint8_t data[], size_t len) {
   HASH(Update)((HASH(CTX)*)ctx, data, len);
 }
 
-inline void HMAC_Final(uint8_t hash[], HMAC_CTX *ctx) {
+inline void HMAC(Final)(uint8_t hash[], HMAC(CTX) *ctx) {
   uint32_t i = ctx->datalen;
 
   if (ctx->datalen < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
@@ -217,9 +210,9 @@ void HMAC(Clear)(HMAC(CTX) *ctx) {
 }
 
 void HMAC_NAME(const void *key, size_t key_sz, const uint8_t msg[], size_t msg_sz, uint8_t hash[]) {
-  HMAC_CTX ctx;
+  HMAC(CTX) ctx;
 
-  HMAC_Init(&ctx, key, key_sz);
-  HMAC_Update(&ctx, msg, msg_sz);
-  HMAC_Final(hash, &ctx);
+  HMAC(Init)(&ctx, key, key_sz);
+  HMAC(Update)(&ctx, msg, msg_sz);
+  HMAC(Final)(hash, &ctx);
 }
