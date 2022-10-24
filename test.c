@@ -235,7 +235,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
   } \
 } while(0)
 
-#define BENCH_DATA(NAME, BLOCK, SIZE) do { \
+#define BENCH_DATA(NAME, QNAME, BLOCK, SIZE) do { \
   if (!should(hashes, #NAME)) break; \
   int iter = 1; \
   for (int n = 1; n <= 64; n *= 4) { \
@@ -244,24 +244,48 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
     OpenSSL_##NAME (ref, scratch, len); \
     printf("\n"); \
     int impl; \
-    for (int i = 0; i < 32; ++i) { \
-      if ((impl = NAME##_Register(1<<i)) != i) continue; \
+    for (int i = -2; i < 32; ++i) { \
+      if (i >= 0 && (impl = NAME##_Register(1<<i)) != i) continue; \
       uint64_t cycles; \
       double best_cycles = 1e40; \
       uint64_t t_end = getns() + fstons(0.5); \
       for (int x = 1; (x & 0xff) || getns() < t_end; ++x) { \
-        cycles = __rdtsc(); \
-        for (int y = 0; y < iter; ++y) { \
-          NAME (scratch, len, hash); \
+        if (i >= 0) { \
+          cycles = __rdtsc(); \
+          for (int y = 0; y < iter; ++y) { \
+            NAME (scratch, len, hash); \
+          } \
+          cycles = __rdtsc() - cycles; \
+        } else if (i == -2) { \
+          cycles = __rdtsc(); \
+          for (int y = 0; y < iter; ++y) { \
+            OpenSSL_EVP_##NAME (ref, scratch, len); \
+          } \
+          cycles = __rdtsc() - cycles; \
+        } else if (i == -1) { \
+          cycles = __rdtsc(); \
+          for (int y = 0; y < iter; ++y) { \
+            OpenSSL_##NAME (ref, scratch, len); \
+          } \
+          cycles = __rdtsc() - cycles; \
         } \
-        cycles = __rdtsc() - cycles; \
         int fail = 0; \
-        for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
+        if (i >= 0) { \
+          for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
+        } \
         /*if (fail) { best_cycles = NAN; break; }*/ \
         double dtmp = (double)cycles / (double)iter; \
         if (dtmp < best_cycles) { best_cycles = dtmp; } \
       } \
-      printf(#NAME " %-28s: ", NAME##_Describe(impl)); \
+      char *desc; \
+      if (i >= 0) { \
+        desc = NAME##_Describe(impl); \
+      } else if (i == -2) { \
+        desc = "OpenSSL (EVP_Digest)"; \
+      } else if (i == -1) { \
+        desc = "OpenSSL (simple)"; \
+      } \
+      printf(#NAME " %-28s: ", desc); \
       printf("%8.1f cycles/call ", best_cycles); \
       printf("%6.1f cycles/block ", best_cycles/(double)n); \
       printf("(%d block%s)\n", n, n > 1 ? "s" : ""); \
@@ -346,12 +370,12 @@ int main(int argc, char *argv[]) {
   }
 
   if (!nobench) {
-    BENCH_DATA(MD4, 64, 16);
-    BENCH_DATA(MD5, 64, 16);
-    BENCH_DATA(RIPEMD160, 64, 20);
-    BENCH_DATA(SHA1, 64, 20);
-    BENCH_DATA(SHA2_256, 64, 32);
-    BENCH_DATA(SHA2_512, 128, 64);
+    BENCH_DATA(MD4, MD4, 64, 16);
+    BENCH_DATA(MD5, MD5, 64, 16);
+    BENCH_DATA(RIPEMD160, RIPEMD160,  64, 20);
+    BENCH_DATA(SHA1, SHA1, 64, 20);
+    BENCH_DATA(SHA2_256, SHA256, 64, 32);
+    BENCH_DATA(SHA2_512, SHA512, 128, 64);
   }
 
   printf("\n");
