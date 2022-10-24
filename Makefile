@@ -33,7 +33,8 @@ ifeq ($(USE_RYANC_SLOW), 1)
 IMPL_FLAGS += -DWITH_RYANC_SLOW
 endif
 
-HASHES = md/md4 md/md5 md/ripemd160 md/sha1 md/sha2_256 md/sha2_512 md/sha2_224 md/sha2_384
+HASHES = md4 md5 ripemd160 sha1 sha2_256 sha2_512 sha2_224 sha2_384
+MD_HASHES = $(foreach h,$(HASHES),md/$h)
 
 # custom functions
 eat = $(subst _,,_)
@@ -56,16 +57,16 @@ _OBJ_ASM += $(subst .c,.o,$(call containing,/asm/,$(call rwildcard,src,*.c)))
 OBJ_ASM = $(subst /asm/,/xform/,$(subst src/,obj/,$(_OBJ_ASM)))
 OBJ_NATIVE = $(patsubst src/%/xform.c,obj/%/xform/native.o,$(call rwildcard,src,*/xform.c))
 OBJ_GENERIC = $(patsubst src/%/xform.c,obj/%/xform/generic.o,$(call rwildcard,src,*/xform.c))
-OBJ_HASHES = $(patsubst %,obj/%.o,$(HASHES))
+OBJ_HASHES = $(patsubst %,obj/%.o,$(MD_HASHES))
 OBJ_CAN = obj/common/cpuinfo.o obj/common/can_native.o $(patsubst src/common/%.c,obj/common/%.o,$(wildcard src/common/can_*.c))
 OBJ_XFORM = $(patsubst src/%/xform.c,obj/%/xform.o,$(call rwildcard,src,*/xform.c))
 
 LIBH = $(patsubst src/libh/%_h.py,libh/%.h,$(wildcard src/libh/*_h.py))
 
 HEADERS := util.h llhash.h
-HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/hash.h,$h))
-HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/hmac.h,$h))
-HEADERS += $(foreach h,$(HASHES),$(patsubst %,gen/%/ext.h,$h))
+HEADERS += $(foreach h,$(MD_HASHES),$(patsubst %,gen/%/hash.h,$h))
+HEADERS += $(foreach h,$(MD_HASHES),$(patsubst %,gen/%/hmac.h,$h))
+HEADERS += $(foreach h,$(MD_HASHES),$(patsubst %,gen/%/ext.h,$h))
 
 MACROS = macros.h param.h libh/libh.h libh/magic.h $(LIBH)
 
