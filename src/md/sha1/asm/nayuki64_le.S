@@ -1,6 +1,8 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha1_nayuki64_xform_le)
+#elif !(defined(WITH_NAYUKI))
+#error "implementation disabled"
 #else
 /*
  * SHA-1 hash in x86-64 assembly

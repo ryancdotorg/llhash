@@ -1,8 +1,9 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha1_intel_avx_xform)
+#elif !(defined(WITH_GPL) && defined(WITH_INTEL))
+#error "implementation disabled"
 #else
-#ifdef LICENSE_GPL
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * This is a SIMD SHA-1 implementation. It requires the Intel(R) Supplemental
@@ -423,8 +424,4 @@ BSWAP_SHUFB_CTL:
 	.long 0x04050607
 	.long 0x08090a0b
 	.long 0x0c0d0e0f
-
-#else // LICENSE
-#include "stub.S"
-#endif // LICENSE
 #endif

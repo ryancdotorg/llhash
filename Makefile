@@ -3,7 +3,36 @@ export LANG=c LC_ALL=C
 
 TMPDIR ?= /dev/shm
 
-LICENSES = -DLICENSE_GPL
+ifeq ($(USE_ALL), 1)
+USE_GPL = 1
+USE_INTEL = 1
+USE_NAYUKI = 1
+USE_RYANC_SLOW = 1
+else
+USE_GPL ?= 0
+USE_INTEL ?= 0
+USE_NAYUKI ?= 0
+USE_RYANC_SLOW ?= 0
+endif
+
+IMPL_FLAGS :=
+
+ifeq ($(USE_GPL), 1)
+IMPL_FLAGS += -DWITH_GPL
+endif
+
+ifeq ($(USE_INTEL), 1)
+IMPL_FLAGS += -DWITH_INTEL
+endif
+
+ifeq ($(USE_NAYUKI), 1)
+IMPL_FLAGS += -DWITH_NAYUKI
+endif
+
+ifeq ($(USE_RYANC_SLOW), 1)
+IMPL_FLAGS += -DWITH_RYANC_SLOW
+endif
+
 HASHES = md/md4 md/md5 md/ripemd160 md/sha1 md/sha2_256 md/sha2_512 md/sha2_224 md/sha2_384
 
 # custom functions
@@ -54,7 +83,7 @@ PP := ccache cpp
 LD := ccache ld
 
 COMPILE = $(CC) $(CFLAGS)
-ASSEMBLE = $(AS) $(LICENSES) -O3 -ggdb
+ASSEMBLE = python3 -B scripts/asmwrapper.py $(AS) $(IMPL_FLAGS) -O3 -ggdb
 
 .PHONY: all libh macros headers asm native generic \
 	clean_all _clean_all clean _clean _nop \

@@ -1,6 +1,8 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha2_512_intel_avx2_xform)
+#elif !(defined(WITH_INTEL))
+#error "implementation disabled"
 #else
 ########################################################################
 # Implement fast SHA-512 with AVX2 instructions. (x86_64)
@@ -123,7 +125,6 @@ frame_size = frame_GPRSAVE + GPRSAVE_SIZE
 	add	\p1, \p2
 	mov	\p2, \p1
 .endm
-
 
 # COPY_YMM_AND_BSWAP ymm, [mem], byte_flip_mask
 # Load ymm with mem and byte swap each dword

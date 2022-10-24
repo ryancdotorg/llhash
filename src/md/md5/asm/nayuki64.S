@@ -1,6 +1,8 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(md5_nayuki64_xform)
+#elif !(defined(WITH_NAYUKI))
+#error "implementation disabled"
 #else
 /*
  * MD5 hash in x86-64 assembly

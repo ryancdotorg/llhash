@@ -1,6 +1,8 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha2_256_intel_shaext_xform)
+#elif !(defined(WITH_INTEL))
+#error "implementation disabled"
 #else
 /*
  * Intel SHA Extensions optimized implementation of a SHA-256 update function

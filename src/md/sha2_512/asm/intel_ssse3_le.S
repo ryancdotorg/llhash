@@ -1,6 +1,8 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha2_512_intel_ssse3_xform_le)
+#elif !(defined(WITH_INTEL))
+#error "implementation disabled"
 #else
 ########################################################################
 # Implement fast SHA-512 with SSSE3 instructions. (x86_64)

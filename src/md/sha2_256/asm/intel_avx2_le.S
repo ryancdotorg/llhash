@@ -1,6 +1,8 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha2_256_intel_avx2_xform_le)
+#elif !(defined(WITH_INTEL))
+#error "implementation disabled"
 #else
 ########################################################################
 # Implement fast SHA-256 with AVX2 instructions. (x86_64)

@@ -2,6 +2,8 @@
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(JOIN(NAME,xform))
+#elif !(defined(WITH_RYANC_SLOW))
+#error "implementation disabled"
 #else
 
 /* main working registers */
