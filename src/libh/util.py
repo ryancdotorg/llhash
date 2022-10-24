@@ -142,8 +142,8 @@ def irange(a, b=None, i=1):
     if a > b: i = -i
     return range(a, b + i, i)
 
-def placeholders(pfx, a, b=None, i=1):
-    return map(lambda x: f'{pfx}{x}', irange(a, b, i))
+def placeholders(pfx, a, b=None, i=1, *, sep='', end=''):
+    return map(lambda x: f'{pfx}{x}' + (end if x == b else sep), irange(a, b, i))
 
 def lutmacro(name, fn, *args):
     if len(args) > 26:

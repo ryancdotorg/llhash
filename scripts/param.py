@@ -6,7 +6,7 @@ eprint = partial(print, file=stderr)
 
 print('#pragma once\n')
 
-names = list(map(lambda x: x.replace('md/', ''), argv[1:]))
+names = list(argv[1:])
 last_i = len(names) - 1
 for i, name in enumerate(names):
     NAME = name.upper()

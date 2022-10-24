@@ -12,34 +12,42 @@ h = Appender()
 helpers, macros = h.sections(2)
 
 helpers.define('_VEXP(...)', '__VA_ARGS__')
+helpers.define('_VAPPLY(F, ...)', 'F(__VA_ARGS__)')
 
 def va_reverse_n(n):
     r = LineWrapper()
 
-    if n == 1:
-        helpers.define('_VREV1(_1)', '_1')
-    else:
-        r(f'#define _VREV{n}(_{n}, ')
-        for_each(lambda x: r(f'_{x}) ', '_1, ') if x == 1 else r(f'_{x}, '), irange(n-1, 1))
-        for_each(lambda x: r(f'_{x}') if x == n else r(f'_{x}, '), irange(2, n))
+    if n >= 1:
+        r(f'#define _VREV{n}(')
+        r(*placeholders('_', n, 1, sep=', '))
+        r(') ')
+        r(*placeholders('_', 1, n, sep=', '))
         helpers(str(r))
 
 def va_select_n(n):
-    d = LineWrapper()
+    r = LineWrapper()
 
-    if n == 1:
-        helpers('#define _VSEL1(_1, NAME, ...) NAME')
-    else:
-        d(f'#define _VSEL{n}(_{n}, ')
-        for_each(lambda x: d(f'_{x}, '), irange(n-1, 1))
+    if n >= 0:
+        r(f'#define _VSEL{n}(')
+        if n > 0: r(*placeholders('_', n, 1, sep=', ', end=', '))
+        r('NAME, ', '...) ', 'NAME')
+        helpers(str(r))
 
-        d('NAME, ', '...) ', 'NAME')
-        helpers(str(d))
+def va_first_n(n):
+    r = LineWrapper()
+
+    if n >= 1:
+        r(f'#define _VFIRST{n}(')
+        r(*placeholders('_', 1, n, sep=', ', end=', '))
+        r('...) ')
+        r(*placeholders('_', 1, n, sep=', '))
+        helpers(str(r))
 
 def va_select():
-    for n in irange(1, MAX_ARGS):
+    for n in irange(0, MAX_ARGS):
         va_select_n(n)
         va_reverse_n(n)
+        va_first_n(n)
 
     va_select_n(MAX_ARGS + 1)
 
@@ -69,6 +77,9 @@ va_select()
 macros.define('VA_REVERSE(...)', '_VREV(__VA_ARGS__)')
 macros.define('VA_COUNT(...)', '_VCNT(_ _VCOMMA(__VA_ARGS__))')
 macros.define('VA_SEP(A, ...)', 'A _VCOMMA(__VA_ARGS__)')
+macros.define('VA_PICK(N, ...)', '_VSEL##N(__VA_ARGS__)')
+macros.define('VA_FIRST(N, ...)', '_VFIRST##N(__VA_ARGS__)')
+macros.define('VA_LAST(N, ...)', '_VAPPLY(_VREV, _VAPPLY(_VFIRST##N, _VREV(__VA_ARGS__)))')
 # The c preprocessor needs to be forced to do some extra expansion passes over
 # this monstrosity of a macro via _VEXP in order to make it work properly.
 macros.define('VA_SELECT(F, V, ...)', '''_VEXP( \\

@@ -50,8 +50,12 @@
 #endif
 #endif
 
-/* type/size definition macro */
+/* type/size definition macros */
 #define uintWS_t CONCAT(uint,HASH_WORD_BITS,_t)
+#define htobeWS CONCAT(hto,be,HASH_WORD_BITS)
+#define htoleWS CONCAT(hto,le,HASH_WORD_BITS)
+#define beWStoh CONCAT(be,HASH_WORD_BITS,toh)
+#define leWStoh CONCAT(le,HASH_WORD_BITS,toh)
 /* type/endian definition macros */
 #if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
 #define htoDeWS CONCAT(htobe,HASH_WORD_BITS)
@@ -68,6 +72,16 @@
 #define De32toh le32toh
 #define De64toh le64toh
 #endif
+
+#define storWSDe(D, V) (*((uintWS_t*)(D)) = htoDeWS(V))
+#define stor32De(D, V) (*((uint32_t*)(D)) = htoDe32(V))
+#define stor64De(D, V) (*((uint64_t*)(D)) = htoDe64(V))
+#define storWSbe(D, V) (*((uintWS_t*)(D)) = htobeWS(V))
+#define stor32be(D, V) (*((uint32_t*)(D)) = htobe32(V))
+#define stor64be(D, V) (*((uint64_t*)(D)) = htobe64(V))
+#define storWSle(D, V) (*((uintWS_t*)(D)) = htoleWS(V))
+#define stor32le(D, V) (*((uint32_t*)(D)) = htole32(V))
+#define stor64le(D, V) (*((uint64_t*)(D)) = htole64(V))
 
 /* rotate operators */
 #define ROL8(x,n)  __extension__({ uint8_t  _x=(x), _n=(n); (_x << _n) | (_x >> ( 8-_n)); })

@@ -1,5 +1,9 @@
 #pragma once
 #include "arith.h"
+
+#define _STR_PRAGMA(S) _Pragma(#S)
+#define STR_PRAGMA(S) _STR_PRAGMA(S)
+
 /* arcane macro magic, based in part on tricks from
  * http://jhnet.co.uk/articles/cpp_magic and
  * https://github.com/18sg/uSHET/blob/master/lib/cpp_magic.h and
@@ -148,6 +152,33 @@
   IF(DEC(n))(sep()) \
   DEFER2(op)(DEC(n), __VA_ARGS__) \
 )
+
+#define JOIN_OP(op, ...) IF(HAS_ARGS(__VA_ARGS__))( \
+  IF_ELSE(HAS_ARGS(REST(__VA_ARGS__)))( \
+    (EVAL(_JOIN_OP_FIRST(op, __VA_ARGS__))), \
+    (FIRST(__VA_ARGS__)) \
+  ) \
+)
+#define _JOIN_OP_DEFER() _JOIN_OP_INNER
+#define _JOIN_OP_FIRST(op,a,b,...) _JOIN_OP_INNER(op,(a),b,__VA_ARGS__)
+#define _JOIN_OP_INNER(op, a, b, ...) IF_ELSE(HAS_ARGS(__VA_ARGS__))( \
+  DEFER2(_JOIN_OP_DEFER)()(op, a op (b), __VA_ARGS__), \
+  a op (b) \
+)
+
+/*
+#define CONCAT(...) IF(HAS_ARGS(__VA_ARGS__))( \
+  IF_ELSE(HAS_ARGS(REST(__VA_ARGS__)))( \
+    EVAL(_CONCAT_INNER(__VA_ARGS__)), \
+    FIRST(__VA_ARGS__) \
+  ) \
+)
+#define _CONCAT_DEFER() _CONCAT_INNER
+#define _CONCAT_INNER(a, b, ...) IF_ELSE(HAS_ARGS(__VA_ARGS__))( \
+  DEFER2(_CONCAT_DEFER)()(a##b, __VA_ARGS__), \
+  a##b \
+)
+*/
 
 #define REDUCE(op, ...) IF(HAS_ARGS(__VA_ARGS__))( \
   IF_ELSE(HAS_ARGS(REST(__VA_ARGS__)))( \
