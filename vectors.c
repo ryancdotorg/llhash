@@ -149,51 +149,6 @@ static char * hex(char *out, const void *in, size_t len, int color) {
   } \
   fprintf(stderr, "HMAC vectors for " #H ": %d/%d\n", total - fail, total); \
 
-void _PBKDF2_HMAC_SHA1(
-uint8_t dk[], size_t dk_sz,
-const uint8_t pass[], size_t pass_sz,
-const uint8_t salt[], size_t salt_sz,
-unsigned int c) {
-  fprintf(stderr, "\n");
-  HMAC_SHA1_CTX ctx, pctx;
-
-  HMAC_SHA1_Init(&pctx, pass, pass_sz);
-
-  size_t nout = 0;
-  unsigned int i, j, block = 1;
-  uint8_t T[SHA1_DIGEST_LENGTH];
-  uint8_t U[SHA1_DIGEST_LENGTH];
-
-  uint8_t I_BE[4];
-
-  while (nout < dk_sz) {
-    *((uint32_t*)I_BE) = be32toh(block);
-    HMAC_SHA1_Clone(&ctx, &pctx);
-    //fprintf(stderr, "ostate1[] ="); for (int x = 0; x < 5; ++x) fprintf(stderr, " %08x", ((uint32_t *)ctx.state)[x]); fprintf(stderr, "\n");
-    HMAC_SHA1_Update(&ctx, salt, salt_sz);
-    HMAC_SHA1_Update(&ctx, I_BE, sizeof(I_BE));
-    HMAC_SHA1_Final(U, &ctx);
-    //fprintf(stderr, "ostate2[] ="); for (int x = 0; x < 5; ++x) fprintf(stderr, " %08x", ((uint32_t *)ctx.state)[x]); fprintf(stderr, "\n");
-    //fprintf(stderr, "ostate3[] ="); for (int x = 0; x < 5; ++x) fprintf(stderr, " %08x", ((uint32_t *)U)[x]); fprintf(stderr, "\n");
-    memcpy(T, U, sizeof(T));
-    for (i = 1; i < c; ++i) {
-      //fprintf(stderr, "idata[] =   "); for (int x = 0; x < 20; ++x) fprintf(stderr, "%02x", ((uint8_t *)U)[x]); fprintf(stderr, "\n");
-      HMAC_SHA1_Clone(&ctx, &pctx);
-      //fprintf(stderr, "istate1[] ="); for (int x = 0; x < 5; ++x) fprintf(stderr, " %08x", ((uint32_t *)ctx.state)[x]); fprintf(stderr, "\n");
-      HMAC_SHA1_Update(&ctx, U, sizeof(U));
-      HMAC_SHA1_Final(U, &ctx);
-      //fprintf(stderr, "istate2[] ="); for (int x = 0; x < 5; ++x) fprintf(stderr, " %08x", ((uint32_t *)ctx.state)[x]); fprintf(stderr, "\n");
-      //fprintf(stderr, "istate3[] ="); for (int x = 0; x < 5; ++x) fprintf(stderr, " %08x", ((uint32_t *)U)[x]); fprintf(stderr, "\n");
-      for (j = 0; j < sizeof(T); ++j) { T[j] ^= U[j]; }
-    }
-    //fprintf(stderr, "xstate_[] ="); for (int x = 0; x < 5; ++x) fprintf(stderr, " %08x", ((uint32_t *)T)[x]); fprintf(stderr, "\n");
-    for (i = 0; nout < dk_sz && i < sizeof(T); ++i, ++nout) {
-      dk[nout] = T[i];
-    }
-    ++block;
-  }
-}
-
 int main() {
   char buf[65536];
   unsigned char k[1024], m[1024], d[1024], x[1024];
