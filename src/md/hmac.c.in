@@ -213,10 +213,7 @@ inline void HMAC(Final)(uint8_t hash[], HMAC(CTX) *ctx) {
 }
 
 void HMAC(Clear)(HMAC(CTX) *ctx) {
-  ctx->bytelen = ctx->datalen = 0;
-  wipe(ctx->data);
-  wipe(ctx->state);
-  wipe(ctx->hmac);
+  wipe(ctx, sizeof(HMAC(CTX)));
 }
 
 void HMAC_NAME(const void *key, size_t key_sz, const uint8_t msg[], size_t msg_sz, uint8_t hash[]) {
