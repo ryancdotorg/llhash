@@ -148,9 +148,26 @@ inline void HMAC(Update)(HMAC(CTX) *ctx, const uint8_t data[], size_t len) {
   HASH(Update)((HASH(CTX)*)ctx, data, len);
 }
 
-inline void HMAC(Final)(uint8_t hash[], HMAC(CTX) *ctx) {
+static inline void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]) {
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+  SERIALIZE(hmac + HASH_BLOCK_LENGTH, state);
+h(else)
+  memcpy(hmac + HASH_BLOCK_LENGTH, state, HASH_DIGEST_LENGTH);
+h(endif)
+
+  HASH(Set_IV)(state);
+
+h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+  HASH(Transform)(state, hmac, HMAC_OUTER_BLOCKS);
+h(else)
+  HASH(Native)(state, hmac, HMAC_OUTER_BLOCKS);
+h(endif)
+}
+
+inline void HMAC(Semifinal)(HMAC(CTX) *ctx) {
   uint32_t i = ctx->datalen;
 
+  // add padding bytes
   if (ctx->datalen < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
     ctx->data[i++] = 0x80;
     memset(ctx->data + i, 0, (HASH_BLOCK_LENGTH-8) - i);
@@ -168,10 +185,12 @@ h(endif)
     memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
   }
 
+  // add bit length
   ctx->bytelen += ctx->datalen;
   prblk(ctx->data, 1);
 h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-  ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bytelen*8);
+  stor64De(ctx->data + HASH_BLOCK_LENGTH - 8, ctx->bytelen * 8);
+  // ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bytelen*8);
   prblk(ctx->data, 1);
   HASH(Transform)(ctx->state, ctx->data, 1);
 h(else)
@@ -185,21 +204,12 @@ h(else)
   HASH(Native)(ctx->state, ctx->data, 1);
 h(endif)
 
-h(ifndef NATIVE_ENDIAN)
-  #define _BSWAP(n, _) ctx->state[n] = htoDeWS(ctx->state[n])
-  REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _BSWAP);
-  #undef _BSWAP
-h(endif)
-  memcpy(ctx->hmac + HASH_BLOCK_LENGTH, ctx->state, HASH_DIGEST_LENGTH);
+  HMAC(Outer)(ctx->hmac, ctx->state);
+}
 
-  HASH(Set_IV)(ctx->state);
-  prblk(ctx->hmac, HMAC_OUTER_BLOCKS);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-  HASH(Transform)(ctx->state, ctx->hmac, HMAC_OUTER_BLOCKS);
-h(else)
-  HASH(Native)(ctx->state, ctx->hmac, HMAC_OUTER_BLOCKS);
-h(endif)
-  SERIALIZE(hash, ctx->state);
+inline void HMAC(Final)(uint8_t hash[], HMAC(CTX) *ctx) {
+  HMAC(Semifinal)(ctx);
+  HASH(Serialize)(hash, ctx->state);
 }
 
 void HMAC(Clear)(HMAC(CTX) *ctx) {
