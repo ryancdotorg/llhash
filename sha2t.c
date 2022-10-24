@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <fcntl.h>
 
+#include "macros.h"
 #include "llhash.h"
 
 #define CH_32(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
@@ -199,7 +200,7 @@ void sha512iv(uint8_t *out, const uint64_t iv[8], const void *buf, size_t len) {
 
     for (i = 0; i < 80; ++i) {
       t1 = h + EP1_64(e) + CH_64(e,f,g) + k[i] + m[i];
-      t2 = EP0_64(a) + MAJ_64(a,b,c); 
+      t2 = EP0_64(a) + MAJ_64(a,b,c);
       h = g; g = f; f = e; e = d + t1;
       d = c; c = b; b = a; a = t1 + t2;
     }
