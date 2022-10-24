@@ -142,13 +142,13 @@ const uint8_t pass[], size_t pass_sz,
 const uint8_t salt[], size_t salt_sz,
 uint32_t c) {
   uint8_t scratch[sizeof(HMAC(CTX)) * 2 + HASH_STATE_BYTES * 3 + HASH_BLOCK_LENGTH * (2+HMAC_OUTER_BLOCKS)];
-  HMAC(CTX) *restrict octx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*1 + HASH_STATE_BYTES*0);
-  HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0 + HASH_STATE_BYTES*0);
-  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*0;
-  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*2;
+  HMAC(CTX) *restrict octx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*0);
+  HMAC(CTX) *restrict ictx = (HMAC(CTX)*)(scratch + sizeof(HMAC(CTX))*1);
   uintWS_t *restrict T = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*0);
   uintWS_t *restrict U = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*1);
   uintWS_t *restrict W = (uintWS_t*)(scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*2);
+  uint8_t *restrict otail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*0;
+  uint8_t *restrict itail = scratch + sizeof(HMAC(CTX))*2 + HASH_STATE_BYTES*3 + HASH_BLOCK_LENGTH*2;
 
   HMAC(Init)(ictx, pass, pass_sz);
   HMAC(Clone)(octx, ictx);
