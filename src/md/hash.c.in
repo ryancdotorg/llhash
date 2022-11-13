@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include <endian.h>
 #include "../../util.h"
 #include "../../gen/md/sha1/hash.h"
 #else
@@ -15,7 +14,6 @@
 h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
-h(include <endian.h>)
 h(include STR(../../../util.h))
 h(define HASH(HASH_C))
 h(include STR(hash.h))
@@ -46,11 +44,11 @@ uint8_t * HASH_NAME(const uint8_t data[], size_t len, uint8_t hash[]) {
   // set length
   if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
     OFFSETFILL(padding, remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH * 1 - 8));
-    stor64De(padding + (HASH_BLOCK_LENGTH * 1) - 8, len * 8);
+    STOR64DE(padding + (HASH_BLOCK_LENGTH * 1) - 8, len * 8);
     HASH(Transform)(state, padding, 1);
   } else {
     OFFSETFILL(padding, remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH * 2 - 8));
-    stor64De(padding + (HASH_BLOCK_LENGTH * 2) - 8, len * 8);
+    STOR64DE(padding + (HASH_BLOCK_LENGTH * 2) - 8, len * 8);
     HASH(Transform)(state, padding, 2);
   }
 
@@ -148,7 +146,7 @@ void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
 
   // padding
   ctx->bytelen += ctx->datalen;
-  stor64De(ctx->data + (HASH_BLOCK_LENGTH) - 8, ctx->bytelen * 8);
+  STOR64DE(ctx->data + (HASH_BLOCK_LENGTH) - 8, ctx->bytelen * 8);
 
   HASH(Transform)(ctx->state, ctx->data, 1);
 
@@ -182,7 +180,7 @@ uint64_t HASH(Pad)(uint8_t data[], size_t len) {
     nblk += 2;
   }
 
-  stor64De(data + (nblk * HASH_BLOCK_LENGTH) - 8, len * 8);
+  STOR64DE(data + (nblk * HASH_BLOCK_LENGTH) - 8, len * 8);
 
   return nblk;
 }
@@ -199,11 +197,11 @@ uint8_t HASH(Tail)(uint8_t last_data_block[], size_t len) {
   last_data_block[remaining_bytes] = 0x80;
   if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
     OFFSETFILL(last_data_block, remaining_bytes + 1, 0, HASH_BLOCK_LENGTH * 1 - 8);
-    stor64De(last_data_block + (HASH_BLOCK_LENGTH * 1) - 8, len * 8);
+    STOR64DE(last_data_block + (HASH_BLOCK_LENGTH * 1) - 8, len * 8);
     return 1;
   } else {
     OFFSETFILL(last_data_block, remaining_bytes + 1, 0, HASH_BLOCK_LENGTH * 2 - 8);
-    stor64De(last_data_block + (HASH_BLOCK_LENGTH * 2) - 8, len * 8);
+    STOR64DE(last_data_block + (HASH_BLOCK_LENGTH * 2) - 8, len * 8);
     return 2;
   }
 }
@@ -232,7 +230,7 @@ void HASH(Bswap)(uintWS_t data[], uint64_t nblk) {
 /* do nothing */
 #else
   for (const uintWS_t *end=data+nblk*HASH_BLOCK_WORDS; data < end; data += HASH_BLOCK_WORDS) {
-    #define _BSWAP(n, _) data[n] = htoDeWS(data[n])
+    #define _BSWAP(n, _) data[n] = UWSH2DE(data[n])
     REPEAT_WITH_COUNTER(HASH_BLOCK_WORDS, SEMICOLON, _BSWAP);
     #undef _BSWAP
   }
@@ -309,7 +307,7 @@ __attribute__((alias(STR(HASH(Extend)))));
 void HASH(Extend)(HASH(CTX) *ctx, uint8_t hash[], uint64_t nblk) {
   const uintWS_t *digest = (uintWS_t*)hash;
   for (int i = 0; i < HASH_STATE_WORDS; ++i) {
-    ctx->state[i] = DeWStoh(digest[i]);
+    ctx->state[i] = UWSDE2H(digest[i]);
   }
   ctx->bytelen = HASH_BLOCK_LENGTH * nblk;
 }
@@ -321,9 +319,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 
 #if HASH_STATE_WORDS > 0
 # if HASH_DIGEST_LENGTH >= 1*(HASH_WORD_SIZE/8)
-  outW[0] = htoDeWS(state[0]);
+  outW[0] = UWSH2DE(state[0]);
 # elif HASH_DIGEST_LENGTH > 0*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[0]);
+  uintWS_t temp = UWSH2DE(state[0]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 0
   hash[0] = ((uint8_t *)&temp)[0];
@@ -369,9 +367,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 #endif
 #if HASH_STATE_WORDS > 1
 # if HASH_DIGEST_LENGTH >= 2*(HASH_WORD_SIZE/8)
-  outW[1] = htoDeWS(state[1]);
+  outW[1] = UWSH2DE(state[1]);
 # elif HASH_DIGEST_LENGTH > 1*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[1]);
+  uintWS_t temp = UWSH2DE(state[1]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 4
   hash[4] = ((uint8_t *)&temp)[0];
@@ -417,9 +415,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 #endif
 #if HASH_STATE_WORDS > 2
 # if HASH_DIGEST_LENGTH >= 3*(HASH_WORD_SIZE/8)
-  outW[2] = htoDeWS(state[2]);
+  outW[2] = UWSH2DE(state[2]);
 # elif HASH_DIGEST_LENGTH > 2*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[2]);
+  uintWS_t temp = UWSH2DE(state[2]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 8
   hash[8] = ((uint8_t *)&temp)[0];
@@ -465,9 +463,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 #endif
 #if HASH_STATE_WORDS > 3
 # if HASH_DIGEST_LENGTH >= 4*(HASH_WORD_SIZE/8)
-  outW[3] = htoDeWS(state[3]);
+  outW[3] = UWSH2DE(state[3]);
 # elif HASH_DIGEST_LENGTH > 3*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[3]);
+  uintWS_t temp = UWSH2DE(state[3]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 12
   hash[12] = ((uint8_t *)&temp)[0];
@@ -513,9 +511,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 #endif
 #if HASH_STATE_WORDS > 4
 # if HASH_DIGEST_LENGTH >= 5*(HASH_WORD_SIZE/8)
-  outW[4] = htoDeWS(state[4]);
+  outW[4] = UWSH2DE(state[4]);
 # elif HASH_DIGEST_LENGTH > 4*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[4]);
+  uintWS_t temp = UWSH2DE(state[4]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 16
   hash[16] = ((uint8_t *)&temp)[0];
@@ -561,9 +559,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 #endif
 #if HASH_STATE_WORDS > 5
 # if HASH_DIGEST_LENGTH >= 6*(HASH_WORD_SIZE/8)
-  outW[5] = htoDeWS(state[5]);
+  outW[5] = UWSH2DE(state[5]);
 # elif HASH_DIGEST_LENGTH > 5*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[5]);
+  uintWS_t temp = UWSH2DE(state[5]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 20
   hash[20] = ((uint8_t *)&temp)[0];
@@ -609,9 +607,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 #endif
 #if HASH_STATE_WORDS > 6
 # if HASH_DIGEST_LENGTH >= 7*(HASH_WORD_SIZE/8)
-  outW[6] = htoDeWS(state[6]);
+  outW[6] = UWSH2DE(state[6]);
 # elif HASH_DIGEST_LENGTH > 6*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[6]);
+  uintWS_t temp = UWSH2DE(state[6]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 24
   hash[24] = ((uint8_t *)&temp)[0];
@@ -657,9 +655,9 @@ static inline void __attribute__((always_inline)) serialize(uint8_t hash[], cons
 #endif
 #if HASH_STATE_WORDS > 7
 # if HASH_DIGEST_LENGTH >= 8*(HASH_WORD_SIZE/8)
-  outW[7] = htoDeWS(state[7]);
+  outW[7] = UWSH2DE(state[7]);
 # elif HASH_DIGEST_LENGTH > 7*(HASH_WORD_SIZE/8)
-  uintWS_t temp = htoDeWS(state[7]);
+  uintWS_t temp = UWSH2DE(state[7]);
 #  if HASH_WORD_SIZE == 32
 #   if HASH_DIGEST_LENGTH > 28
   hash[28] = ((uint8_t *)&temp)[0];

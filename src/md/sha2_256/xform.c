@@ -3,7 +3,6 @@
 // Copyright (c) 2021, Ryan Castellucci, No Rights Reserved
 
 #include <stdint.h>
-#include <endian.h>
 
 #include "../../../macros.h"
 
@@ -44,11 +43,7 @@ void JOIN(sha2_256,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nb
   for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
     // Load input
     uint32_t W[16];
-#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
-    for (int i = 0; i < 16; ++i) W[i] = htobe32(input[i]);
-#else
-    for (int i = 0; i < 16; ++i) W[i] = input[i];
-#endif
+    for (int i = 0; i < 16; ++i) W[i] = U32H2BE(input[i]);
 
     A = digest[0]; B = digest[1]; C = digest[2]; D = digest[3];
     E = digest[4]; F = digest[5]; G = digest[6]; H = digest[7];

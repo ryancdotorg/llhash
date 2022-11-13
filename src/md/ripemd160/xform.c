@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <endian.h>
 
 #include "../../../macros.h"
 
@@ -39,7 +38,7 @@ void JOIN(ripemd160,c_impl,xform)(uint32_t *digest, const char *data, uint32_t n
   for (const uint32_t *end=input+nblk*16; input < end; input += 16) {
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
     uint32_t W[16];
-    for (int i = 0; i < 16; ++i) W[i] = htole32(input[i]);
+    for (int i = 0; i < 16; ++i) W[i] = U32H2LE(input[i]);
 #else
     const uint32_t *W = input;
 #endif

@@ -14,6 +14,10 @@ indir = h.section()
 alias = h.section()
 stor = h.section()
 
+stor.define('STORWSH(D, V)', '(*((uintWS_t*)(D)) = (V))')
+stor.define('STOR32H(D, V)', '(*((uint32_t*)(D)) = (V))')
+stor.define('STOR64H(D, V)', '(*((uint64_t*)(D)) = (V))')
+
 for width, order in product((64, 32), ('BE', 'LE')):
     indir.define(f'_U{width}_H_{bo[order]}(V)',f'U{width}H2{order}(V)')
 
@@ -29,7 +33,7 @@ for width, order in product((64, 32), ('BE', 'LE')):
             l(f'  _t[{i}] = (_v & UINT32_C(0x{255<<sw:08X})) >> {sw:2};')
     l(f'  *((uint{width}_t*)_t);')
     l.newline = 'never'
-    l('});')
+    l('})')
     func(l)
 
     indir.define(f'_U{width}_{bo[order]}_H(V)',f'U{width}{order}2H(V)')
@@ -43,13 +47,13 @@ for width, order in product((64, 32), ('BE', 'LE')):
         l(f'  _r |= ((uint{width}_t)_t[{i}]) << {sw:2};')
     l('  _r;')
     l.newline = 'never'
-    l('});')
+    l('})')
     func(l)
 
 for width, order in product(('WS', '64', '32'), ('DE', 'BE', 'LE')):
     stor.define(
         f'STOR{width}{order}(D, V)',
-        f'(*((uint{width}_t*)(D)) = U{width}H2{order}((V))'
+        f'(*((uint{width}_t*)(D)) = U{width}H2{order}((V)))'
     )
 
 alias.define('UWSH2LE(V)','CONCAT(_U,HASH_WORD_BITS,_H_,__ORDER_LITTLE_ENDIAN__)(V)')

@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include <endian.h>
 #ifndef __STDC_NO_ATOMICS__
 #include <stdatomic.h>
 #endif
@@ -18,7 +17,6 @@
 h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
-h(include <endian.h>)
 h(ifndef __STDC_NO_ATOMICS__)
 h(include <stdatomic.h>)
 h(endif)
@@ -243,7 +241,7 @@ const uint8_t salt[], size_t salt_sz) {
 
   while (nout < dk_sz) {
     memcpy(U, ctx->state, HASH_STATE_BYTES);
-    stor32be(otail+ctx->datalen, block);
+    STOR32BE(otail+ctx->datalen, block);
     HASH(Transform)(U, otail, otail_blks);
     SERIALIZE(ctx->hmac + HASH_BLOCK_LENGTH, U);
     HASH(Set_IV)(U);
@@ -272,7 +270,7 @@ uint8_t otail_blks, uint8_t itail_blks,
 uintWS_t *restrict T, uintWS_t *restrict U, uintWS_t *restrict W,
 uint32_t c, uint32_t block) {
   memcpy(U, octx->state, HASH_STATE_BYTES);
-  stor32be(otail+octx->datalen, block);
+  STOR32BE(otail+octx->datalen, block);
   HASH(Transform)(U, otail, otail_blks);
 h(if HASH_ENDIAN == __BYTE_ORDER__)
   SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);

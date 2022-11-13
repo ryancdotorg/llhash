@@ -50,62 +50,29 @@
 #endif
 #endif
 
-/* type/size definition macros */
+/* type/size definition */
 #define uintWS_t CONCAT(uint,HASH_WORD_BITS,_t)
-#define htobeWS CONCAT(hto,be,HASH_WORD_BITS)
-#define htoleWS CONCAT(hto,le,HASH_WORD_BITS)
-#define beWStoh CONCAT(be,HASH_WORD_BITS,toh)
-#define leWStoh CONCAT(le,HASH_WORD_BITS,toh)
-/* type/endian definition macros */
-#if HASH_ENDIAN == __ORDER_BIG_ENDIAN__
-#define htoDeWS CONCAT(htobe,HASH_WORD_BITS)
-#define htoDe32 htobe32
-#define htoDe64 htobe64
-#define DeWStoh CONCAT(be,HASH_WORD_BITS,toh)
-#define De32toh be32toh
-#define De64toh be64toh
-#elif HASH_ENDIAN == __ORDER_LITTLE_ENDIAN__
-#define htoDeWS CONCAT(htole,HASH_WORD_BITS)
-#define htoDe32 htole32
-#define htoDe64 htole64
-#define DeWStoh CONCAT(le,HASH_WORD_BITS,toh)
-#define De32toh le32toh
-#define De64toh le64toh
-#endif
-
-#define storWSh(D, V) (*((uintWS_t*)(D)) = (V))
-#define stor32h(D, V) (*((uint32_t*)(D)) = (V))
-#define stor64h(D, V) (*((uint64_t*)(D)) = (V))
-#define storWSDe(D, V) (*((uintWS_t*)(D)) = htoDeWS(V))
-#define stor32De(D, V) (*((uint32_t*)(D)) = htoDe32(V))
-#define stor64De(D, V) (*((uint64_t*)(D)) = htoDe64(V))
-#define storWSbe(D, V) (*((uintWS_t*)(D)) = htobeWS(V))
-#define stor32be(D, V) (*((uint32_t*)(D)) = htobe32(V))
-#define stor64be(D, V) (*((uint64_t*)(D)) = htobe64(V))
-#define storWSle(D, V) (*((uintWS_t*)(D)) = htoleWS(V))
-#define stor32le(D, V) (*((uint32_t*)(D)) = htole32(V))
-#define stor64le(D, V) (*((uint64_t*)(D)) = htole64(V))
 
 #if HASH_ENDIAN != __BYTE_ORDER__
 #define statehtoDe(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
   STR_PRAGMA(GCC unroll HASH_STATE_WORDS) \
-  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = htoDeWS(w[i]); \
+  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = UWSH2DE(w[i]); \
 }
 #define stateDetoh(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
   STR_PRAGMA(GCC unroll HASH_STATE_WORDS) \
-  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = DeWStoh(w[i]); \
+  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = UWSDE2H(w[i]); \
 }
 #define blockhtoDe(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
   STR_PRAGMA(GCC unroll HASH_BLOCK_WORDS) \
-  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = htoDeWS(w[i]); \
+  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = UWSH2DE(w[i]); \
 }
 #define blockDetoh(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
   STR_PRAGMA(GCC unroll HASH_BLOCK_WORDS) \
-  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = DeWStoh(w[i]); \
+  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = UWSDE2H(w[i]); \
 }
 #else
 #define statehtoDe(S)

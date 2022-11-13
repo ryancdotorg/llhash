@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include <endian.h>
 #include <stdio.h>
 #include "../../util.h"
 #include "../../gen/md/sha1/hmac.h"
@@ -16,7 +15,6 @@
 h(include <stdint.h>)
 h(include <stddef.h>)
 h(include <string.h>)
-h(include <endian.h>)
 h(include <stdio.h>)
 h(include STR(../../../util.h))
 h(define HASH(HMAC_C))
@@ -56,7 +54,7 @@ void HMAC(Init)(HMAC(CTX) *ctx, const void *key, size_t len) {
       memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
     }
 
-    stor64De(ctx->data + HASH_BLOCK_LENGTH - 8, len*8);
+    STOR64DE(ctx->data + HASH_BLOCK_LENGTH - 8, len*8);
     HASH(Transform)(outer, ctx->data, 1);
 
     // generate ipad
@@ -83,15 +81,15 @@ void HMAC(Init)(HMAC(CTX) *ctx, const void *key, size_t len) {
 h(if HASH_ENDIAN == __BYTE_ORDER__)
   ctx->hmac[ILEN] = 0x80;
   OFFSETFILL(ctx->hmac, ILEN + 1, 0, HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8);
-  stor64De(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN*8);
+  STOR64DE(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN*8);
 h(else)
   OFFSETFILL(ctx->hmac, ILEN, 0, HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8);
   ctx->hmac[ILEN+(HASH_WORD_BYTES-1)] = 0x80;
 #if HASH_WORD_SIZE == 64
-  stor64h(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN * 8);
+  STOR64H(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN * 8);
 #else
-  stor32h(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN>>29);
-  stor32h(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 4, ILEN*8);
+  STOR32H(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN>>29);
+  STOR32H(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 4, ILEN*8);
 #endif
 h(endif)
 #undef ILEN
@@ -122,7 +120,7 @@ inline void HMAC(Semifinal)(HMAC(CTX) *ctx) {
 h(if HASH_ENDIAN == __BYTE_ORDER__)
     uintWS_t *data = (uintWS_t *)(ctx->data);
     for (size_t n = (i+(HASH_WORD_BYTES-1))/HASH_WORD_BYTES, j = 0; j < n; ++j) {
-      data[j] = DeWStoh(data[j]);
+      data[j] = UWSDE2H(data[j]);
     }
 h(endif)
   } else {
@@ -134,7 +132,7 @@ h(endif)
 
   // add bit length
   ctx->bytelen += ctx->datalen;
-  stor64De(ctx->data + HASH_BLOCK_LENGTH - 8, ctx->bytelen * 8);
+  STOR64DE(ctx->data + HASH_BLOCK_LENGTH - 8, ctx->bytelen * 8);
   HASH(Transform)(ctx->state, ctx->data, 1);
   HMAC(Outer)(ctx->hmac, ctx->state);
 }

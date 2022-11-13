@@ -1,7 +1,6 @@
 // MD5 implemetation, transform only
 
 #include <stdint.h>
-#include <endian.h>
 
 #include "../../../macros.h"
 
@@ -43,7 +42,7 @@ void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
     // load input
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
     uint32_t W[16];
-    for (int i = 0; i < 16; ++i) W[i] = htole32(input[i]);
+    for (int i = 0; i < 16; ++i) W[i] = U32H2LE(input[i]);
 #else
     const uint32_t *W = input;
 #endif
