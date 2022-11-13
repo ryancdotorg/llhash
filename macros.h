@@ -73,6 +73,9 @@
 #define De64toh le64toh
 #endif
 
+#define storWSh(D, V) (*((uintWS_t*)(D)) = (V))
+#define stor32h(D, V) (*((uint32_t*)(D)) = (V))
+#define stor64h(D, V) (*((uint64_t*)(D)) = (V))
 #define storWSDe(D, V) (*((uintWS_t*)(D)) = htoDeWS(V))
 #define stor32De(D, V) (*((uint32_t*)(D)) = htoDe32(V))
 #define stor64De(D, V) (*((uint64_t*)(D)) = htoDe64(V))
@@ -82,6 +85,34 @@
 #define storWSle(D, V) (*((uintWS_t*)(D)) = htoleWS(V))
 #define stor32le(D, V) (*((uint32_t*)(D)) = htole32(V))
 #define stor64le(D, V) (*((uint64_t*)(D)) = htole64(V))
+
+#if HASH_ENDIAN != __BYTE_ORDER__
+#define statehtoDe(S) { \
+  uintWS_t *w = (uintWS_t *)(S); \
+  STR_PRAGMA(GCC unroll HASH_STATE_WORDS) \
+  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = htoDeWS(w[i]); \
+}
+#define stateDetoh(S) { \
+  uintWS_t *w = (uintWS_t *)(S); \
+  STR_PRAGMA(GCC unroll HASH_STATE_WORDS) \
+  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = DeWStoh(w[i]); \
+}
+#define blockhtoDe(S) { \
+  uintWS_t *w = (uintWS_t *)(S); \
+  STR_PRAGMA(GCC unroll HASH_BLOCK_WORDS) \
+  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = htoDeWS(w[i]); \
+}
+#define blockDetoh(S) { \
+  uintWS_t *w = (uintWS_t *)(S); \
+  STR_PRAGMA(GCC unroll HASH_BLOCK_WORDS) \
+  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = DeWStoh(w[i]); \
+}
+#else
+#define statehtoDe(S)
+#define stateDetoh(S)
+#define blockhtoDe(S)
+#define blockDetoh(S)
+#endif
 
 /* rotate operators */
 #define ROL8(x,n)  __extension__({ uint8_t  _x=(x), _n=(n); (_x << _n) | (_x >> ( 8-_n)); })
@@ -100,6 +131,8 @@
 #define _OFFSETCPY4(D, DO, S, N) memcpy(((unsigned char *)(D)) + (DO), S, N)
 #define _OFFSETCPY5(D, DO, S, SO, N) memcpy(((unsigned char *)(D)) + (DO), ((unsigned char *)(S)) + (SO), N)
 #define OFFSETCPY(D, DO, S, ...) VA_SELECT((D, DO, S), (__VA_ARGS__), _OFFSETCPY4, _OFFSETCPY5)
+
+#define OFFSETFILL(D, O, V, N) memset(((unsigned char *)(D)) + (O), (V), (N)-(O));
 
 #if HASH_ENDIAN == __ORDER_BIG_ENDIAN__ && HASH_WORD_SIZE == 64
 #define NTH_BYTE_OF_WORD(W, N) (((W) >> (56-BITS(N))) & 0xff)

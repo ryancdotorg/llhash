@@ -23,122 +23,75 @@ h(define HASH(HMAC_C))
 h(include STR(hmac.h))
 #endif
 
-//#define prblk(a, b) _prblk(a, b, __FILE__, __LINE__)
-#ifndef prblk
-#define prblk(...)
-#endif
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
-static void _prblk(uintWS_t blk[HASH_BLOCK_WORDS], size_t n, char *f, unsigned int l) {
-  size_t z = 0;
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-  printf("blocks:           %s:%u\n", f, l);
-h(else)
-  printf("blocks: (native)  %s:%u\n", f, l);
-h(endif)
-  while (n--) { printf("%zd\n", n); int i = 0; while (i < HASH_BLOCK_WORDS) {
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-#if HASH_WORD_SIZE == 64
-    printf("  %016zx %016zx %016zx %016zx\n", blk[z+i+0], blk[z+i+1], blk[z+i+2], blk[z+i+3]);
-#else
-    printf("  %08x %08x %08x %08x\n", blk[z+i+1], blk[z+i+2], blk[z+i+3], blk[z+i+4]);
-#endif
-h(else)
-#if HASH_WORD_SIZE == 64
-    printf("  %016zx %016zx %016zx %016zx\n", blk[z+i+0], blk[z+i+1], blk[z+i+2], blk[z+i+3]);
-#else
-    printf("  %08x %08x %08x %08x\n", blk[z+i+0], blk[z+i+1], blk[z+i+2], blk[z+i+3]);
-#endif
-h(endif)
-    i += 4;
-  } z += HASH_BLOCK_WORDS; printf("\n"); }
-}
-#pragma GCC diagnostic pop
-
 void HMAC(Clone)(HMAC(CTX) *dst, const HMAC(CTX) *src) {
   // relies on .data being first
   if (src->datalen) {
     memcpy(dst, src, sizeof(HMAC(CTX)));
   } else {
-    memcpy(PTR_ADD(dst, HASH_BLOCK_LENGTH), PTR_ADD(src, HASH_BLOCK_LENGTH), sizeof(HMAC(CTX)) - HASH_BLOCK_LENGTH);
+    TAILCPY(dst, src, HASH_BLOCK_LENGTH, sizeof(HMAC(CTX)));
   }
 }
 
 void HMAC(Init)(HMAC(CTX) *ctx, const void *key, size_t len) {
+  //memset(ctx, 0x41, sizeof(HMAC(CTX)));
   HASH(Init)((HASH(CTX)*)ctx);
 
   // populate padded key
   if (len > HASH_BLOCK_LENGTH) {
     // long keys need to be hashed
-    uintWS_t *state = (uintWS_t *)(ctx->hmac);
-    HASH(Set_IV)(state);
+    uintWS_t *outer = (uintWS_t *)(ctx->hmac);
+    HASH(Set_IV)(outer);
     size_t data_blocks = len / HASH_BLOCK_LENGTH;
     size_t remaining_bytes = len % HASH_BLOCK_LENGTH;
-    if (data_blocks) HASH(Transform)(state, key, data_blocks);
+    HASH(Transform)(outer, key, data_blocks);
 
-    memcpy(ctx->data, ((uint8_t *)key) + (data_blocks * HASH_BLOCK_LENGTH), remaining_bytes);
+    OFFSETCPY(ctx->data, 0, key, data_blocks * HASH_BLOCK_LENGTH, remaining_bytes);
     if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
       ctx->data[remaining_bytes++] = 0x80;
-      memset(ctx->data + remaining_bytes, 0, (HASH_BLOCK_LENGTH-8) - remaining_bytes);
+      OFFSETFILL(ctx->data, remaining_bytes, 0, (HASH_BLOCK_LENGTH-8));
     } else {
       ctx->data[remaining_bytes++] = 0x80;
-      memset(ctx->data + remaining_bytes, 0, HASH_BLOCK_LENGTH - remaining_bytes);
-      HASH(Transform)(state, ctx->data, 1);
+      OFFSETFILL(ctx->data, remaining_bytes, 0, HASH_BLOCK_LENGTH);
+      HASH(Transform)(outer, ctx->data, 1);
       memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
     }
 
-    ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(len*8);
-    HASH(Transform)(state, ctx->data, 1);
-h(ifndef NATIVE_ENDIAN)
-    #define _BSWAP(n, _) state[n] = htoDeWS(state[n])
-    REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _BSWAP);
-    #undef _BSWAP
-h(endif)
+    stor64De(ctx->data + HASH_BLOCK_LENGTH - 8, len*8);
+    HASH(Transform)(outer, ctx->data, 1);
 
     // generate ipad
     for (size_t i = 0; i < HASH_DIGEST_LENGTH; ++i) ctx->hmac[i] ^= 0x36;
-    memset(ctx->hmac+HASH_DIGEST_LENGTH, 0x36, HASH_BLOCK_LENGTH-HASH_DIGEST_LENGTH);
+    OFFSETFILL(ctx->hmac, HASH_DIGEST_LENGTH, 0x36, HASH_BLOCK_LENGTH);
   } else {
     memcpy(ctx->hmac, key, len);
 
     // generate ipad
     for (size_t i = 0; i < len; ++i) ctx->hmac[i] ^= 0x36;
-    memset(ctx->hmac+len, 0x36, HASH_BLOCK_LENGTH-len);
-h(ifdef NATIVE_ENDIAN)
-    uintWS_t *data = (uintWS_t *)(ctx->hmac);
-    for (size_t n = (len+(HASH_WORD_BYTES-1))/HASH_WORD_BYTES, i = 0; i < n; ++i) {
-      data[i] = DeWStoh(data[i]);
-    }
-h(endif)
+    OFFSETFILL(ctx->hmac, len, 0x36, HASH_BLOCK_LENGTH);
+    blockDetoh(ctx->hmac);
   }
 
   // load ipad into hash state
   ctx->bytelen = HASH_BLOCK_LENGTH;
-  prblk(ctx->hmac, 1);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-  HASH(Transform)(ctx->state, ctx->hmac, 1);
-h(else)
-  HASH(Native)(ctx->state, ctx->hmac, 1);
-h(endif)
+  HASH(Native)(ctx->state, (uintWS_t*)ctx->hmac, 1);
 
   // convert ipad to opad (0x6a == 0x36 ^ 0x5c)
   for (int i = 0; i < HASH_BLOCK_LENGTH; ++i) ctx->hmac[i] ^= 0x6a;
 
 #define ILEN (HASH_BLOCK_LENGTH+HASH_DIGEST_LENGTH)
   // set up padding
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+h(if HASH_ENDIAN == __BYTE_ORDER__)
   ctx->hmac[ILEN] = 0x80;
-  memset(ctx->hmac + ILEN + 1, 0, HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - (ILEN + 9));
-  *((uint64_t *)(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8)) = htoDe64(ILEN*8);
+  OFFSETFILL(ctx->hmac, ILEN + 1, 0, HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8);
+  stor64De(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN*8);
 h(else)
-  memset(ctx->hmac + ILEN, 0, HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - (ILEN + 8));
+  OFFSETFILL(ctx->hmac, ILEN, 0, HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8);
   ctx->hmac[ILEN+(HASH_WORD_BYTES-1)] = 0x80;
 #if HASH_WORD_SIZE == 64
-  *((uint64_t *)(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8)) = ILEN*8;
+  stor64h(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN * 8);
 #else
-  *((uint32_t *)(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8)) = ILEN>>29;
-  *((uint32_t *)(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 4)) = ILEN*8;
+  stor32h(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 8, ILEN>>29);
+  stor32h(ctx->hmac + HASH_BLOCK_LENGTH * HMAC_OUTER_BLOCKS - 4, ILEN*8);
 #endif
 h(endif)
 #undef ILEN
@@ -149,19 +102,14 @@ inline void HMAC(Update)(HMAC(CTX) *ctx, const uint8_t data[], size_t len) {
 }
 
 static inline void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]) {
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+h(if HASH_ENDIAN == __BYTE_ORDER__)
   SERIALIZE(hmac + HASH_BLOCK_LENGTH, state);
 h(else)
-  memcpy(hmac + HASH_BLOCK_LENGTH, state, HASH_DIGEST_LENGTH);
+  OFFSETCPY(hmac, HASH_BLOCK_LENGTH, state, HASH_DIGEST_LENGTH);
 h(endif)
 
   HASH(Set_IV)(state);
-
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-  HASH(Transform)(state, hmac, HMAC_OUTER_BLOCKS);
-h(else)
-  HASH(Native)(state, hmac, HMAC_OUTER_BLOCKS);
-h(endif)
+  HASH(Native)(state, (uintWS_t*)hmac, HMAC_OUTER_BLOCKS);
 }
 
 inline void HMAC(Semifinal)(HMAC(CTX) *ctx) {
@@ -170,8 +118,8 @@ inline void HMAC(Semifinal)(HMAC(CTX) *ctx) {
   // add padding bytes
   if (ctx->datalen < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
     ctx->data[i++] = 0x80;
-    memset(ctx->data + i, 0, (HASH_BLOCK_LENGTH-8) - i);
-h(ifdef NATIVE_ENDIAN)
+    OFFSETFILL(ctx->data, i, 0, (HASH_BLOCK_LENGTH-8));
+h(if HASH_ENDIAN == __BYTE_ORDER__)
     uintWS_t *data = (uintWS_t *)(ctx->data);
     for (size_t n = (i+(HASH_WORD_BYTES-1))/HASH_WORD_BYTES, j = 0; j < n; ++j) {
       data[j] = DeWStoh(data[j]);
@@ -179,31 +127,15 @@ h(ifdef NATIVE_ENDIAN)
 h(endif)
   } else {
     ctx->data[i++] = 0x80;
-    memset(ctx->data + i, 0, HASH_BLOCK_LENGTH - i);
-    prblk(ctx->data, 1);
+    OFFSETFILL(ctx->data, i, 0, HASH_BLOCK_LENGTH);
     HASH(Transform)(ctx->state, ctx->data, 1);
     memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
   }
 
   // add bit length
   ctx->bytelen += ctx->datalen;
-  prblk(ctx->data, 1);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
   stor64De(ctx->data + HASH_BLOCK_LENGTH - 8, ctx->bytelen * 8);
-  // ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bytelen*8);
-  prblk(ctx->data, 1);
   HASH(Transform)(ctx->state, ctx->data, 1);
-h(else)
-#if HASH_WORD_SIZE == 64
-  ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = ctx->bytelen*8;
-#else
-  ((uint32_t *)ctx->data)[(HASH_WORD_SIZE/2)-2] = ctx->bytelen>>29;
-  ((uint32_t *)ctx->data)[(HASH_WORD_SIZE/2)-1] = ctx->bytelen*8;
-#endif
-  prblk(ctx->data, 1);
-  HASH(Native)(ctx->state, ctx->data, 1);
-h(endif)
-
   HMAC(Outer)(ctx->hmac, ctx->state);
 }
 

@@ -21,7 +21,6 @@ h(define HASH(HASH_C))
 h(include STR(hash.h))
 #endif
 
-static const uintWS_t iv[] = HASH(IV);
 static uint8_t hash_output[HASH_DIGEST_LENGTH];
 
 static inline void __attribute__((always_inline)) serialize(uint8_t hash[], const uintWS_t *state);
@@ -39,19 +38,19 @@ uint8_t * HASH_NAME(const uint8_t data[], size_t len, uint8_t hash[]) {
   uintWS_t state[] = HASH(IV);
 
   // copy partial block bytes into the padding
-  memcpy(padding, data + (dblk * HASH_BLOCK_LENGTH), remaining_bytes);
+  OFFSETCPY(padding, 0, data, dblk * HASH_BLOCK_LENGTH, remaining_bytes);
   // set a 1 bit after the data
   padding[remaining_bytes] = 0x80;
 
   if (dblk) HASH(Transform)(state, data, dblk);
   // set length
   if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
-    memset(padding + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
-    ((uint64_t *)padding)[(HASH_WORD_SIZE/4)-1] = htoDe64(len * 8);
+    OFFSETFILL(padding, remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH * 1 - 8));
+    stor64De(padding + (HASH_BLOCK_LENGTH * 1) - 8, len * 8);
     HASH(Transform)(state, padding, 1);
   } else {
-    memset(padding + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
-    ((uint64_t *)padding)[(HASH_WORD_SIZE/2)-1] = htoDe64(len * 8);
+    OFFSETFILL(padding, remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH * 2 - 8));
+    stor64De(padding + (HASH_BLOCK_LENGTH * 2) - 8, len * 8);
     HASH(Transform)(state, padding, 2);
   }
 
@@ -90,7 +89,7 @@ __attribute__((alias(STR(HASH(Init)))));
 #endif
 void HASH(Init)(HASH(CTX) *ctx) {
   ctx->bytelen = ctx->datalen = 0;
-  for (int i = 0; i < HASH(STATE_WORDS); ++i) ctx->state[i] = iv[i];
+  HASH(Set_IV)(ctx->state);
 }
 
 #if HASH_ALIASED
@@ -105,12 +104,10 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
   if (ctx->datalen > 0) {
     i = HASH_BLOCK_LENGTH - ctx->datalen;
     if (i > len) {
-      //memcpy(ctx->data + ctx->datalen, input, len);
       OFFSETCPY(ctx->data, ctx->datalen, input, len);
       ctx->datalen += len;
       return;
     } else {
-      //memcpy(ctx->data + ctx->datalen, input, i);
       OFFSETCPY(ctx->data, ctx->datalen, input, i);
       HASH(Transform)(ctx->state, ctx->data, 1);
       ctx->bytelen += HASH_BLOCK_LENGTH;
@@ -141,17 +138,17 @@ void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
 
   if (ctx->datalen < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
     ctx->data[i++] = 0x80;
-    memset(ctx->data + i, 0, (HASH_BLOCK_LENGTH-8) - i);
+    OFFSETFILL(ctx->data, i, 0, HASH_BLOCK_LENGTH - 8);
   } else {
     ctx->data[i++] = 0x80;
-    memset(ctx->data + i, 0, HASH_BLOCK_LENGTH - i);
+    OFFSETFILL(ctx->data, i, 0, HASH_BLOCK_LENGTH);
     HASH(Transform)(ctx->state, ctx->data, 1);
     memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
   }
 
   // padding
   ctx->bytelen += ctx->datalen;
-  ((uint64_t *)ctx->data)[(HASH_WORD_SIZE/4)-1] = htoDe64(ctx->bytelen*8);
+  stor64De(ctx->data + (HASH_BLOCK_LENGTH) - 8, ctx->bytelen * 8);
 
   HASH(Transform)(ctx->state, ctx->data, 1);
 
@@ -163,9 +160,7 @@ void ALIAS(Clear)(ALIAS(CTX) *ctx)
 __attribute__((alias(STR(HASH(Clear)))));
 #endif
 void HASH(Clear)(HASH(CTX) *ctx) {
-  ctx->bytelen = ctx->datalen = 0;
-  wipe(ctx->data);
-  wipe(ctx->state);
+  wipe(ctx);
 }
 
 // caller responsible for making sure the buffer is big enough
@@ -203,12 +198,12 @@ uint8_t HASH(Tail)(uint8_t last_data_block[], size_t len) {
   // set a 1 bit after the data
   last_data_block[remaining_bytes] = 0x80;
   if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
-    memset(last_data_block + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
-    *((uint64_t *)(last_data_block + HASH_BLOCK_LENGTH - 8)) = htoDe64(len * 8);
+    OFFSETFILL(last_data_block, remaining_bytes + 1, 0, HASH_BLOCK_LENGTH * 1 - 8);
+    stor64De(last_data_block + (HASH_BLOCK_LENGTH * 1) - 8, len * 8);
     return 1;
   } else {
-    memset(last_data_block + remaining_bytes + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
-    *((uint64_t *)(last_data_block + (HASH_BLOCK_LENGTH*2) - 8)) = htoDe64(len * 8);
+    OFFSETFILL(last_data_block, remaining_bytes + 1, 0, HASH_BLOCK_LENGTH * 2 - 8);
+    stor64De(last_data_block + (HASH_BLOCK_LENGTH * 2) - 8, len * 8);
     return 2;
   }
 }
@@ -261,7 +256,7 @@ void HASH(Partial)(uint8_t *restrict out, const uintWS_t *restrict _state, size_
   const uintWS_t *state = __builtin_assume_aligned(_state, HASH_WORD_BYTES);
   if (start > end || start > HASH_DIGEST_LENGTH || end > HASH_DIGEST_LENGTH) __builtin_unreachable();
 #if HASH_ENDIAN == __BYTE_ORDER__
-  memcpy(out, ((uint8_t *)state)+start, end-start);
+  OFFSETCPY(out, 0, state, start, end-start);
 #else
   state += (start / HASH_WORD_BYTES);
   size_t pos = start;

@@ -83,7 +83,7 @@ AS := ccache gcc
 PP := ccache cpp
 LD := ccache ld
 
-COMPILE = $(CC) $(CFLAGS)
+COMPILE = python3 -B scripts/asmwrapper.py $(CC) $(CFLAGS)
 ASSEMBLE = python3 -B scripts/asmwrapper.py $(AS) $(IMPL_FLAGS) -O3 -ggdb
 
 .PHONY: all libh macros headers asm native generic \
@@ -223,7 +223,7 @@ obj/xform.o: $(OBJ_XFORM)
 	$(LD) -r $^ -o $@
 
 # everything
-obj/llhash.o: obj/can.o obj/xform.o $(OBJ_HASHES)
+obj/llhash.o: state_debug.o obj/can.o obj/xform.o $(OBJ_HASHES)
 	$(LD) -r $^ -o $@
 
 # fallback build rules

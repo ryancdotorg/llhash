@@ -32,7 +32,7 @@ h(include STR(ext.h))
 #define prblk(...)
 #endif
 
-//h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
+//h(if HASH_ENDIAN != __BYTE_ORDER__)
 // Me: Given a byte position within an array of words, I need to know what the
 // equivalent position will be after I bswap that array, so...
 // (((O)&~(HASH_WORD_BYTES-1))+(HASH_WORD_BYTES-1))-(((O)&(HASH_WORD_BYTES-1)))
@@ -43,7 +43,7 @@ h(define BSWAP_OFFSET(O) ((O)^(HASH_WORD_BYTES-1)))
 //h(define BSWAP_OFFSET(O) (O))
 //h(endif)
 
-void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]);
+static void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]);
 
 h(ifndef __STDC_NO_ATOMICS__)
 static HMAC(CTX) HMAC(EmptyKey) = { .data = {1} };
@@ -150,7 +150,8 @@ const uint8_t info[], size_t info_sz) {
       // previous hash output, info, and block number are small enough to fit
       // in three blocks after padding, set up for a single transform per block
       ioff = irem = 0; tail = NULL; // head may be overlapping tail
-      memcpy(head + HASH_DIGEST_LENGTH, info, info_sz);
+      //memcpy(head + HASH_DIGEST_LENGTH, info, info_sz);
+      OFFSETCPY(head, HASH_DIGEST_LENGTH, info, info_sz);
 
       head_blks = HASH(Pad)(head, dlen);
       data_blks = 0;
@@ -165,7 +166,8 @@ const uint8_t info[], size_t info_sz) {
       // HMAC_Update(info[...:] || padding)
       ioff = ((HASH_DIGEST_LENGTH + info_sz) & ~(HASH_BLOCK_LENGTH-1)) - HASH_DIGEST_LENGTH;
       irem = info_sz - ioff;
-      memcpy(head + HASH_DIGEST_LENGTH, info, HASH_BLOCK_LENGTH - HASH_DIGEST_LENGTH);
+      // memcpy(head + HASH_DIGEST_LENGTH, info, HASH_BLOCK_LENGTH - HASH_DIGEST_LENGTH);
+      TAILCPY(head, info, HASH_DIGEST_LENGTH, HASH_BLOCK_LENGTH);
       data = info + ioff;
       memcpy(tail, data, irem);
 
@@ -188,37 +190,29 @@ const uint8_t info[], size_t info_sz) {
   *blkptr = block;
 
   if (data_blks == 0) {
-    while (++*blkptr < n) { // middle blocks (full)
+    for (;;) {
       memcpy(head, okm, HASH_DIGEST_LENGTH);
       memcpy(ctx->state, key->state, HASH_STATE_BYTES);
       HASH(Transform)(ctx->state, head, head_blks);
       HMAC(Outer)(key->hmac, ctx->state);
+      if (++*blkptr < n) break;
+      // any block up to the last one must be filled
       okm += HASH_DIGEST_LENGTH;
       SERIALIZE(okm, ctx->state);
     }
-    // last block (potentially partial)
-    memcpy(head, okm, HASH_DIGEST_LENGTH);
-    memcpy(ctx->state, key->state, HASH_STATE_BYTES);
-    HASH(Transform)(ctx->state, head, head_blks);
-    HMAC(Outer)(key->hmac, ctx->state);
   } else {
-    while (++*blkptr < n) { // middle blocks (full)
+    for (;;) {
       memcpy(head, okm, HASH_DIGEST_LENGTH);
       memcpy(ctx->state, key->state, HASH_STATE_BYTES);
       HASH(Transform)(ctx->state, head, head_blks);
       HASH(Transform)(ctx->state, data, data_blks);
       HASH(Transform)(ctx->state, tail, tail_blks);
       HMAC(Outer)(key->hmac, ctx->state);
+      if (++*blkptr < n) break;
+      // any block up to the last one must be filled
       okm += HASH_DIGEST_LENGTH;
       SERIALIZE(okm, ctx->state);
     }
-    // last block (potentially partial)
-    memcpy(head, okm, HASH_DIGEST_LENGTH);
-    memcpy(ctx->state, key->state, HASH_STATE_BYTES);
-    HASH(Transform)(ctx->state, head, head_blks);
-    HASH(Transform)(ctx->state, data, data_blks);
-    HASH(Transform)(ctx->state, tail, tail_blks);
-    HMAC(Outer)(key->hmac, ctx->state);
   }
 
   // output final bytes
@@ -269,31 +263,30 @@ const uint8_t salt[], size_t salt_sz) {
   wipe(scratch);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 static inline void PBKDF2(Block)(
 HMAC(CTX) *restrict octx, HMAC(CTX) *restrict ictx,
 uint8_t *restrict otail, uint8_t *restrict itail,
 uint8_t otail_blks, uint8_t itail_blks,
-uintWS_t *restrict T, uintWS_t *restrict U,
+uintWS_t *restrict T, uintWS_t *restrict U, uintWS_t *restrict W,
 uint32_t c, uint32_t block) {
   memcpy(U, octx->state, HASH_STATE_BYTES);
   stor32be(otail+octx->datalen, block);
   HASH(Transform)(U, otail, otail_blks);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+h(if HASH_ENDIAN == __BYTE_ORDER__)
   SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
 h(else)
-  memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
+  // memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
+  OFFSETCPY(octx->hmac, HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
 h(endif)
   //prblk(octx->hmac, HMAC_OUTER_BLOCKS);
   HASH(Set_IV)(U);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
-  HASH(Transform)(U, octx->hmac, HMAC_OUTER_BLOCKS);
-h(else)
-  HASH(Native)(U, octx->hmac, HMAC_OUTER_BLOCKS);
-h(endif)
+  HASH(Native)(U, (uintWS_t*)octx->hmac, HMAC_OUTER_BLOCKS);
   memcpy(T, U, HASH_STATE_BYTES);
   //prblk(T, 1);
   for (size_t i = 1; i < c; ++i) {
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+h(if HASH_ENDIAN == __BYTE_ORDER__)
     /* inner hash with previous U */
     SERIALIZE(itail, U);
     memcpy(U, ictx->state, HASH_STATE_BYTES);
@@ -301,22 +294,24 @@ h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
     /* outer hash with inner result */
     SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
     HASH(Set_IV)(U);
+    //memcpy(U, W, HASH_STATE_BYTES);
     HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
 h(else)
     /* inner hash with previous U */
     memcpy(itail, U, HASH_STATE_BYTES);
     memcpy(U, ictx->state, HASH_STATE_BYTES);
-    HASH(Native)(U, itail, itail_blks);
+    HASH(Native)(U, (uintWS_t*)itail, itail_blks);
     memcpy(itail, U, HASH_STATE_BYTES);
     /* outer hash with inner result */
     memcpy(U, W, HASH_STATE_BYTES);
-    HASH(Native)(U, itail, itail_blks);
+    HASH(Native)(U, (uintWS_t*)itail, itail_blks);
 h(endif)
     #define _XOR(n, _) T[n] ^= U[n]
     REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _XOR);
     #undef _XOR
   }
 }
+#pragma GCC diagnostic pop
 
 void PBKDF2_NAME(
 uint8_t dk[], size_t dk_sz,
@@ -337,10 +332,10 @@ uint32_t c) {
   HMAC(Update)(octx, salt, salt_sz);
 
   HASH(Set_IV)(W);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+h(if HASH_ENDIAN == __BYTE_ORDER__)
   HASH(Transform)(W, ictx->hmac, 1);
 h(else)
-  HASH(Native)(W, ictx->hmac, 1);
+  HASH(Native)(W, (uintWS_t*)ictx->hmac, 1);
 h(endif)
 
   size_t nout = 0;
@@ -349,12 +344,12 @@ h(endif)
   memcpy(otail, octx->data, octx->datalen);
   uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
   uint8_t itail_blks = HASH(Tail)(itail, HASH_BLOCK_LENGTH + HASH_DIGEST_LENGTH);
-h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
-  HASH(Bswap)(itail, itail_blks);
+h(if HASH_ENDIAN != __BYTE_ORDER__)
+  HASH(Bswap)((uintWS_t*)itail, itail_blks);
 h(endif)
 
   while (nout < dk_sz) {
-    PBKDF2(Block)(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
+    PBKDF2(Block)(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, W, c, block);
 
     if (nout + HASH_DIGEST_LENGTH <= dk_sz) {
       SERIALIZE(dk + nout, T);
@@ -390,10 +385,10 @@ uint32_t c) {
   HMAC(Update)(octx, salt, salt_sz);
 
   HASH(Set_IV)(W);
-h(if !defined(NATIVE_ENDIAN) || HASH_ENDIAN == __BYTE_ORDER__)
+h(if HASH_ENDIAN == __BYTE_ORDER__)
   HASH(Transform)(W, ictx->hmac, 1);
 h(else)
-  HASH(Native)(W, ictx->hmac, 1);
+  HASH(Native)(W, (uintWS_t*)ictx->hmac, 1);
 h(endif)
 
   size_t dk_pos = 0;
@@ -403,33 +398,27 @@ h(endif)
   memcpy(otail, octx->data, octx->datalen);
   uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
   uint8_t itail_blks = HASH(Tail)(itail, HASH_BLOCK_LENGTH + HASH_DIGEST_LENGTH);
-h(if defined(NATIVE_ENDIAN) && HASH_ENDIAN != __BYTE_ORDER__)
-  HASH(Bswap)(itail, itail_blks);
+h(if HASH_ENDIAN != __BYTE_ORDER__)
+  HASH(Bswap)((uintWS_t*)itail, itail_blks);
 h(endif)
 
   while (nout < dk_end) {
-    //printf(">>> %s[%zu:%zu] block %u, nout %4zu, dk_pos %4zu\n", __func__, dk_off, dk_end, block, nout, dk_pos);
-    PBKDF2(Block)(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, c, block);
+    PBKDF2(Block)(octx, ictx, otail, itail, otail_blks, itail_blks, T, U, W, c, block);
 
     if (nout < dk_off) {
       if (dk_end < nout + HASH_DIGEST_LENGTH) {
-        //printf("A dk[%zu] <- HASH[%zu:%zu]\n", dk_pos, dk_off - nout, dk_end - nout);
         HASH(Partial)(dk + dk_pos, T, dk_off - nout, dk_end - nout);
         break;
       } else {
-        //printf("B dk[%zu] <- HASH[%zu:%d]\n", dk_pos, dk_off - nout, HASH_DIGEST_LENGTH);
         HASH(Partial)(dk + dk_pos, T, dk_off - nout, HASH_DIGEST_LENGTH);
-        //printf("dk_pos += %d\n", HASH_DIGEST_LENGTH - (dk_off - nout));
         dk_pos += HASH_DIGEST_LENGTH - (dk_off - nout);
         nout += HASH_DIGEST_LENGTH;
       }
     } else if (nout + HASH_DIGEST_LENGTH <= dk_end) {
-      //printf("C dk[%zu] <- HASH[%d:%d]\n", dk_pos, 0, HASH_DIGEST_LENGTH);
       SERIALIZE(dk + dk_pos, T);
       dk_pos += HASH_DIGEST_LENGTH;
       nout += HASH_DIGEST_LENGTH;
     } else {
-      //printf("D dk[%zu] <- HASH[%d:%zu]\n", dk_pos, 0, dk_end - nout);
       HASH(Partial)(dk + dk_pos, T, 0, dk_end - nout);
       break;
     }

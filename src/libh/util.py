@@ -12,17 +12,22 @@ from collections import OrderedDict
 __all__ = ['LineWrapper', 'Appender', 'for_each', 'irange', 'placeholders']
 
 class LineWrapper:
-    def __init__(self, line='', length=78, continuation='\\'):
+    def __init__(self, line='', length=78, continuation='\\', newline='auto'):
         self._f = io.StringIO('')
         self._line = line
         self.line_length = length
         self.continuation = continuation
+        if newline not in ('auto', 'always', 'never'):
+            raise ValueError('Invalid newline parameter')
+        self.newline = newline
 
     def __call__(self, *args):
         for s in args:
-            if len(self._line) + len(s) > self.line_length:
-                self.linebreak()
+            if self.newline == 'auto':
+                if len(self._line) + len(s) > self.line_length:
+                    self.linebreak()
             self._line += s
+            if self.newline == 'always': self.linebreak()
 
     def __str__(self):
         self._f.write(self._line)
@@ -87,7 +92,8 @@ class Appender:
     def append(self, s):
         if isinstance(s, (list, tuple, Iterator)):
             for line in s: self._writeln(line)
-        else: self._writeln(s)
+        elif isinstance(s, str): self._writeln(s)
+        else: self._writeln(str(s))
 
     # helpers
     def define(self, k, v):
