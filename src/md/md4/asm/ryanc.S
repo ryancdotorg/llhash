@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: 0BSD OR OR MIT-0 OR Unlicense OR CC0-1.0+
+ * Copyright (c) 2022, Ryan Castellucci, no rights reserved
+ * MD4 implemetation, transform only
+ */
 #define NAME md4_ryanc
 #include "../../../common/built.S"
 #ifdef STUBBED

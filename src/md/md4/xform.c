@@ -1,4 +1,6 @@
-// MD5 implemetation, transform only
+// SPDX-License-Identifier: 0BSD OR OR MIT-0 OR Unlicense OR CC0-1.0+
+// Copyright (c) 2022, Ryan Castellucci, no rights reserved
+// MD4 implemetation, transform only
 
 #include <stdint.h>
 

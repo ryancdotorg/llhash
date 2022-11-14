@@ -1,10 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha1_intel_avx_xform)
 #elif !(defined(WITH_GPL) && defined(WITH_INTEL))
 #error "implementation disabled"
 #else
-/* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * This is a SIMD SHA-1 implementation. It requires the Intel(R) Supplemental
  * SSE3 instruction set extensions introduced in Intel Core Microarchitecture

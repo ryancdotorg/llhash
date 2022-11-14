@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha1_nayuki64_xform_le)

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: BSD-3-Clause OR GPL-1.0-or-later */
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha1_cryptogams_ssse3_xform)

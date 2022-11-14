@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0-only */
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha2_256_intel_shaext_xform_le)

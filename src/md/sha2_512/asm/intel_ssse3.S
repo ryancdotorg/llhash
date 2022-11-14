@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Linux-OpenIB OR GPL-2.0-only */
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha2_512_intel_ssse3_xform)

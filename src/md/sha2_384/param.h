@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright (c) 2022, Ryan Castellucci, all rights reserved
+
 #pragma once
 
 #define _COMPARE_SHA2_384(x) x

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 OR (BSD-3-Clause OR GPL-1.0-or-later) */
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(sha1_cryptogams_avx_xform)
