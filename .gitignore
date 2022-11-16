@@ -1,9 +1,13 @@
 # project specific
 bin/
 obj/
+wasm/
 gen/
 libh/*.h
 src/libh/__pycache__/
+
+vec.out
+vec_ref.ndjson
 
 param.h
 

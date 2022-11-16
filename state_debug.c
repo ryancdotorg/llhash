@@ -28,6 +28,7 @@ static size_t state_debug_pos;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC visibility push(internal)
 static void state_debug_init() {
   if (state_debug_data == NULL) {

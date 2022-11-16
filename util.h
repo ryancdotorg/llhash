@@ -4,7 +4,7 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
+#include "src/common/string.h"
 
 /* small helper functions */
 /*
@@ -15,8 +15,8 @@ static inline void xmemcpy(void *restrict dst, const void *restrict src, size_t 
 */
 
 #define _WIPEN(_1, _2, NAME, ...) NAME
-#define _WIPE1(P) explicit_bzero((P), sizeof(P))
-#define _WIPE2(P, N) explicit_bzero((P), (N))
+#define _WIPE1(P) llh_bzero((P), sizeof(P))
+#define _WIPE2(P, N) llh_bzero((P), (N))
 #define wipe(...) _WIPEN(__VA_ARGS__, _WIPE2, _WIPE1)(__VA_ARGS__)
 /*
 static inline void _wipe(void *mem, size_t n) {

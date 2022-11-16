@@ -34,7 +34,9 @@
   else {                 P(r,B,C,D,E,F,G,H,A,K); } \
 } while(0)
 
+#if !(defined(__wasm) || defined(__wasm__) || defined(__WASM__))
 int JOIN(sha2_512,c_impl,xform,built)() { return 1; }
+#endif
 // Process input in chunks of 128 bytes, caller resposible for padding
 void JOIN(sha2_512,c_impl,xform)(uint64_t *digest, const char *data, uint32_t nblk) {
   const uint64_t *input=(uint64_t *)data;
@@ -94,7 +96,9 @@ void JOIN(sha2_512,c_impl,xform)(uint64_t *digest, const char *data, uint32_t nb
   }
 }
 
+#if !(defined(__wasm) || defined(__wasm__) || defined(__WASM__))
 int JOIN(sha2_512,c_impl,xform_le,built)() { return 1; }
+#endif
 // Process input in chunks of 128 bytes, caller resposible for padding
 void JOIN(sha2_512,c_impl,xform_le)(uint64_t *digest, const char *data, uint32_t nblk) {
   const uint64_t *input=(uint64_t *)data;

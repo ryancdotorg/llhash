@@ -9,21 +9,21 @@
 #include "../../macros.h"
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>
 #ifndef __STDC_NO_ATOMICS__
 #include <stdatomic.h>
 #endif
 #include "../../util.h"
+#include "../../src/common/string.h"
 #include "../../gen/md/sha1/ext.h"
 #else
 #include "../../macros.h"
 h(include <stdint.h>)
 h(include <stddef.h>)
-h(include <string.h>)
 h(ifndef __STDC_NO_ATOMICS__)
 h(include <stdatomic.h>)
 h(endif)
 h(include STR(../../../util.h))
+h(include STR(../../../src/common/string.h))
 h(define HASH(EXT_C))
 h(include STR(ext.h))
 #endif
@@ -44,10 +44,8 @@ h(define BSWAP_OFFSET(O) ((O)^(HASH_WORD_BYTES-1)))
 //h(define BSWAP_OFFSET(O) (O))
 //h(endif)
 
-static void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]);
-
 h(ifndef __STDC_NO_ATOMICS__)
-static HMAC(CTX) HMAC(EmptyKey) = { .data = {1} };
+static _Atomic uint8_t HMAC(EmptyKey)[sizeof(HMAC(CTX))] = {1};
 h(endif)
 
 void HKDF(Extract)(
@@ -63,16 +61,16 @@ h(ifdef __STDC_NO_ATOMICS__)
     HMAC(Init)(&ctx, "", 0);
 h(else)
     // try to compute data for empty key once...
-    if (HMAC(EmptyKey).data[0] == 0) {
-      HMAC(Clone)(&ctx, &HMAC(EmptyKey));
+    if (HMAC(EmptyKey)[0] == 0) {
+      HMAC(Clone)(&ctx, (HMAC(CTX)*)HMAC(EmptyKey));
     } else {
       HMAC(Init)(&ctx, "", 0);
 
       uint8_t init = 1;
-      if (atomic_compare_exchange_strong(&(HMAC(EmptyKey).data[0]), &init, 2)) {
-        HMAC(Init)(&HMAC(EmptyKey), "", 0);
-        HMAC(Clone)(&HMAC(EmptyKey), &ctx);
-        atomic_store(&(HMAC(EmptyKey).data[0]), 0);
+      if (atomic_compare_exchange_strong(&(HMAC(EmptyKey)[0]), &init, 2)) {
+        HMAC(Init)((HMAC(CTX)*)HMAC(EmptyKey), "", 0);
+        HMAC(Clone)((HMAC(CTX)*)HMAC(EmptyKey), &ctx);
+        atomic_store(&(HMAC(EmptyKey)[0]), 0);
       }
     }
 h(endif)
@@ -151,7 +149,7 @@ const uint8_t info[], size_t info_sz) {
       // previous hash output, info, and block number are small enough to fit
       // in three blocks after padding, set up for a single transform per block
       ioff = irem = 0; tail = NULL; // head may be overlapping tail
-      //memcpy(head + HASH_DIGEST_LENGTH, info, info_sz);
+      //llh_memcpy(head + HASH_DIGEST_LENGTH, info, info_sz);
       OFFSETCPY(head, HASH_DIGEST_LENGTH, info, info_sz);
 
       head_blks = HASH(Pad)(head, dlen);
@@ -167,10 +165,10 @@ const uint8_t info[], size_t info_sz) {
       // HMAC_Update(info[...:] || padding)
       ioff = ((HASH_DIGEST_LENGTH + info_sz) & ~(HASH_BLOCK_LENGTH-1)) - HASH_DIGEST_LENGTH;
       irem = info_sz - ioff;
-      // memcpy(head + HASH_DIGEST_LENGTH, info, HASH_BLOCK_LENGTH - HASH_DIGEST_LENGTH);
+      // llh_memcpy(head + HASH_DIGEST_LENGTH, info, HASH_BLOCK_LENGTH - HASH_DIGEST_LENGTH);
       TAILCPY(head, info, HASH_DIGEST_LENGTH, HASH_BLOCK_LENGTH);
       data = info + ioff;
-      memcpy(tail, data, irem);
+      llh_memcpy(tail, data, irem);
 
       head_blks = 1;
       data_blks = (ioff - (HASH_BLOCK_LENGTH - HASH_DIGEST_LENGTH)) / HASH_BLOCK_LENGTH;
@@ -192,8 +190,8 @@ const uint8_t info[], size_t info_sz) {
 
   if (data_blks == 0) {
     for (;;) {
-      memcpy(head, okm, HASH_DIGEST_LENGTH);
-      memcpy(ctx->state, key->state, HASH_STATE_BYTES);
+      llh_memcpy(head, okm, HASH_DIGEST_LENGTH);
+      llh_memcpy(ctx->state, key->state, HASH_STATE_BYTES);
       HASH(Transform)(ctx->state, head, head_blks);
       HMAC(Outer)(key->hmac, ctx->state);
       if (++*blkptr < n) break;
@@ -203,8 +201,8 @@ const uint8_t info[], size_t info_sz) {
     }
   } else {
     for (;;) {
-      memcpy(head, okm, HASH_DIGEST_LENGTH);
-      memcpy(ctx->state, key->state, HASH_STATE_BYTES);
+      llh_memcpy(head, okm, HASH_DIGEST_LENGTH);
+      llh_memcpy(ctx->state, key->state, HASH_STATE_BYTES);
       HASH(Transform)(ctx->state, head, head_blks);
       HASH(Transform)(ctx->state, data, data_blks);
       HASH(Transform)(ctx->state, tail, tail_blks);
@@ -239,11 +237,11 @@ const uint8_t salt[], size_t salt_sz) {
   size_t nout = 0;
   uint32_t block = 1;
 
-  memcpy(otail, ctx->data, ctx->datalen);
+  llh_memcpy(otail, ctx->data, ctx->datalen);
   uint8_t otail_blks = HASH(Tail)(otail, ctx->bytelen + ctx->datalen + 4);
 
   while (nout < dk_sz) {
-    memcpy(U, ctx->state, HASH_STATE_BYTES);
+    llh_memcpy(U, ctx->state, HASH_STATE_BYTES);
     STOR32BE(otail+ctx->datalen, block);
     HASH(Transform)(U, otail, otail_blks);
     SERIALIZE(ctx->hmac + HASH_BLOCK_LENGTH, U);
@@ -272,39 +270,39 @@ uint8_t *restrict otail, uint8_t *restrict itail,
 uint8_t otail_blks, uint8_t itail_blks,
 uintWS_t *restrict T, uintWS_t *restrict U, uintWS_t *restrict W,
 uint32_t c, uint32_t block) {
-  memcpy(U, octx->state, HASH_STATE_BYTES);
+  llh_memcpy(U, octx->state, HASH_STATE_BYTES);
   STOR32BE(otail+octx->datalen, block);
   HASH(Transform)(U, otail, otail_blks);
 h(if HASH_ENDIAN == __BYTE_ORDER__)
   SERIALIZE(octx->hmac + HASH_BLOCK_LENGTH, U);
 h(else)
-  // memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
+  // llh_memcpy(octx->hmac + HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
   OFFSETCPY(octx->hmac, HASH_BLOCK_LENGTH, U, HASH_DIGEST_LENGTH);
 h(endif)
   //prblk(octx->hmac, HMAC_OUTER_BLOCKS);
   HASH(Set_IV)(U);
   HASH(Native)(U, (uintWS_t*)octx->hmac, HMAC_OUTER_BLOCKS);
-  memcpy(T, U, HASH_STATE_BYTES);
+  llh_memcpy(T, U, HASH_STATE_BYTES);
   //prblk(T, 1);
   for (size_t i = 1; i < c; ++i) {
 h(if HASH_ENDIAN == __BYTE_ORDER__)
     /* inner hash with previous U */
     SERIALIZE(itail, U);
-    memcpy(U, ictx->state, HASH_STATE_BYTES);
+    llh_memcpy(U, ictx->state, HASH_STATE_BYTES);
     HASH(Transform)(U, itail, itail_blks);
     /* outer hash with inner result */
     SERIALIZE(ictx->hmac + HASH_BLOCK_LENGTH, U);
     HASH(Set_IV)(U);
-    //memcpy(U, W, HASH_STATE_BYTES);
+    //llh_memcpy(U, W, HASH_STATE_BYTES);
     HASH(Transform)(U, ictx->hmac, HMAC_OUTER_BLOCKS);
 h(else)
     /* inner hash with previous U */
-    memcpy(itail, U, HASH_STATE_BYTES);
-    memcpy(U, ictx->state, HASH_STATE_BYTES);
+    llh_memcpy(itail, U, HASH_STATE_BYTES);
+    llh_memcpy(U, ictx->state, HASH_STATE_BYTES);
     HASH(Native)(U, (uintWS_t*)itail, itail_blks);
-    memcpy(itail, U, HASH_STATE_BYTES);
+    llh_memcpy(itail, U, HASH_STATE_BYTES);
     /* outer hash with inner result */
-    memcpy(U, W, HASH_STATE_BYTES);
+    llh_memcpy(U, W, HASH_STATE_BYTES);
     HASH(Native)(U, (uintWS_t*)itail, itail_blks);
 h(endif)
     #define _XOR(n, _) T[n] ^= U[n]
@@ -342,7 +340,7 @@ h(endif)
   size_t nout = 0;
   uint32_t block = 1;
 
-  memcpy(otail, octx->data, octx->datalen);
+  llh_memcpy(otail, octx->data, octx->datalen);
   uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
   uint8_t itail_blks = HASH(Tail)(itail, HASH_BLOCK_LENGTH + HASH_DIGEST_LENGTH);
 h(if HASH_ENDIAN != __BYTE_ORDER__)
@@ -396,7 +394,7 @@ h(endif)
   size_t nout = dk_off - (dk_off % HASH_DIGEST_LENGTH);
   uint32_t block = (dk_off / HASH_DIGEST_LENGTH) + 1;
 
-  memcpy(otail, octx->data, octx->datalen);
+  llh_memcpy(otail, octx->data, octx->datalen);
   uint8_t otail_blks = HASH(Tail)(otail, octx->bytelen + octx->datalen + 4);
   uint8_t itail_blks = HASH(Tail)(itail, HASH_BLOCK_LENGTH + HASH_DIGEST_LENGTH);
 h(if HASH_ENDIAN != __BYTE_ORDER__)

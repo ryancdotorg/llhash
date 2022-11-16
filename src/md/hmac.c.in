@@ -9,17 +9,17 @@
 #include "../../macros.h"
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include "../../util.h"
+#include "../../src/common/string.h"
 #include "../../gen/md/sha1/hmac.h"
 #else
 #include "../../macros.h"
 h(include <stdint.h>)
 h(include <stddef.h>)
-h(include <string.h>)
-h(include <stdio.h>)
+//h(include <stdio.h>)
 h(include STR(../../../util.h))
+h(include STR(../../../src/common/string.h))
 h(define HASH(HMAC_C))
 h(include STR(hmac.h))
 #endif
@@ -27,14 +27,14 @@ h(include STR(hmac.h))
 void HMAC(Clone)(HMAC(CTX) *dst, const HMAC(CTX) *src) {
   // relies on .data being first
   if (src->datalen) {
-    memcpy(dst, src, sizeof(HMAC(CTX)));
+    llh_memcpy(dst, src, sizeof(HMAC(CTX)));
   } else {
     TAILCPY(dst, src, HASH_BLOCK_LENGTH, sizeof(HMAC(CTX)));
   }
 }
 
 void HMAC(Init)(HMAC(CTX) *ctx, const void *key, size_t len) {
-  //memset(ctx, 0x41, sizeof(HMAC(CTX)));
+  //llh_memset(ctx, 0x41, sizeof(HMAC(CTX)));
   HASH(Init)((HASH(CTX)*)ctx);
 
   // populate padded key
@@ -54,7 +54,7 @@ void HMAC(Init)(HMAC(CTX) *ctx, const void *key, size_t len) {
       ctx->data[remaining_bytes++] = 0x80;
       OFFSETFILL(ctx->data, remaining_bytes, 0, HASH_BLOCK_LENGTH);
       HASH(Transform)(outer, ctx->data, 1);
-      memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
+      llh_memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
     }
 
     STOR64DE(ctx->data + HASH_BLOCK_LENGTH - 8, len*8);
@@ -64,7 +64,7 @@ void HMAC(Init)(HMAC(CTX) *ctx, const void *key, size_t len) {
     for (size_t i = 0; i < HASH_DIGEST_LENGTH; ++i) ctx->hmac[i] ^= 0x36;
     OFFSETFILL(ctx->hmac, HASH_DIGEST_LENGTH, 0x36, HASH_BLOCK_LENGTH);
   } else {
-    memcpy(ctx->hmac, key, len);
+    llh_memcpy(ctx->hmac, key, len);
 
     // generate ipad
     for (size_t i = 0; i < len; ++i) ctx->hmac[i] ^= 0x36;
@@ -102,7 +102,7 @@ inline void HMAC(Update)(HMAC(CTX) *ctx, const uint8_t data[], size_t len) {
   HASH(Update)((HASH(CTX)*)ctx, data, len);
 }
 
-static inline void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]) {
+inline void HMAC(Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]) {
 h(if HASH_ENDIAN == __BYTE_ORDER__)
   SERIALIZE(hmac + HASH_BLOCK_LENGTH, state);
 h(else)
@@ -130,7 +130,7 @@ h(endif)
     ctx->data[i++] = 0x80;
     OFFSETFILL(ctx->data, i, 0, HASH_BLOCK_LENGTH);
     HASH(Transform)(ctx->state, ctx->data, 1);
-    memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
+    llh_memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
   }
 
   // add bit length

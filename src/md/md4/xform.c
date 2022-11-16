@@ -33,7 +33,9 @@
   else {                 P(r,B,C,D,A,p); } \
 } while(0)
 
+#if !(defined(__wasm) || defined(__wasm__) || defined(__WASM__))
 int JOIN(md4,c_impl,xform,built)() { return 1; }
+#endif
 // Process input in chunks of 64 bytes, caller resposible for padding
 void JOIN(md4,c_impl,xform)(uint32_t *digest, const char *data, uint32_t nblk)
 {

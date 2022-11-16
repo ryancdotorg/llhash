@@ -18,13 +18,37 @@ h(elif !defined(SERIALIZE))
 h(define SERIALIZE(A, B) HASH(Serialize)(A, B))
 h(endif)
 
+h(if !(defined(__wasm) || defined(__wasm__) || defined(__WASM__)))
 typedef void (*JOIN(HASH_name,xform_t))(uintWS_t *, const void *, uint32_t);
 typedef void (*JOIN(HASH_name,native_t))(uintWS_t *, const uintWS_t *, uint32_t);
 
 char * HASH(Describe)(int impl);
 int HASH(Register)(int enable);
-void (*HASH(Transform))(uintWS_t *digest, const void *data, uint32_t nblk);
-void (*HASH(Native))(uintWS_t *digest, const uintWS_t *data, uint32_t nblk);
+
+extern void (*HASH(Transform))(uintWS_t *digest, const void *data, uint32_t nblk);
+extern void (*HASH(Native))(uintWS_t *digest, const uintWS_t *data, uint32_t nblk);
+h(else)
+void HASH(Transform)(uintWS_t *digest, const void *data, uint32_t nblk);
+void HASH(Native)(uintWS_t *digest, const uintWS_t *data, uint32_t nblk);
+
+#if EQUAL(HASH_NAME,SHA2_224)
+#define IMPL_name sha2_256
+#elif EQUAL(HASH_NAME,SHA2_384)
+#define IMPL_name sha2_512
+#else
+#define IMPL_name HASH_name
+#endif
+
+extern void JOIN(IMPL_name,generic_xform)(uintWS_t *digest, const uintWS_t *data, uint32_t nblk);
+
+#if HASH_ENDIAN == __BYTE_ORDER__
+// nothing
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+extern void JOIN(IMPL_name,generic_xform_le)(uintWS_t *digest, const uintWS_t *data, uint32_t nblk);
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+extern void JOIN(IMPL_name,generic_xform_be)(uintWS_t *digest, const uintWS_t *data, uint32_t nblk);
+#endif
+h(endif)
 
 #if HASH_ALIASED
 char * ALIAS(Describe)(int impl);

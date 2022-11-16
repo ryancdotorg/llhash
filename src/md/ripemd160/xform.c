@@ -31,7 +31,9 @@
 #define RMD42(A, B, C, D, E, W, S) RND(G, A, B, C, D, E, W, 0x7A6D76E9, S)
 #define RMD52(A, B, C, D, E, W, S) RND(F, A, B, C, D, E, W, 0x00000000, S)
 
+#if !(defined(__wasm) || defined(__wasm__) || defined(__WASM__))
 int JOIN(ripemd160,c_impl,xform,built)() { return 1; }
+#endif
 #pragma GCC push_options
 //#pragma GCC optimize ("-fno-schedule-insns")
 #pragma GCC optimize ("-fno-schedule-insns2")

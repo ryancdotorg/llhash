@@ -1,5 +1,5 @@
 MAKEFLAGS += --no-builtin-rules
-export LANG=c LC_ALL=C
+export LANG=C LC_ALL=C
 
 TMPDIR ?= /dev/shm
 
@@ -78,13 +78,23 @@ override CFLAGS += -O3 -fPIC \
 	-Wall -Wextra -pedantic \
 	-std=gnu11 -ggdb
 
+ARCH_FLAGS := -mssse3
+
 CC := ccache gcc
 AS := ccache gcc
 PP := ccache cpp
 LD := ccache ld
 
-COMPILE = python3 -B scripts/asmwrapper.py $(CC) $(CFLAGS)
+WASM_FLAGS := --target=wasm32 -ffreestanding --no-standard-libraries \
+	-Wno-gnu-zero-variadic-macro-arguments
+
+CC_WASM := ccache clang
+LD_WASM := ccache wasm-ld
+
+COMPILE = python3 -B scripts/asmwrapper.py $(CC) $(ARCH_FLAGS) $(CFLAGS)
 ASSEMBLE = python3 -B scripts/asmwrapper.py $(AS) $(IMPL_FLAGS) -O3 -ggdb
+
+COMPILE_WASM = $(CC_WASM) $(WASM_FLAGS) $(CFLAGS)
 
 .PHONY: all libh macros headers asm native generic \
 	clean_all _clean_all clean _clean _nop \
@@ -174,19 +184,10 @@ obj/md/%/xform/native.S: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -march=native -Dc_impl=native -c $< -S -o $@
 
-# core hash drivers
-obj/md/%/hash.o: gen/md/%/hash.c gen/md/%/hash.h $(MACROS)
+# wasm
+wasm/md/%/xform.o: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
-	$(COMPILE) -c $< -o $@
-
-# hmac drivers
-obj/md/%/hmac.o: gen/md/%/hmac.c gen/md/%/hmac.h gen/md/%/hash.h $(MACROS)
-	@mkdir -p $(@D)
-	$(COMPILE) -c $< -o $@
-
-obj/md/%/ext.o: gen/md/%/ext.c gen/md/%/ext.h gen/md/%/hmac.h gen/md/%/hash.h $(MACROS)
-	@mkdir -p $(@D)
-	$(COMPILE) -c $< -o $@
+	$(COMPILE_WASM) -Dc_impl=generic -c $< -o $@
 
 # impl registration
 obj/md/%/register.o: gen/md/%/register.c gen/md/%/hash.h $(MACROS)
@@ -206,6 +207,18 @@ obj/common/%.o: gen/common/%.c $(MACROS)
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
+wasm/common/%.o: src/common/%.c src/common/%.h $(MACROS)
+	@mkdir -p $(@D)
+	$(COMPILE_WASM) -c $< -o $@
+
+wasm/common/%.o: src/common/%.c $(MACROS)
+	@mkdir -p $(@D)
+	$(COMPILE_WASM) -c $< -o $@
+
+wasm/common/%.o: gen/common/%.c $(MACROS)
+	@mkdir -p $(@D)
+	$(COMPILE_WASM) -c $< -o $@
+
 # cpu functionality checks
 obj/can.o: $(OBJ_CAN)
 	$(LD) -r $^ -o $@
@@ -215,16 +228,26 @@ obj/md/%/driver.o: gen/md/%/driver.c gen/md/%/hash.h gen/md/%/hmac.h gen/md/%/ex
 	@mkdir -p $(@D)
 	$(COMPILE) -c $< -o $@
 
-#obj/md/%.o: obj/md/%/hash.o obj/md/%/hmac.o obj/md/%/ext.o obj/md/%/register.o
 obj/md/%.o: obj/md/%/driver.o obj/md/%/register.o
 	$(LD) -r $^ -o $@
 
+wasm/md/%.o: gen/md/%/driver.c gen/md/%/hash.h gen/md/%/hmac.h gen/md/%/ext.h $(MACROS)
+	@mkdir -p $(@D)
+	$(COMPILE_WASM) -c $< -o $@
+
+# all transform implementations
 obj/xform.o: $(OBJ_XFORM)
 	$(LD) -r $^ -o $@
 
+wasm/xform.o: $(patsubst obj/%,wasm/%,$(OBJ_XFORM))
+	$(LD_WASM) -r $^ -o $@
+
 # everything
-obj/llhash.o: state_debug.o obj/can.o obj/xform.o $(OBJ_HASHES)
+obj/llhash.o: state_debug.o obj/can.o obj/xform.o obj/common/string.o $(OBJ_HASHES)
 	$(LD) -r $^ -o $@
+
+wasm/llhash.o: wasm/xform.o wasm/common/string.o $(patsubst obj/%,wasm/%,$(OBJ_HASHES))
+	$(LD_WASM) -r $^ -o $@
 
 # fallback build rules
 %.o: %.c %.h $(MACROS) $(HEADERS)
@@ -280,6 +303,15 @@ vectors.o: vectors.c $(MACROS) $(HEADERS) gen/test_vectors.h
 vectors: vectors.o obj/test_vectors.o obj/llhash.o
 	$(COMPILE) $^ -o $@
 
+# wasm output
+wasm/%.wasm: wasm/%.o
+	$(LD_WASM) --no-entry --export-all $< -o $@
+
+# wasm optimize
+wasm/%.dist.wasm: wasm/%.wasm
+	wasm-opt -O3 $< -o $@
+	wasm-strip $@
+
 # run test programs
 run_test: test
 	./test nobench
@@ -296,7 +328,7 @@ _clean_all: _clean
 
 clean: _nop $(foreach _,$(filter clean,$(MAKECMDGOALS)),$(info $(shell $(MAKE) _clean)))
 _clean:
-	rm -rf obj gen bin $(BINARIES) $(wildcard *.o) || /bin/true
+	rm -rf obj wasm gen bin $(BINARIES) $(wildcard *.o) || /bin/true
 
 _nop:
 	@true
@@ -316,7 +348,7 @@ obj/%.o: $$(subst /xform/,/asm/,src/$$*.c) $(MACROS)
 	$(COMPILE) -O2 -c $< -o $@ || \
 	$(COMPILE) -Wno-unused-parameter -DSTUBBED -c $< -o $@
 
-# transform registration
+# bundle transforms
 obj/%/xform.o: obj/%/xform/generic.o obj/%/xform/native.o \
 $$(subst .c,.o,$$(subst src/$$*/asm/,obj/$$*/xform/,$$(wildcard src/$$*/asm/*.c))) \
 $$(subst .S,.o,$$(subst src/$$*/asm/,obj/$$*/xform/,$$(wildcard src/$$*/asm/*.S)))

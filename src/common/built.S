@@ -4,13 +4,12 @@
 #if (defined(STUBBED) && !__ASSEMBLER__)
 #include <stdint.h>
 #include <stddef.h>
-#include <signal.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #define STUB(name) \
 int JOIN(name,built)() { return 0; } \
-void JOIN(name)(void *digest, const char *data, uint32_t nblk) { raise(SIGILL); }
+void JOIN(name)(void *digest, const char *data, uint32_t nblk) { __builtin_trap(); }
 #pragma GCC diagnostic pop
 #elif __ASSEMBLER__
 #ifdef __CET__

@@ -9,17 +9,46 @@
 #include "../../macros.h"
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>
 #include "../../util.h"
+#include "../../src/common/string.h"
 #include "../../gen/md/sha1/hash.h"
 #else
 #include "../../macros.h"
 h(include <stdint.h>)
 h(include <stddef.h>)
-h(include <string.h>)
 h(include STR(../../../util.h))
+h(include STR(../../../src/common/string.h))
 h(define HASH(HASH_C))
 h(include STR(hash.h))
+// transform function gets built in directly for wasm
+h(if (defined(__wasm) || defined(__wasm__) || defined(__WASM__)))
+h(if EQUAL(HASH_NAME,SHA2_224))
+h(define XFORM sha2_256_generic_xform)
+h(define XFORM_LE sha2_256_generic_xform_le)
+h(define XFORM_BE sha2_256_generic_xform_be)
+h(elif EQUAL(HASH_NAME,SHA2_384))
+h(define XFORM sha2_512_generic_xform)
+h(define XFORM_LE sha2_512_generic_xform_le)
+h(define XFORM_BE sha2_512_generic_xform_be)
+h(else)
+h(define XFORM JOIN(HASH_name,generic_xform))
+h(define XFORM_LE JOIN(HASH_name,generic_xform_le))
+h(define XFORM_BE JOIN(HASH_name,generic_xform_be))
+h(endif)
+
+void HASH(Transform)(uintWS_t *digest, const void *data, uint32_t nblk) {
+  XFORM(digest, data, nblk);
+}
+void HASH(Native)(uintWS_t *digest, const uintWS_t *data, uint32_t nblk) {
+h(if HASH_ENDIAN == __BYTE_ORDER__)
+  XFORM(digest, data, nblk);
+h(elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+  XFORM_LE(digest, data, nblk);
+h(elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+  XFORM_BE(digest, data, nblk);
+h(endif)
+}
+h(endif)
 #endif
 
 static uint8_t hash_output[HASH_DIGEST_LENGTH];
@@ -67,7 +96,7 @@ __attribute__((alias(STR(HASH(Set_IV)))));
 #endif
 inline void HASH(Set_IV)(uintWS_t state[]) {
   static uintWS_t iv[] = HASH(IV);
-  memcpy(state, iv, HASH_STATE_WORDS * HASH_WORD_BYTES);
+  llh_memcpy(state, iv, HASH_STATE_WORDS * HASH_WORD_BYTES);
 }
 
 #if HASH_ALIASED
@@ -77,7 +106,7 @@ __attribute__((alias(STR(HASH(Clone)))));
 void HASH(Clone)(HASH(CTX) *dst, const HASH(CTX) *src) {
   // relies on .data being first
   if (src->datalen) {
-    memcpy(dst, src, sizeof(HASH(CTX)));
+    llh_memcpy(dst, src, sizeof(HASH(CTX)));
   } else {
     // don't copy the data if there isn't any
     TAILCPY(dst, src, HASH_BLOCK_LENGTH, sizeof(HASH(CTX)));
@@ -126,7 +155,7 @@ void HASH(Update)(HASH(CTX) *ctx, const uint8_t data[], size_t len) {
     ctx->bytelen += i * HASH_BLOCK_LENGTH;
   }
 
-  memcpy(ctx->data, input, len);
+  llh_memcpy(ctx->data, input, len);
   ctx->datalen = len;
 }
 
@@ -144,7 +173,7 @@ void HASH(Final)(uint8_t hash[], HASH(CTX) *ctx) {
     ctx->data[i++] = 0x80;
     OFFSETFILL(ctx->data, i, 0, HASH_BLOCK_LENGTH);
     HASH(Transform)(ctx->state, ctx->data, 1);
-    memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
+    llh_memset(ctx->data, 0, HASH_BLOCK_LENGTH-8);
   }
 
   // padding
@@ -176,10 +205,10 @@ uint64_t HASH(Pad)(uint8_t data[], size_t len) {
   // set a 1 bit after the data
   data[len] = 0x80;
   if (remaining_bytes < (HASH_BLOCK_LENGTH-(HASH_WORD_SIZE/4))) {
-    memset(data + len + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
+    llh_memset(data + len + 1, 0, (HASH_BLOCK_LENGTH-8) - (remaining_bytes + 1));
     nblk += 1;
   } else {
-    memset(data + len + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
+    llh_memset(data + len + 1, 0, (HASH_BLOCK_LENGTH*2-8) - (remaining_bytes + 1));
     nblk += 2;
   }
 
@@ -233,9 +262,7 @@ void HASH(Bswap)(uintWS_t data[], uint64_t nblk) {
 /* do nothing */
 #else
   for (const uintWS_t *end=data+nblk*HASH_BLOCK_WORDS; data < end; data += HASH_BLOCK_WORDS) {
-    #define _BSWAP(n, _) data[n] = UWSH2DE(data[n])
-    REPEAT_WITH_COUNTER(HASH_BLOCK_WORDS, SEMICOLON, _BSWAP);
-    #undef _BSWAP
+    blockhtoDe(data);
   }
 #endif
 }

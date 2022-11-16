@@ -54,25 +54,23 @@
 #define uintWS_t CONCAT(uint,HASH_WORD_BITS,_t)
 
 #if HASH_ENDIAN != __BYTE_ORDER__
+#define _COUNT_UWSH2DE(n, _) w[n] = UWSH2DE(w[n])
+#define _COUNT_UWSDE2H(n, _) w[n] = UWSDE2H(w[n])
 #define statehtoDe(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
-  STR_PRAGMA(GCC unroll HASH_STATE_WORDS) \
-  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = UWSH2DE(w[i]); \
+  REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _COUNT_UWSH2DE); \
 }
 #define stateDetoh(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
-  STR_PRAGMA(GCC unroll HASH_STATE_WORDS) \
-  for (int i = 0; i < HASH_STATE_WORDS; ++i) w[i] = UWSDE2H(w[i]); \
+  REPEAT_WITH_COUNTER(HASH_STATE_WORDS, SEMICOLON, _COUNT_UWSDE2H); \
 }
 #define blockhtoDe(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
-  STR_PRAGMA(GCC unroll HASH_BLOCK_WORDS) \
-  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = UWSH2DE(w[i]); \
+  REPEAT_WITH_COUNTER(HASH_BLOCK_WORDS, SEMICOLON, _COUNT_UWSH2DE); \
 }
 #define blockDetoh(S) { \
   uintWS_t *w = (uintWS_t *)(S); \
-  STR_PRAGMA(GCC unroll HASH_BLOCK_WORDS) \
-  for (int i = 0; i < HASH_BLOCK_WORDS; ++i) w[i] = UWSDE2H(w[i]); \
+  REPEAT_WITH_COUNTER(HASH_BLOCK_WORDS, SEMICOLON, _COUNT_UWSDE2H); \
 }
 #else
 #define statehtoDe(S)
@@ -93,13 +91,13 @@
 
 #define PTR_ADD(P, N) ((typeof(P))(((unsigned char *)(P)) + (N)))
 #define PTR_SUB(P, N) ((typeof(P))(((unsigned char *)(P)) - (N)))
-#define TAILCPY(D, S, O, N) memcpy(((unsigned char *)(D)) + (O), ((unsigned char *)(S)) + (O), (N)-(O))
+#define TAILCPY(D, S, O, N) llh_memcpy(((unsigned char *)(D)) + (O), ((unsigned char *)(S)) + (O), (N)-(O))
 
-#define _OFFSETCPY4(D, DO, S, N) memcpy(((unsigned char *)(D)) + (DO), S, N)
-#define _OFFSETCPY5(D, DO, S, SO, N) memcpy(((unsigned char *)(D)) + (DO), ((unsigned char *)(S)) + (SO), N)
+#define _OFFSETCPY4(D, DO, S, N) llh_memcpy(((unsigned char *)(D)) + (DO), S, N)
+#define _OFFSETCPY5(D, DO, S, SO, N) llh_memcpy(((unsigned char *)(D)) + (DO), ((unsigned char *)(S)) + (SO), N)
 #define OFFSETCPY(D, DO, S, ...) VA_SELECT((D, DO, S), (__VA_ARGS__), _OFFSETCPY4, _OFFSETCPY5)
 
-#define OFFSETFILL(D, O, V, N) memset(((unsigned char *)(D)) + (O), (V), (N)-(O));
+#define OFFSETFILL(D, O, V, N) llh_memset(((unsigned char *)(D)) + (O), (V), (N)-(O));
 
 #if HASH_ENDIAN == __ORDER_BIG_ENDIAN__ && HASH_WORD_SIZE == 64
 #define NTH_BYTE_OF_WORD(W, N) (((W) >> (56-BITS(N))) & 0xff)

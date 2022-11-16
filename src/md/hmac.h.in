@@ -23,6 +23,7 @@ void JOIN(HMAC,HASH_NAME,Clear)(JOIN(HMAC,HASH_NAME,CTX) *ctx);
 void JOIN(HMAC,HASH_NAME,Clone)(JOIN(HMAC,HASH_NAME,CTX) *dst, const JOIN(HMAC,HASH_NAME,CTX) *src);
 void JOIN(HMAC,HASH_NAME,Init)(JOIN(HMAC,HASH_NAME,CTX) *ctx, const void *key, size_t len);
 void JOIN(HMAC,HASH_NAME,Update)(JOIN(HMAC,HASH_NAME,CTX) *ctx, const uint8_t data[], size_t len);
+void JOIN(HMAC,HASH_NAME,Outer)(uint8_t hmac[HASH_BLOCK_LENGTH*HMAC_OUTER_BLOCKS], uintWS_t state[HASH_STATE_WORDS]);
 void JOIN(HMAC,HASH_NAME,Semifinal)(JOIN(HMAC,HASH_NAME,CTX) *ctx);
 void JOIN(HMAC,HASH_NAME,Final)(uint8_t hash[], JOIN(HMAC,HASH_NAME,CTX) *ctx);
 void JOIN(HMAC,HASH_NAME)(const void *key, size_t key_sz, const uint8_t msg[], size_t msg_sz, uint8_t hash[]);
