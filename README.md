@@ -37,8 +37,6 @@ license (BSD/MIT/Public Domain/etc).
       (SHA1, SHA2 - [Andy Polyakov](https://github.com/dot-asm))
     * [Intel/Linux](https://github.com/torvalds/linux/tree/v5.12/arch/x86/crypto)
       (SHA1, SHA2)
-    * [Project Nayuki](https://www.nayuki.io/category/x86)
-      (MD5, SHA1, SHA2))
     * [Ryan Castellucci](https://github.com/ryancdotorg) (MD4, MD5)
 
 ## Wrapper Code

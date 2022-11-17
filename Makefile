@@ -6,12 +6,10 @@ TMPDIR ?= /dev/shm
 ifeq ($(USE_ALL), 1)
 USE_GPL = 1
 USE_INTEL = 1
-USE_NAYUKI = 1
 USE_RYANC_SLOW = 1
 else
 USE_GPL ?= 0
 USE_INTEL ?= 0
-USE_NAYUKI ?= 0
 USE_RYANC_SLOW ?= 0
 endif
 
@@ -25,15 +23,11 @@ ifeq ($(USE_INTEL), 1)
 IMPL_FLAGS += -DWITH_INTEL
 endif
 
-ifeq ($(USE_NAYUKI), 1)
-IMPL_FLAGS += -DWITH_NAYUKI
-endif
-
 ifeq ($(USE_RYANC_SLOW), 1)
 IMPL_FLAGS += -DWITH_RYANC_SLOW
 endif
 
-HASHES = md4 md5 ripemd160 sha1 sha2_256 sha2_512 sha2_224 sha2_384
+HASHES ?= md4 md5 ripemd160 sha1 sha2_256 sha2_512 sha2_224 sha2_384
 MD_HASHES = $(foreach h,$(HASHES),md/$h)
 
 # custom functions
