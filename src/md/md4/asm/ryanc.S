@@ -47,14 +47,14 @@ STUB(JOIN(NAME,xform))
 #define ROUND_F(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_f,PAD02(r)): \
 	IF(EQUAL(r,0))(mov 0(%rsi), %T2;) \
-	mov kn*4(%rsi), %EVEN_ODD(r, T3, T2); \
-	mov %c, %T1; \
-	xor %d, %T1; \
-	and %b, %T1; \
-	xor %d, %T1; \
-	add %T1, %a; \
-	add %EVEN_ODD(r, T2, T3), %a; \
-	rol $s, %a;
+	mov kn*4(%rsi), %EVEN_ODD(r, T3, T2);  /* tX = w */ \
+	mov %c, %T1;                           /* t1 = c */ \
+	xor %d, %T1;                           /* t1 ^= d : (c ^ d) */ \
+	add %EVEN_ODD(r, T2, T3), %a;          /* a += tX : w + a */ \
+	and %b, %T1;                           /* t1 &= b : (b & (c ^ d)) */ \
+	xor %d, %T1;                           /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
+	add %T1, %a;                           /* a += t1 : (d ^ (b & (c ^ d))) + w + a */ \
+	rol $s, %a;                            /* a = rol(a, s) */
 
 /* a = rol(((b & c) | (b & d) | (c & d)) + a + w + 0x5a827999, s);
  * t0 = w
