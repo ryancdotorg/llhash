@@ -2,7 +2,7 @@
  * Copyright (c) 2022, Ryan Castellucci, no rights reserved
  * MD4 implemetation, transform only
  */
-#define NAME md4_ryanc
+#define NAME md4_ryanc_alt
 #include "../../../common/built.S"
 #ifdef STUBBED
 STUB(JOIN(NAME,xform))
@@ -30,71 +30,54 @@ STUB(JOIN(NAME,xform))
 
 #define ROUND_F(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_f,PAD02(r)): \
-	mov %d, %T1;                           /* t1 = d */ \
 	add r*4(%rsi), %a;                     /* a += w : w + a */ \
+	mov %d, %T1;                           /* t1 = d */ \
 	xor %c, %T1;                           /* t1 ^= c : (c ^ d) */ \
 	and %b, %T1;                           /* t1 &= b : (b & (c ^ d)) */ \
 	xor %d, %T1;                           /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
 	add %T1, %a;                           /* a += t1 : (d ^ (b & (c ^ d))) + w + a */ \
 	rol $s, %a;                            /* a = rol(a, s) */
 
-#define ROUND_GY(r, a, b, c, d, kn, s) \
+#define ROUND_G(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_g,PAD02(r)): \
-	mov %c, %T1;                       /* c */ \
-	mov %c, %T2;                       /* c */ \
-	add kn*4(%rsi), %a;                /* add */ \
-	or  %d, %T1;                       /* c|d */ \
-	and %d, %T2;                       /* c&d */ \
-	and %b, %T1;                       /* b&(c|d) */ \
-	add $0x5a827999, %a;               /* add */ \
-	or  %T1, %T2;                      /* (b&(c|d))|(c&d) */ \
-	add %T2, %a;                       /* add */ \
-	rol $s, %a;
+	add kn*4(%rsi), %a;                    /* a += w : w + a */ \
+	add $0x5a827999, %a;                   /* a += k : k + w + a */ \
+	mov %c, %T1;                           /* t1 = c */ \
+	mov %c, %T2;                           /* t2 = c */ \
+	or  %d, %T1;                           /* t1 |= d : c | d */ \
+	and %d, %T2;                           /* t2 &= d : c & d */ \
+	and %b, %T1;                           /* t1 &= b : b & (c | d) */ \
+	or  %T1, %T2;                          /* t2 |= t1 : (b & (c | d)) | (c & d) */ \
+	add %T2, %a;                           /* a += t2 : ((b & (c | d)) | (c & d)) + k + w + a */ \
+	rol $s, %a;                            /* a = rol(a, s) */
 
-/* a = rol((b ^ c ^ d)  + a + w + 0x6ed9eba1, s);
-                    B    C    D
-  ROUND_H(32, RXA, RXB, RXC, RXD,  0,  3)
-  ROUND_H(33, RXD, RXA, RXB, RXC,  8,  9)
-  ROUND_H(34, RXC, RXD, RXA, RXB,  4, 11)
-  ROUND_H(35, RXB, RXC, RXD, RXA, 12, 15)
+/*
+a = rol((b ^ c ^ d)  + a + w + 0x6ed9eba1, s);
+                  B    C    D
+ROUND_H(32, RXA, RXB, RXC, RXD,  0,  3)
+ROUND_H(33, RXD, RXA, RXB, RXC,  8,  9)
+ROUND_H(34, RXC, RXD, RXA, RXB,  4, 11)
+ROUND_H(35, RXB, RXC, RXD, RXA, 12, 15)
 
-  at the end of the round we have
-  tmp1 = b ^ c ^ d
-  the b ^ c component is used as c ^ d for the next round
-  so we can get rid of d by doing tmp1 ^= d
-  and then on the next round doing tmp1 ^= b
+at the end of the round we have
+tmp1 = b ^ c ^ d
+the b ^ c component is used as c ^ d for the next round
+so we can get rid of d by doing tmp1 ^= d
+and then on the next round doing tmp1 ^= b
+
+this makes the code a bit smaller, but doesn't seem to speed it up
 */
-
-//	IF(EQUAL(r,32))(mov %d, %T1;)
-//	IF(EQUAL(r,32))(xor %c, %T1;)
 
 #define ROUND_H(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_h,PAD02(r)): \
-	IF(EQUAL(r,32))(mov %d, %T1;) \
-	IF(EQUAL(r,32))(xor %c, %T1;) \
-	IF(NOT_EQUAL(r,47))(mov kn*4(%rsi), %EVEN_ODD(r, T3, T2);) \
-	add $0x6ed9eba1, %a; \
-	xor %b, %T1; \
-	add %EVEN_ODD(r, T2, T3), %a; \
-	add %T1, %a; \
-	IF(NOT_EQUAL(r,47))(xor %d, %T1;) \
-	rol $s, %a; \
-	IF(EQUAL(r,44))(add %a,  0(%rdi);) \
-	IF(EQUAL(r,45))(add %a, 12(%rdi);) \
-	IF(EQUAL(r,46))(add %a,  8(%rdi);) \
-	IF(EQUAL(r,47))(add %a,  4(%rdi);)
-
-/* T1 retains B^C for use as C^D in the next round */
-
-#define ROUND_HY(r, a, b, c, d, kn, s) \
-CONCAT(NAME,_h,PAD02(r)): \
-	add kn*4(%rsi), %a;  /* a += input */ \
-	mov %d, %T1;         /* t1 = c */ \
-	xor %c, %T1;         /* t1 = c ^ d */ \
-	add $0x6ed9eba1, %a; /* a += const */ \
-	xor %b, %T1;         /* t1 = b ^ c ^ d */ \
-	add %T1, %a;         /* a += b ^ c ^ d */ \
-	rol $s, %a;
+	add kn*4(%rsi), %a;                    /* a += w : w + a */ \
+	add $0x6ed9eba1, %a;                   /* a += k : k + w + a */ \
+	IF(EQUAL(r,32))(mov %d, %T1;)          /* t1 = d */ \
+	IF(EQUAL(r,32))(xor %c, %T1;)          /* t1 |= c : c ^ d */ \
+	xor %b, %T1;                           /* t1 |= b : b ^ c ^ d */ \
+	add %T1, %a;                           /* a += t1 : (b ^ c ^ d) + k + w + a */ \
+	IF(NOT_EQUAL(r,47))(xor %d, %T1;)      /* t1 |= d : b ^ c */ \
+	rol $s, %a;                            /* a = rol(a, s) */
 
 #define R4(R, r, kn0, s0, kn1, s1, kn2, s2, kn3, s3) \
 R(r,                RA, RB, RC, RD, kn0, s0) \
@@ -136,17 +119,17 @@ load_state:
 	R4(ROUND_F,  8,    9,  3,   10,  7,   11, 11,   12, 19)
 	R4(ROUND_F, 12,   13,  3,   14,  7,   15, 11,    0, 19)
 
-//	              r,  kn0, s0, kn1,  s1, kn2,  s2,  kn3, s3
-	R4(ROUND_GY, 16,    0,  3,    4,  5,    8,  9,   12, 13)
-	R4(ROUND_GY, 20,    1,  3,    5,  5,    9,  9,   13, 13)
-	R4(ROUND_GY, 24,    2,  3,    6,  5,   10,  9,   14, 13)
-	R4(ROUND_GY, 28,    3,  3,    7,  5,   11,  9,   15, 13)
+//	             r,  kn0, s0, kn1,  s1, kn2,  s2,  kn3, s3
+	R4(ROUND_G, 16,    0,  3,    4,  5,    8,  9,   12, 13)
+	R4(ROUND_G, 20,    1,  3,    5,  5,    9,  9,   13, 13)
+	R4(ROUND_G, 24,    2,  3,    6,  5,   10,  9,   14, 13)
+	R4(ROUND_G, 28,    3,  3,    7,  5,   11,  9,   15, 13)
 
-//	              r,  kn0, s0,  kn1, s1,  kn2, s2,  kn3, s3
-	R4(ROUND_HY, 32,    0,  3,    8,  9,    4, 11,   12, 15)
-	R4(ROUND_HY, 36,    2,  3,   10,  9,    6, 11,   14, 15)
-	R4(ROUND_HY, 40,    1,  3,    9,  9,    5, 11,   13, 15)
-	R4(ROUND_HY, 44,    3,  3,   11,  9,    7, 11,   15, 15)
+//	             r,  kn0, s0,  kn1, s1,  kn2, s2,  kn3, s3
+	R4(ROUND_H, 32,    0,  3,    8,  9,    4, 11,   12, 15)
+	R4(ROUND_H, 36,    2,  3,   10,  9,    6, 11,   14, 15)
+	R4(ROUND_H, 40,    1,  3,    9,  9,    5, 11,   13, 15)
+	R4(ROUND_H, 44,    3,  3,   11,  9,    7, 11,   15, 15)
 
 update:
 	add %RA,  0(%rdi)

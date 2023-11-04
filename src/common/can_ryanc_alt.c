@@ -2,7 +2,7 @@
 
 #include "cpuinfo.h"
 
-int can_ryanc_naive() {
+int can_ryanc_alt() {
 #ifdef __x86_64__
   return 1;
 #else

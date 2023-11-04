@@ -21,16 +21,16 @@
 #define R2(r,a,b,c,d,p) a=ROL32(a+H(b,c,d)+W[p]+0x6ed9eba1, S2(r));
 
 #define P(r,a,b,c,d,p) do {            \
-  if (r < 16) {      R0(r,a,b,c,d,p) } \
+  if      (r < 16) { R0(r,a,b,c,d,p) } \
   else if (r < 32) { R1(r,a,b,c,d,p) } \
-  else {             R2(r,a,b,c,d,p) } \
+  else if (r < 48) { R2(r,a,b,c,d,p) } \
 } while(0)
 
 #define R(r,p) do {                        \
-  if ((r%4) == 0) {      P(r,A,B,C,D,p); } \
+  if      ((r%4) == 0) { P(r,A,B,C,D,p); } \
   else if ((r%4) == 1) { P(r,D,A,B,C,p); } \
   else if ((r%4) == 2) { P(r,C,D,A,B,p); } \
-  else {                 P(r,B,C,D,A,p); } \
+  else if ((r%4) == 3) { P(r,B,C,D,A,p); } \
 } while(0)
 
 #if !(defined(__wasm) || defined(__wasm__) || defined(__WASM__))
