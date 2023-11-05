@@ -25,6 +25,8 @@ pr32.indirect('REG8(x)',  '_REG_8_##x')
 callee_saved = ('rsp', 'rbp', 'rbx', 'r12', 'r13', 'r14', 'r15')
 pr64.define('CALLEE_SAVED(r)', OR(map(lambda r: f'SAME_REG(r,{r})', callee_saved)))
 pr64.define('CALLER_SAVED(r)', 'COMPL(CALLEE_SAVED(r))')
+pr64.define('CALLEE_SAVE(r)', 'IF(CALLEE_SAVED(r))(push %r)')
+pr64.define('CALLEE_RESTORE(r)', 'IF(CALLEE_SAVED(r))(pop %r)')
 
 def prdef(x, w, reg):
         if reg.startswith('r'):

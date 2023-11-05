@@ -7,7 +7,9 @@
 #include "../../../macros.h"
 
 // Mixing functions
-#define F(b, c, d) (d ^ (b & (c ^ d)))
+//#define F(b, c, d) (d ^ (b & (c ^ d)))
+#define F(b, c, d) (((c ^ d) & b) ^ d)
+//#define F(b, c, d) ((b & c) + (~b & d))
 #define G(b, c, d) ((b & c) | (b & d) | (c & d))
 #define H(b, c, d) (b ^ c ^ d)
 

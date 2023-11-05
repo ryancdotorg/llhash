@@ -9,14 +9,14 @@ STUB(JOIN(NAME,xform))
 #else
 
 /* main working registers */
-#define RA r8d
-#define RB r9d
-#define RC r10d
-#define RD r11d
+#define RA eax
+#define RB ecx
+#define RC r8d
+#define RD r9d
 
 /* temporary registers */
-#define T1 eax
-#define T2 ecx
+#define T1 r10d
+#define T2 r11d
 #define T3 none
 #define T4 none
 #define T5 none

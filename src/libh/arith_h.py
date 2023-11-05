@@ -27,6 +27,12 @@ lut('IDIV', lambda a, b: a // b, range(MAX), div)
 #lut('ADD', lambda a, b: a + b, range(MAX), range(MAX))
 #lut('MULT', lambda a, b: a * b, range(MAX), div)
 
+for i in range(8):
+    macros(f'#define ADD{i}(a) ' + ('INC(' * i) + 'a' + (')' * i))
+
+for i in range(8):
+    macros(f'#define SUB{i}(a) ' + ('DEC(' * i) + 'a' + (')' * i))
+
 macros('#define ODD(a) _MOD(a, 2)')
 macros('#define EVEN(a) COMPL(_MOD(a, 2))')
 macros('#define ODD_EVEN(r, a, b) IF_ELSE(_MOD(r, 2))(a, b)')

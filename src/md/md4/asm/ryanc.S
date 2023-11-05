@@ -9,17 +9,17 @@ STUB(JOIN(NAME,xform))
 #else
 
 /* main working registers */
-#define RA r8d
-#define RB r9d
-#define RC r10d
-#define RD r11d
+#define RA eax
+#define RB ecx
+#define RC r8d
+#define RD r9d
 
 /* temporary registers */
-#define T1 eax
-#define T2 ecx
-#define T3 none
-#define T4 none
-#define T5 none
+#define T1 r10d
+#define T2 r11d
+#define T3
+#define T4
+#define T5
 
 /* end of input */
 #define END IF_ELSE(SAME_REG(RD,rdx))(r15,rdx)
@@ -30,92 +30,57 @@ STUB(JOIN(NAME,xform))
 
 #define ROUND_F(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_f,PAD02(r)): \
-	mov %d, %T1;                           /* t1 = d */ \
-	add r*4(%rsi), %a;                     /* a += w : w + a */ \
-	xor %c, %T1;                           /* t1 ^= c : (c ^ d) */ \
-	and %b, %T1;                           /* t1 &= b : (b & (c ^ d)) */ \
-	xor %d, %T1;                           /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
-	add %T1, %a;                           /* a += t1 : (d ^ (b & (c ^ d))) + w + a */ \
-	rol $s, %a;                            /* a = rol(a, s) */
+	mov %d, %T1;                    /* t1 = d */ \
+	add r*4(%rsi), %a;              /* a += w : w + a */ \
+	xor %c, %T1;                    /* t1 ^= c : (c ^ d) */ \
+	and %b, %T1;                    /* t1 &= b : (b & (c ^ d)) */ \
+	xor %d, %T1;                    /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
+	add %T1, %a;                    /* a += t1 : (d ^ (b & (c ^ d))) + w + a */ \
+	rol $s, %a;                     /* a = rol(a, s) */
 
-#define ROUND_GY(r, a, b, c, d, kn, s) \
+#define ROUND_G(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_g,PAD02(r)): \
-	mov %c, %T1;                       /* c */ \
-	mov %c, %T2;                       /* c */ \
-	add kn*4(%rsi), %a;                /* add */ \
-	or  %d, %T1;                       /* c|d */ \
-	and %d, %T2;                       /* c&d */ \
-	and %b, %T1;                       /* b&(c|d) */ \
-	add $0x5a827999, %a;               /* add */ \
-	or  %T1, %T2;                      /* (b&(c|d))|(c&d) */ \
-	add %T2, %a;                       /* add */ \
-	rol $s, %a;
-
-/* a = rol((b ^ c ^ d)  + a + w + 0x6ed9eba1, s);
-                    B    C    D
-  ROUND_H(32, RXA, RXB, RXC, RXD,  0,  3)
-  ROUND_H(33, RXD, RXA, RXB, RXC,  8,  9)
-  ROUND_H(34, RXC, RXD, RXA, RXB,  4, 11)
-  ROUND_H(35, RXB, RXC, RXD, RXA, 12, 15)
-
-  at the end of the round we have
-  tmp1 = b ^ c ^ d
-  the b ^ c component is used as c ^ d for the next round
-  so we can get rid of d by doing tmp1 ^= d
-  and then on the next round doing tmp1 ^= b
-*/
-
-//	IF(EQUAL(r,32))(mov %d, %T1;)
-//	IF(EQUAL(r,32))(xor %c, %T1;)
+	mov %c, %T1;                    /* t1 = c */ \
+	mov %c, %T2;                    /* t2 = c */ \
+	add kn*4(%rsi), %a;             /* a += w : w + a */ \
+	or  %d, %T1;                    /* t1 |= d : (d | c) */ \
+	and %d, %T2;                    /* t2 &= d : (d & c) */ \
+	and %b, %T1;                    /* t1 &= b : (b & (d | c)) */ \
+	add $0x5a827999, %a;            /* a += k : k + w + a */ \
+	or  %T2, %T1;                   /* t1 |= t2 : ((d & c) | (b & (d | c))) */ \
+	add %T1, %a;                    /* a += t1 : ((d & c) | (b & (d | c))) + k + w + a */ \
+	rol $s, %a;                     /* a = rol(a, s) */
 
 #define ROUND_H(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_h,PAD02(r)): \
-	IF(EQUAL(r,32))(mov %d, %T1;) \
-	IF(EQUAL(r,32))(xor %c, %T1;) \
-	IF(NOT_EQUAL(r,47))(mov kn*4(%rsi), %EVEN_ODD(r, T3, T2);) \
-	add $0x6ed9eba1, %a; \
-	xor %b, %T1; \
-	add %EVEN_ODD(r, T2, T3), %a; \
-	add %T1, %a; \
-	IF(NOT_EQUAL(r,47))(xor %d, %T1;) \
-	rol $s, %a; \
-	IF(EQUAL(r,44))(add %a,  0(%rdi);) \
-	IF(EQUAL(r,45))(add %a, 12(%rdi);) \
-	IF(EQUAL(r,46))(add %a,  8(%rdi);) \
-	IF(EQUAL(r,47))(add %a,  4(%rdi);)
-
-/* T1 retains B^C for use as C^D in the next round */
-
-#define ROUND_HY(r, a, b, c, d, kn, s) \
-CONCAT(NAME,_h,PAD02(r)): \
-	add kn*4(%rsi), %a;  /* a += input */ \
-	mov %d, %T1;         /* t1 = c */ \
-	xor %c, %T1;         /* t1 = c ^ d */ \
-	add $0x6ed9eba1, %a; /* a += const */ \
-	xor %b, %T1;         /* t1 = b ^ c ^ d */ \
-	add %T1, %a;         /* a += b ^ c ^ d */ \
-	rol $s, %a;
+	add kn*4(%rsi), %a;             /* a += w : w + a*/ \
+	mov %d, %T1;                    /* t1 = d */ \
+	xor %c, %T1;                    /* t1 ^= c : (c ^ d) */ \
+	add $0x6ed9eba1, %a;            /* a += k : k + w + a */ \
+	xor %b, %T1;                    /* t1 ^= b : (b ^ (c ^ d)) */ \
+	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + k + w + x */ \
+	rol $s, %a;                     /* a = rol(a, s) */
 
 #define R4(R, r, kn0, s0, kn1, s1, kn2, s2, kn3, s3) \
-R(r,                RA, RB, RC, RD, kn0, s0) \
-R(INC(r),           RD, RA, RB, RC, kn1, s1) \
-R(INC(INC(r)),      RC, RD, RA, RB, kn2, s2) \
-R(INC(INC(INC(r))), RB, RC, RD, RA, kn3, s3)
+R(ADD0(r), RA, RB, RC, RD, kn0, s0) \
+R(ADD1(r), RD, RA, RB, RC, kn1, s1) \
+R(ADD2(r), RC, RD, RA, RB, kn2, s2) \
+R(ADD3(r), RB, RC, RD, RA, kn3, s3)
 
-/* void md4_ryanc_xform(uint32_t state[static 4], const uint8_t block[static 64], uint64_t nblk) */ 
+/* void md4_ryanc_xform(uint32_t state[static 4], const uint8_t block[static 64], uint64_t nblk) */
 ENTRY(JOIN(NAME,xform))
 save:
 	/* save registers */
-	IF(CALLEE_SAVED(RA))(push %REG64(RA))
-	IF(CALLEE_SAVED(RB))(push %REG64(RB))
-	IF(CALLEE_SAVED(RC))(push %REG64(RC))
-	IF(CALLEE_SAVED(RD))(push %REG64(RD))
-	IF(CALLEE_SAVED(T1))(push %REG64(T1))
-	IF(CALLEE_SAVED(T2))(push %REG64(T2))
-	IF(CALLEE_SAVED(T3))(push %REG64(T3))
-	IF(CALLEE_SAVED(T4))(push %REG64(T4))
-	IF(CALLEE_SAVED(T5))(push %REG64(T5))
-	IF(CALLEE_SAVED(END))(push %REG64(END))
+	CALLEE_SAVE(REG64(RA))
+	CALLEE_SAVE(REG64(RB))
+	CALLEE_SAVE(REG64(RC))
+	CALLEE_SAVE(REG64(RD))
+	CALLEE_SAVE(REG64(T1))
+	CALLEE_SAVE(REG64(T2))
+	CALLEE_SAVE(REG64(T3))
+	CALLEE_SAVE(REG64(T4))
+	CALLEE_SAVE(REG64(T5))
+	CALLEE_SAVE(REG64(END))
 
 adjust:
 	shl $6, %rdx   /* number of bytes to process */
@@ -135,18 +100,16 @@ load_state:
 	R4(ROUND_F,  4,    5,  3,    6,  7,    7, 11,    8, 19)
 	R4(ROUND_F,  8,    9,  3,   10,  7,   11, 11,   12, 19)
 	R4(ROUND_F, 12,   13,  3,   14,  7,   15, 11,    0, 19)
-
-//	              r,  kn0, s0, kn1,  s1, kn2,  s2,  kn3, s3
-	R4(ROUND_GY, 16,    0,  3,    4,  5,    8,  9,   12, 13)
-	R4(ROUND_GY, 20,    1,  3,    5,  5,    9,  9,   13, 13)
-	R4(ROUND_GY, 24,    2,  3,    6,  5,   10,  9,   14, 13)
-	R4(ROUND_GY, 28,    3,  3,    7,  5,   11,  9,   15, 13)
-
-//	              r,  kn0, s0,  kn1, s1,  kn2, s2,  kn3, s3
-	R4(ROUND_HY, 32,    0,  3,    8,  9,    4, 11,   12, 15)
-	R4(ROUND_HY, 36,    2,  3,   10,  9,    6, 11,   14, 15)
-	R4(ROUND_HY, 40,    1,  3,    9,  9,    5, 11,   13, 15)
-	R4(ROUND_HY, 44,    3,  3,   11,  9,    7, 11,   15, 15)
+//	             r,  kn0, s0, kn1,  s1, kn2,  s2,  kn3, s3
+	R4(ROUND_G, 16,    0,  3,    4,  5,    8,  9,   12, 13)
+	R4(ROUND_G, 20,    1,  3,    5,  5,    9,  9,   13, 13)
+	R4(ROUND_G, 24,    2,  3,    6,  5,   10,  9,   14, 13)
+	R4(ROUND_G, 28,    3,  3,    7,  5,   11,  9,   15, 13)
+//	             r,  kn0, s0,  kn1, s1,  kn2, s2,  kn3, s3
+	R4(ROUND_H, 32,    0,  3,    8,  9,    4, 11,   12, 15)
+	R4(ROUND_H, 36,    2,  3,   10,  9,    6, 11,   14, 15)
+	R4(ROUND_H, 40,    1,  3,    9,  9,    5, 11,   13, 15)
+	R4(ROUND_H, 44,    3,  3,   11,  9,    7, 11,   15, 15)
 
 update:
 	add %RA,  0(%rdi)
@@ -161,16 +124,16 @@ next:
 
 ret:
 	/* restore registers */
-	IF(CALLEE_SAVED(END))(pop %REG64(END))
-	IF(CALLEE_SAVED(T5))(pop %REG64(T5))
-	IF(CALLEE_SAVED(T4))(pop %REG64(T4))
-	IF(CALLEE_SAVED(T3))(pop %REG64(T3))
-	IF(CALLEE_SAVED(T2))(pop %REG64(T2))
-	IF(CALLEE_SAVED(T1))(pop %REG64(T1))
-	IF(CALLEE_SAVED(RD))(pop %REG64(RD))
-	IF(CALLEE_SAVED(RC))(pop %REG64(RC))
-	IF(CALLEE_SAVED(RB))(pop %REG64(RB))
-	IF(CALLEE_SAVED(RA))(pop %REG64(RA))
+	CALLEE_RESTORE(REG64(END))
+	CALLEE_RESTORE(REG64(T5))
+	CALLEE_RESTORE(REG64(T4))
+	CALLEE_RESTORE(REG64(T3))
+	CALLEE_RESTORE(REG64(T2))
+	CALLEE_RESTORE(REG64(T1))
+	CALLEE_RESTORE(REG64(RD))
+	CALLEE_RESTORE(REG64(RC))
+	CALLEE_RESTORE(REG64(RB))
+	CALLEE_RESTORE(REG64(RA))
 	retq
 ENDPROC(JOIN(NAME,xform))
 #endif
