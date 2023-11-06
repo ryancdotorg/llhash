@@ -31,19 +31,21 @@ exception of the Intel SHA1 SSSE3 and AVX implementations (which are
 GPLv2-or-later and behind a build flag), everything is under a permissive
 license (BSD/MIT/Public Domain/etc).
 
-* C ([Ryan Castellucci](https://github.com/ryancdotorg))
+* C
+    * ([Ryan Castellucci](https://github.com/ryancdotorg))
+      (MD4, MD5, RIPEMD160, SHA1, SHA2
 * x86_64 assembly
     * [CRYPTOGAMS](https://github.com/dot-asm/cryptogams)
       (SHA1, SHA2 - [Andy Polyakov](https://github.com/dot-asm))
     * [Intel/Linux](https://github.com/torvalds/linux/tree/v5.12/arch/x86/crypto)
       (SHA1, SHA2)
-    * [Ryan Castellucci](https://github.com/ryancdotorg) (MD4, MD5)
+    * [Ryan Castellucci](https://github.com/ryancdotorg) (MD4, MD5, RIPEMD160)
 
 ## Wrapper Code
 
 The wrapper API has functions that are mostly compatible with OpenSSL’s legacy
-hash APIs, though the CTX structures. There are also a number of additional
-functions for advanced usage.
+hash APIs, though the CTX structures are different. There are also a number of
+additional functions for advanced usage.
 
 Where `HASH` is the name of a supported hash, the following functions are
 available:
