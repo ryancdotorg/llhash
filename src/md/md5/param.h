@@ -16,9 +16,9 @@
 }
 
 #define MD5_IMPL_PRIO \
-(ryanc, RYANC), \
-(native, NATIVE), \
-(generic, GENERIC)
+(ryanc, x64, RYANC), \
+(native, native, NATIVE), \
+(generic, generic, GENERIC)
 
 #define MD5_USING_GENERIC              0
 #define MD5_USING_NATIVE               1

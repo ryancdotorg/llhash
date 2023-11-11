@@ -14,6 +14,3 @@ int can_avx2() {
 
   return 0;
 }
-
-int can_intel_avx2() { return can_avx2(); }
-int can_cryptogams_avx2() { return can_avx2(); }

@@ -18,17 +18,17 @@
 }
 
 #define SHA2_224_IMPL_PRIO \
-(cryptogams_shaext, CRYPTOGAMS_SHAEXT), \
-(intel_shaext, INTEL_SHAEXT), \
-(cryptogams_avx2, CRYPTOGAMS_AVX2), \
-(intel_avx2, INTEL_AVX2), \
-(cryptogams_avx, CRYPTOGAMS_AVX), \
-(cryptogams_ssse3, CRYPTOGAMS_SSSE3), \
-(intel_avx, INTEL_AVX), \
-(intel_ssse3, INTEL_SSSE3), \
-(cryptogams_gen, CRYPTOGAMS_GEN), \
-(native, NATIVE), \
-(generic, GENERIC)
+(cryptogams_shaext, shaext, CRYPTOGAMS_SHAEXT), \
+(intel_shaext, shaext, INTEL_SHAEXT), \
+(cryptogams_avx2, avx2, CRYPTOGAMS_AVX2), \
+(intel_avx2, avx2, INTEL_AVX2), \
+(cryptogams_avx, avx, CRYPTOGAMS_AVX), \
+(cryptogams_ssse3, ssse3, CRYPTOGAMS_SSSE3), \
+(intel_avx, avx, INTEL_AVX), \
+(intel_ssse3, ssse3, INTEL_SSSE3), \
+(cryptogams_gen, x64, CRYPTOGAMS_GEN), \
+(native, native, NATIVE), \
+(generic, generic, GENERIC)
 
 #define SHA2_224_USING_GENERIC            0
 #define SHA2_224_USING_NATIVE             1

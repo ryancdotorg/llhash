@@ -2,7 +2,7 @@
 
 #include "cpuinfo.h"
 
-int can_ryanc() {
+int can_x64() {
 #ifdef __x86_64__
   return 1;
 #else

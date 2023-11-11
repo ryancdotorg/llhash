@@ -10,6 +10,3 @@ int can_xop() {
 
   return 0;
 }
-
-int can_intel_xop() { return can_xop(); }
-int can_cryptogams_xop() { return can_xop(); }

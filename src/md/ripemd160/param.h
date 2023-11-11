@@ -16,9 +16,9 @@
 }
 
 #define RIPEMD160_IMPL_PRIO \
-(ryanc, RYANC), \
-(native, NATIVE), \
-(generic, GENERIC),
+(ryanc, x64, RYANC), \
+(native, native, NATIVE), \
+(generic, generic, GENERIC),
 
 #define RIPEMD160_USING_GENERIC              0
 #define RIPEMD160_USING_NATIVE               1

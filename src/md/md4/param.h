@@ -16,10 +16,10 @@
 }
 
 #define MD4_IMPL_PRIO \
-(ryanc, RYANC), \
-(ryanc_alt, RYANC_ALT), \
-(native, NATIVE), \
-(generic, GENERIC)
+(ryanc, x64, RYANC), \
+(ryanc_alt, x64, RYANC_ALT), \
+(native, native, NATIVE), \
+(generic, generic, GENERIC)
 
 #define MD4_USING_GENERIC           0
 #define MD4_USING_NATIVE            1

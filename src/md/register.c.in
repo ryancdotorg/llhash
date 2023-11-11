@@ -28,7 +28,7 @@ h(include STR(../../../gen/md/HASH_name/hash.h))
 h(include STR(../../../src/md/HASH_name/param.h))
 #endif
 
-#define CASE_DESC(I) case JOIN(HASH_NAME,USING,SECOND I): return JOIN(HASH_NAME,DESC,SECOND I);
+#define CASE_DESC(I) case JOIN(HASH_NAME,USING,THIRD I): return JOIN(HASH_NAME,DESC,THIRD I);
 char * HASH(Describe)(int impl) {
   switch (impl >= 0 ? impl : -1) {
     MAP(CASE_DESC, EMPTY, HASH(IMPL_PRIO))
@@ -109,16 +109,16 @@ void (*HASH(Native))(uintWS_t *, const uintWS_t *, uint32_t) = (JOIN(HASH_name,n
 #define MAYBE_REGISTER(I) \
   extern int JOIN(can,FIRST I)(); \
   IMPL_DEFS(I); \
-  if (enable & JOIN(HASH_NAME,ENABLE,SECOND I)) { \
+  if (enable & JOIN(HASH_NAME,ENABLE,THIRD I)) { \
     int e = 0; \
     CHECK_BUILT(I); \
-    if (!JOIN(can,FIRST I)()) { e |= 2; } \
+    if (!JOIN(can,SECOND I)()) { e |= 2; } \
     if (e) { \
       err |= ~e; \
     } else { \
       HASH(Transform) = JOIN(BASE_IMPL,FIRST I,xform); \
       HASH(Native) = (JOIN(HASH_name,native_t))CONCAT(BASE_IMPL,_,FIRST I,_xform,NATIVE_SUFFIX); \
-      return JOIN(HASH_NAME,USING,SECOND I); \
+      return JOIN(HASH_NAME,USING,THIRD I); \
     } \
   }
 
