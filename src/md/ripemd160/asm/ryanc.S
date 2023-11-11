@@ -62,7 +62,7 @@ STUB(JOIN(NAME,xform))
 	mov %d, %T1;                    /* t1 = d */ \
 	xor %c, %T1;                    /* t1 ^= c : (c ^ d) */ \
 	xor %b, %T1;                    /* t1 ^= b : (b ^ (c ^ d)) */ \
-	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+	add %T1, %a;
 
 #if 0
 #define G(r, a, b, c, d, e, s, k) \
@@ -71,7 +71,7 @@ STUB(JOIN(NAME,xform))
 	and %b, %T1; \
 	add %T1, %a; \
 	andn %d, %b, %T1; \
-	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+	add %T1, %a;
 
 #else
 #define G(r, a, b, c, d, e, s, k) \
@@ -80,7 +80,7 @@ STUB(JOIN(NAME,xform))
 	xor %c, %T1;                    /* t1 ^= c : (c ^ d) */ \
 	and %b, %T1;                    /* t1 &= b : (b & (c ^ d)) */ \
 	xor %d, %T1;                    /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
-	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+	add %T1, %a;
 
 #endif
 
@@ -200,7 +200,7 @@ IG_SHR:
 	not %T1;                        /* t1 ~= : ~c */ \
 	or  %b, %T1;                    /* t1 |= b : b | ~c */ \
 	xor %d, %T1;                    /* t1 ^= d : (b | ~c) ^ d */ \
-	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+	add %T1, %a;
 
 #if 1
 #define I(r, a, b, c, d, e, s, k) \
@@ -209,7 +209,7 @@ IG_SHR:
 	and %b, %T1;                    /* t1 &= b : d & b */ \
 	add %T1, %a;                    /* a += t1 */ \
 	andn %c, %d, %T2;               /* t1 = c & ~b */ \
-	add %T2, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+	add %T2, %a;
 
 #else
 #define I(r, a, b, c, d, e, s, k) \
@@ -218,7 +218,7 @@ IG_SHR:
 	xor %b, %T1;                    /* t1 ^= c : (c ^ d) */ \
 	and %d, %T1;                    /* t1 &= b : (b & (c ^ d)) */ \
 	xor %c, %T1;                    /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
-	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+	add %T1, %a;
 
 #endif
 
