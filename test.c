@@ -330,8 +330,17 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 
 int main(int argc, char *argv[]) {
   int nobench = 0;
-  if (argc > 1 && strcmp(argv[1], "nobench") == 0) {
-    nobench = 1;
+  int start_impl = -2;
+  while (argc > 1) {
+    if (strcmp(argv[1], "nobench") == 0) {
+      nobench = 1;
+    } else if (strcmp(argv[1], "noopenssl") == 0) {
+      start_impl = 0;
+    } else if (strcmp(argv[1], "noc") == 0) {
+      start_impl = 2;
+    } else {
+      break;
+    }
     ++argv; --argc;
   }
 
