@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <stdio.h>
 
 #include <openssl/crypto.h>
 #include <openssl/hmac.h>
@@ -20,63 +21,43 @@ static char *libcrypto[] = {
 #define DLFUNC(NAME, TYPE, ARGS, ARGN) \
 static TYPE _load_##NAME ARGS; \
 static TYPE (*_##NAME)ARGS = _load_##NAME; \
-static TYPE _load_##NAME ARGS { \
+static int _has_##NAME () { \
   int i = 0; \
   char *filename; \
   void *handle = NULL; \
   while (handle == NULL && (filename = libcrypto[i++]) != NULL) { \
     handle = dlopen(filename, RTLD_LAZY); \
   } \
-  _##NAME = dlsym(handle, #NAME); \
+  _##NAME = (typeof(_##NAME))(intptr_t)(dlsym(handle, #NAME)); \
+  return (_##NAME != NULL); \
+} \
+static TYPE _load_##NAME ARGS { \
+  if (!_has_##NAME ()) { \
+    fprintf(stderr, "fatal: can't load function `%s`!\n", #NAME); \
+    abort(); \
+  } \
   return _##NAME ARGN; \
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
 DLFUNC(EVP_Digest, int,
   (const void *a, size_t b, unsigned char *c, unsigned int *d, const EVP_MD *e, ENGINE *f),
   (a, b, c, d, e, f)
 )
 
-DLFUNC(EVP_md4,       const EVP_MD *, (), ())
-DLFUNC(EVP_md5,       const EVP_MD *, (), ())
-DLFUNC(EVP_ripemd160, const EVP_MD *, (), ())
-DLFUNC(EVP_sha1,      const EVP_MD *, (), ())
-DLFUNC(EVP_sha224,    const EVP_MD *, (), ())
-DLFUNC(EVP_sha256,    const EVP_MD *, (), ())
-DLFUNC(EVP_sha384,    const EVP_MD *, (), ())
-DLFUNC(EVP_sha512,    const EVP_MD *, (), ())
-
-DLFUNC(MD4,       unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-DLFUNC(MD5,       unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-DLFUNC(RIPEMD160, unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-DLFUNC(SHA1,      unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-DLFUNC(SHA224,    unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-DLFUNC(SHA256,    unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-DLFUNC(SHA384,    unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-DLFUNC(SHA512,    unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c))
-#pragma GCC diagnostic pop
-
 static const EVP_MD *md_md4, *md_md5, *md_ripemd160, *md_sha1;
 static const EVP_MD *md_sha224, *md_sha256, *md_sha384, *md_sha512;
 
-static __attribute__((constructor)) void getmd() {
-  md_md4 = _EVP_md4();
-  md_md5 = _EVP_md5();
-  md_ripemd160 = _EVP_ripemd160();
-  md_sha1 = _EVP_sha1();
-  md_sha224 = _EVP_sha224();
-  md_sha256 = _EVP_sha256();
-  md_sha384 = _EVP_sha384();
-  md_sha512 = _EVP_sha512();
-}
-
 #define OPENSSL_DIGEST(NAME, QNAME, name) \
+DLFUNC(EVP_##name, const EVP_MD *, (), ()) \
+DLFUNC(QNAME, unsigned char *, (const unsigned char *a, unsigned long b, unsigned char *c), (a, b, c)) \
 void OpenSSL_EVP_##NAME (uint8_t hash[], const uint8_t data[], size_t len) { \
   _EVP_Digest(data, len, hash, NULL, md_##name, NULL); \
 } \
 void OpenSSL_##NAME (uint8_t hash[], const uint8_t data[], size_t len) { \
   _##QNAME (data, len, hash); \
+} \
+int OpenSSL_has_##NAME() { \
+  return _has_EVP_##name(); \
 }
 
 OPENSSL_DIGEST(MD4, MD4, md4)
@@ -87,3 +68,14 @@ OPENSSL_DIGEST(SHA2_224, SHA224, sha224)
 OPENSSL_DIGEST(SHA2_256, SHA256, sha256)
 OPENSSL_DIGEST(SHA2_384, SHA384, sha384)
 OPENSSL_DIGEST(SHA2_512, SHA512, sha512)
+
+#define INIT_EVP(MD) md_##MD = _has_EVP_##MD () ? _EVP_##MD () : NULL
+static __attribute__((constructor)) void getmd() {
+  INIT_EVP(md4);
+  INIT_EVP(md5);
+  INIT_EVP(ripemd160);
+  INIT_EVP(sha224);
+  INIT_EVP(sha256);
+  INIT_EVP(sha384);
+  INIT_EVP(sha512);
+}

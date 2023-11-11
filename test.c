@@ -167,6 +167,10 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 
 #define TEST_EMPTY(NAME, SIZE) do { \
   if (!should(hashes, #NAME)) break; \
+  if (!OpenSSL_has_##NAME ()) { \
+    printf("OpenSSL_" #NAME "() is not available, skipping tests!\n"); \
+    break; \
+  } \
   OpenSSL_##NAME (ref, buf, 0); \
   printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
   for (int i = 0; i < 32; ++i) { \
@@ -186,6 +190,10 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 
 #define TEST_DATA(NAME, N, SIZE) do { \
   if (!should(hashes, #NAME)) break; \
+  if (!OpenSSL_has_##NAME ()) { \
+    printf("OpenSSL_" #NAME "() is not available, skipping tests!\n"); \
+    break; \
+  } \
   OpenSSL_##NAME (ref, buf, N); \
   for (int i = 0; i < 32; ++i) { \
     int impl = NAME##_Register(1<<i); \
@@ -265,6 +273,10 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
 
 #define BENCH_DATA(NAME, QNAME, BLOCK, SIZE) do { \
   if (!should(hashes, #NAME)) break; \
+  int start_impl_this = start_impl; \
+  if (start_impl_this < 0 && !OpenSSL_has_##NAME ()) { \
+    start_impl_this = 0; \
+  } \
   int iter = 1; \
   for (int n = 1; n <= 64; n *= 4) { \
     int len = BLOCK * n - 20; \
@@ -272,7 +284,7 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
     OpenSSL_##NAME (ref, scratch, len); \
     printf("\n"); \
     int impl = 0; \
-    for (int i = start_impl; i < 32; ++i) { \
+    for (int i = start_impl_this; i < 32; ++i) { \
       if (i >= 0 && (impl = NAME##_Register(1<<i)) != i) continue; \
       uint32_t cycles_h0, cycles_l0; \
       uint64_t cycles; \
@@ -357,7 +369,7 @@ int main(int argc, char *argv[]) {
   uint8_t ref[64], hash[64];
 
   char *_h[] = {
-    "MD2", "MD4", "MD5",
+    "MD4", "MD5",
     "SHA1", "RIPEMD160",
     "SHA2_224", "SHA2_256",
     "SHA2_384", "SHA2_512",
