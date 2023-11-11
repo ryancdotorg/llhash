@@ -28,14 +28,34 @@ STUB(JOIN(NAME,xform))
 // rsi  2nd arg, Base address of block array argument
 // rdx  3rd arg, Number of blocks to process
 
+#ifdef SUM_IRD
+#undef SUM_IRD
+#endif
+
+// F(b, c, d) (((c ^ d) & b) ^ d)
+// F(b, c, d) ((b & c) + (~b & d))
+// a += s
+// a += ~b & d
+// a += b & c
+
+#define ROUND_X(r, a, b, c, d, kn, s) \
+CONCAT(NAME,_x,PAD02(r)): \
+	add r*4(%rsi), %a; \
+	mov %b, %T2; \
+	andn %d, %b, %T1; \
+	and %c, %T2; \
+	add %T2, %a; \
+	add %T1, %a; \
+	rol $s, %a;
+
 #define ROUND_F(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_f,PAD02(r)): \
 	add r*4(%rsi), %a;                     /* a += w : w + a */ \
 	mov %d, %T1;                           /* t1 = d */ \
-	xor %c, %T1;                           /* t1 ^= c : (c ^ d) */ \
-	and %b, %T1;                           /* t1 &= b : (b & (c ^ d)) */ \
-	xor %d, %T1;                           /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
-	add %T1, %a;                           /* a += t1 : (d ^ (b & (c ^ d))) + w + a */ \
+	xor %c, %T1;                           /* t1 ^= c : c ^ d */ \
+	and %b, %T1;                           /* t1 &= b : (c ^ d) & b */ \
+	xor %d, %T1;                           /* t1 ^= d : ((c ^ d) & b) ^ d) */ \
+	add %T1, %a;                           /* a += t1 : (((c ^ d) & b) ^ d) + w + a */ \
 	rol $s, %a;                            /* a = rol(a, s) */
 
 #define ROUND_G(r, a, b, c, d, kn, s) \
@@ -68,6 +88,7 @@ and then on the next round doing tmp1 ^= b
 this makes the code a bit smaller, but doesn't seem to speed it up
 */
 
+#if 0
 #define ROUND_H(r, a, b, c, d, kn, s) \
 CONCAT(NAME,_h,PAD02(r)): \
 	add kn*4(%rsi), %a;                    /* a += w : w + a */ \
@@ -76,8 +97,19 @@ CONCAT(NAME,_h,PAD02(r)): \
 	IF(EQUAL(r,32))(xor %c, %T1;)          /* t1 |= c : c ^ d */ \
 	xor %b, %T1;                           /* t1 |= b : b ^ c ^ d */ \
 	add %T1, %a;                           /* a += t1 : (b ^ c ^ d) + k + w + a */ \
-	IF(NOT_EQUAL(r,47))(xor %d, %T1;)      /* t1 |= d : b ^ c */ \
+	rol $s, %a;                            /* a = rol(a, s) */ \
+	IF(NOT_EQUAL(r,47))(xor %d, %T1;)      /* t1 |= d : b ^ c */
+#else
+#define ROUND_H(r, a, b, c, d, kn, s) \
+CONCAT(NAME,_h,PAD02(r)): \
+	add kn*4(%rsi), %a;                    /* a += w : w + a */ \
+	mov %d, %T1;          /* t1 = d */ \
+	xor %c, %T1;          /* t1 |= c : c ^ d */ \
+	add $0x6ed9eba1, %a;                   /* a += k : k + w + a */ \
+	xor %b, %T1;                           /* t1 |= b : b ^ c ^ d */ \
+	add %T1, %a;                           /* a += t1 : (b ^ c ^ d) + k + w + a */ \
 	rol $s, %a;                            /* a = rol(a, s) */
+#endif
 
 #define R4(R, r, kn0, s0, kn1, s1, kn2, s2, kn3, s3) \
 R(r,                RA, RB, RC, RD, kn0, s0) \
