@@ -107,7 +107,7 @@ void (*HASH(Native))(uintWS_t *, const uintWS_t *, uint32_t) = (JOIN(HASH_name,n
 #endif
 
 #define MAYBE_REGISTER(I) \
-  extern int JOIN(can,FIRST I)(); \
+  extern int JOIN(can,SECOND I)(); \
   IMPL_DEFS(I); \
   if (enable & JOIN(HASH_NAME,ENABLE,THIRD I)) { \
     int e = 0; \
