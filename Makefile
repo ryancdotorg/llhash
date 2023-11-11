@@ -3,6 +3,8 @@ export LANG=C LC_ALL=C
 
 TMPDIR ?= /dev/shm
 
+ARCH ?= $(shell gcc -march=native -Q --help=target | sed -En 's/^\s*-march=\s+(.+)/\1/p')
+
 ifeq ($(USE_ALL), 1)
 USE_GPL = 1
 USE_INTEL = 1
@@ -72,6 +74,7 @@ override CFLAGS += -O3 -fPIC \
 	-Wall -Wextra -pedantic \
 	-std=gnu11 -ggdb
 
+# core2 and later, bulldozer and later
 ARCH_FLAGS := -mssse3
 
 CC := ccache gcc
@@ -115,6 +118,17 @@ libh/libh.h: $(LIBH)
 libh/%.h: src/libh/%_h.py src/libh/util.py
 	@mkdir -p $(@D)
 	python3 $< > $@
+
+arch/generic.args: Makefile
+	@mkdir -p $(@D)
+	@echo -DARCH=generic > $@
+	gcc $(ARCH_FLAGS) -mssse3 -Q --help=target | \
+	tr a-z.- A-Z__ | grep -E '\[ENABLED\]' | \
+	sed -E 's/^\s+_M(\S+).*/-D__ARCH_HAS_\1__/' >> $@
+
+arch/%.args: scripts/arch.sh
+	@mkdir -p $(@D)
+	$< $(subst .args,,$(@F)) > $@
 
 # generated headers
 gen/md/%/hash.h: src/md/%/param.h src/md/hash.h.in $(MACROS)
@@ -322,7 +336,7 @@ _clean_all: _clean
 
 clean: _nop $(foreach _,$(filter clean,$(MAKECMDGOALS)),$(info $(shell $(MAKE) _clean)))
 _clean:
-	rm -rf obj wasm gen bin $(BINARIES) $(wildcard *.o) || /bin/true
+	rm -rf obj wasm gen bin $(BINARIES) $(wildcard *.o) arch || /bin/true
 
 _nop:
 	@true
