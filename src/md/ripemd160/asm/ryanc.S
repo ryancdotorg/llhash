@@ -21,6 +21,20 @@ STUB(JOIN(NAME,xform))
 #define LD r11d
 #define LE r12d
 
+#define XI xmm0
+
+#define XA xmm1
+#define XB xmm2
+#define XC xmm3
+#define XD xmm4
+#define XE xmm5
+
+#define XT xmm6
+#define XU xmm7
+#define XN xmm8
+
+#define XS xmm9
+
 /* temporary registers */
 #define T1 r14d
 #define T2 r15d
@@ -43,57 +57,180 @@ STUB(JOIN(NAME,xform))
 # I(b, c, d) G(d, b, c)
 # J(b, c, d) H(c, d, b)
 
-#define F(r, a, b, c, d, e, s) \
+#define F(r, a, b, c, d, e, s, k) \
+	IF_NOTEQ(k,0)(add $k, %a;)      /* a += k : k + w + a */ \
 	mov %d, %T1;                    /* t1 = d */ \
 	xor %c, %T1;                    /* t1 ^= c : (c ^ d) */ \
-	xor %b, %T1;                    /* t1 ^= b : (b ^ (c ^ d)) */
+	xor %b, %T1;                    /* t1 ^= b : (b ^ (c ^ d)) */ \
+	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
 
 #if 0
-#define G(r, a, b, c, d, e, s) \
+#define G(r, a, b, c, d, e, s, k) \
+	IF_NOTEQ(k,0)(add $k, %a;)      /* a += k : k + w + a */ \
 	mov %c, %T1; \
 	and %b, %T1; \
 	add %T1, %a; \
-	andn %d, %b, %T1;
+	andn %d, %b, %T1; \
+	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+
 #else
-#define G(r, a, b, c, d, e, s) \
+#define G(r, a, b, c, d, e, s, k) \
+	IF_NOTEQ(k,0)(add $k, %a;)      /* a += k : k + w + a */ \
 	mov %d, %T1;                    /* t1 = d */ \
 	xor %c, %T1;                    /* t1 ^= c : (c ^ d) */ \
 	and %b, %T1;                    /* t1 &= b : (b & (c ^ d)) */ \
-	xor %d, %T1;                    /* t1 ^= d : (d ^ (b & (c ^ d))) */
+	xor %d, %T1;                    /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
+	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+
 #endif
 
+/*
+HH_INIT(la, lb, lc, ld, le, ra, rb, rc, rd, re) \
+	movdqa HH_ADD(%rip), %XI; \
+	pinsrd $2, %la, %XA; pinsrd $0, %ra, %XA; \
+	pinsrd $2, %lb, %XB; pinsrd $0, %rb, %XB; \
+	pinsrd $2, %lc, %XC; pinsrd $0, %rc, %XC; \
+	pinsrd $2, %ld, %XD; pinsrd $0, %rd, %XD; \
+	pinsrd $2, %le, %XE; pinsrd $0, %re, %XE; \
+	pcmpeqb %XN, %XN; \
 
-#define H(r, a, b, c, d, e, s) \
+HH_BODY(r, s, xa, xb, xc, xd, xe, lw, rw) \
+	movdqa  HH_SHR+i*8(%rip), %XS; \
+	pinsrd  $2, $lw*4(%rsi), %XT; pinsrd  $0, $rw*4(%rsi), %XT; \
+	paddd   %XI, %XT; \
+	paddd   %XT, %xa; \
+	pxor    %xc, %XN, %XT; \
+	por     %xb, %XT; \
+	pxor    %xd, %XT; \
+	paddd   %XT, %xa; \
+	pshufd  $0xa0, %xa, %xa; \
+	vpsrlvq %XS, %xa, %xa; \
+	paddd   %xe, %xa
+	pshufd  $0xa0, %xc, %xc; \
+	psrlq   $22, %xc; \
+
+HH_POST(la, lb, lc, ld, le, ra, rb, rc, rd, re) \
+	pextrd  $2, %XA, %la; pextrd  $0, %XA, %ra; \
+	pextrd  $2, %XB, %la; pextrd  $0, %XB, %ra; \
+	pextrd  $2, %XC, %la; pextrd  $0, %XC, %ra; \
+	pextrd  $2, %XD, %la; pextrd  $0, %XD, %ra; \
+	pextrd  $2, %XE, %la; pextrd  $0, %XE, %ra; \
+
+# mergeable - rotation constants for round h
+.section .rodata.cst16.GI_ADD, "aM", @progbits, 16
+.align 16
+GI_ADD
+.long 0x00000000,0x5a827999,0x00000000,0x5c4dd124
+
+.section .rodata.cst512.GI_SHR, "aM", @progbits, 512
+.align 32
+GI_SHR:
+.quad 0x0000000000000019,0x0000000000000017
+.quad 0x000000000000001a,0x0000000000000013
+.quad 0x0000000000000018,0x0000000000000011
+.quad 0x0000000000000013,0x0000000000000019
+.quad 0x0000000000000015,0x0000000000000014
+.quad 0x0000000000000017,0x0000000000000018
+.quad 0x0000000000000019,0x0000000000000017
+.quad 0x0000000000000011,0x0000000000000015
+.quad 0x0000000000000019,0x0000000000000019
+.quad 0x0000000000000014,0x0000000000000019
+.quad 0x0000000000000011,0x0000000000000014
+.quad 0x0000000000000017,0x0000000000000019
+.quad 0x0000000000000015,0x000000000000001a
+.quad 0x0000000000000019,0x0000000000000011
+.quad 0x0000000000000013,0x0000000000000013
+.quad 0x0000000000000014,0x0000000000000015
+
+.section .rodata.cst16.HH_ADD, "aM", @progbits, 16
+.align 16
+HH_ADD
+.long 0x00000000,0x6ed9eba1,0x00000000,0x6d703ef3
+
+.section .rodata.cst512.HH_SHR, "aM", @progbits, 512
+.align 32
+HH_SHR:
+	.quad 0x0000000000000015,0x0000000000000011
+	.quad 0x0000000000000013,0x000000000000001b
+	.quad 0x000000000000001a,0x000000000000001f
+	.quad 0x0000000000000019,0x000000000000001d
+	.quad 0x0000000000000012,0x0000000000000019
+	.quad 0x0000000000000017,0x0000000000000012
+	.quad 0x0000000000000013,0x000000000000001a
+	.quad 0x0000000000000011,0x0000000000000017
+	.quad 0x0000000000000012,0x0000000000000015
+	.quad 0x0000000000000018,0x0000000000000018
+	.quad 0x0000000000000013,0x0000000000000014
+	.quad 0x000000000000001a,0x000000000000001e
+	.quad 0x000000000000001b,0x0000000000000016
+	.quad 0x0000000000000014,0x0000000000000020
+	.quad 0x0000000000000019,0x000000000000001c
+	.quad 0x000000000000001b,0x0000000000000013
+
+.section .rodata.cst16.IG_ADD, "aM", @progbits, 16
+.align 16
+IG_ADD
+.long 0x00000000,0x8f1bbcdc,0x00000000,0x7a6d76e9
+
+.section .rodata.cst512.IG_SHR, "aM", @progbits, 512
+.align 32
+IG_SHR:
+.quad 0x0000000000000015,0x0000000000000011
+.quad 0x0000000000000014,0x000000000000001b
+.quad 0x0000000000000012,0x0000000000000018
+.quad 0x0000000000000011,0x0000000000000015
+.quad 0x0000000000000012,0x0000000000000012
+.quad 0x0000000000000011,0x0000000000000012
+.quad 0x0000000000000017,0x000000000000001a
+.quad 0x0000000000000018,0x0000000000000012
+.quad 0x0000000000000017,0x000000000000001a
+.quad 0x0000000000000012,0x0000000000000017
+.quad 0x000000000000001b,0x0000000000000014
+.quad 0x000000000000001a,0x0000000000000017
+.quad 0x0000000000000018,0x0000000000000014
+.quad 0x000000000000001a,0x000000000000001b
+.quad 0x000000000000001b,0x0000000000000011
+.quad 0x0000000000000014,0x0000000000000018
+
+*/
+
+#define H(r, a, b, c, d, e, s, k) \
+	IF_NOTEQ(k,0)(add $k, %a;)      /* a += k : k + w + a */ \
 	mov %c, %T1;                    /* t1 = c */ \
 	not %T1;                        /* t1 ~= : ~c */ \
 	or  %b, %T1;                    /* t1 |= b : b | ~c */ \
-	xor %d, %T1;                    /* t1 ^= d : (b | ~c) ^ d */
+	xor %d, %T1;                    /* t1 ^= d : (b | ~c) ^ d */ \
+	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
 
 #if 1
-#define I(r, a, b, c, d, e, s) \
+#define I(r, a, b, c, d, e, s, k) \
+	IF_NOTEQ(k,0)(add $k, %a;)      /* a += k : k + w + a */ \
 	mov %d, %T1;                    /* t1 = d */ \
 	and %b, %T1;                    /* t1 &= b : d & b */ \
 	add %T1, %a;                    /* a += t1 */ \
-	andn %c, %d, %T1;               /* t1 = c & ~b */
+	andn %c, %d, %T2;               /* t1 = c & ~b */ \
+	add %T2, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+
 #else
-#define I(r, a, b, c, d, e, s) \
+#define I(r, a, b, c, d, e, s, k) \
+	IF_NOTEQ(k,0)(add $k, %a;)      /* a += k : k + w + a */ \
 	mov %c, %T1;                    /* t1 = d */ \
 	xor %b, %T1;                    /* t1 ^= c : (c ^ d) */ \
 	and %d, %T1;                    /* t1 &= b : (b & (c ^ d)) */ \
-	xor %c, %T1;                    /* t1 ^= d : (d ^ (b & (c ^ d))) */
+	xor %c, %T1;                    /* t1 ^= d : (d ^ (b & (c ^ d))) */ \
+	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+
 #endif
 
 
 
-#define J(r, a, b, c, d, e, s) \
-	H(r, a, c, d, b, e, s)
+#define J(r, a, b, c, d, e, s, k) \
+	H(r, a, c, d, b, e, s, k)
 
 #define RND(FN, r, LR, a, b, c, d, e, w, s, k) \
 CONCAT(NAME,_,PAD02(r),LR): \
 	add w*4(%rsi), %a;              /* a += w : w + a*/ \
-	IF_NOTEQ(k,0)(add $k, %a;)      /* a += k : k + w + a */ \
-	FN(r, a, b, c, d, e, s) \
-	add %T1, %a;                    /* a += t1 : (b ^ (c ^ d)) + w + a */ \
+	FN(r, a, b, c, d, e, s, k) \
 	rol $s, %a;                     /* a = rol(a, s) */ \
 	add %e, %a;                     /* a += e */ \
 	rol $10, %c;                    /* c = rol(c, 10) */
