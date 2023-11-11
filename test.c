@@ -39,6 +39,34 @@
 
 #include "macros.h"
 
+// https://securityboulevard.com/2022/09/benchmarking-in-c-for-x86-and-x64/
+#define CYCLES_START(H0, L0) { \
+  __asm__ __volatile__( \
+    "\tlfence\n" \
+    "\trdtsc\n" \
+    "\tmov %%edx, %0\n" \
+    "\tmov %%eax, %1\n" \
+    : "=r" (H0), "=r" (L0) \
+    : \
+    : "%rax", "%rdx" \
+  ); \
+}
+
+#define CYCLES_END(DEST, H0, L0) { \
+  uint32_t h1, l1; \
+  __asm__ __volatile__( \
+    "\trdtscp\n" \
+    "\tmov %%edx, %0\n" \
+    "\tmov %%eax, %1\n" \
+    "\tlfence\n" \
+    : "=r" (h1), "=r" (l1) \
+    : \
+    : "%rax", "%rdx" \
+  ); \
+  (DEST)  = ((unsigned long long)(h1) << 32ULL) + (l1); \
+  (DEST) -= ((unsigned long long)(H0) << 32ULL) + (L0); \
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 #define BILLION 1000000000ULL;
@@ -243,31 +271,38 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
     rc4_prng(scratch, len, "an arbitrary string"); \
     OpenSSL_##NAME (ref, scratch, len); \
     printf("\n"); \
-    int impl; \
-    for (int i = -2; i < 32; ++i) { \
+    int impl = 0; \
+    for (int i = start_impl; i < 32; ++i) { \
       if (i >= 0 && (impl = NAME##_Register(1<<i)) != i) continue; \
+      uint32_t cycles_h0, cycles_l0; \
       uint64_t cycles; \
       double best_cycles = 1e40; \
       uint64_t t_end = getns() + fstons(0.5); \
+      CYCLES_START(cycles_h0, cycles_l0); \
+      CYCLES_END(cycles, cycles_h0, cycles_l0); \
+      CYCLES_START(cycles_h0, cycles_l0); \
+      CYCLES_END(cycles, cycles_h0, cycles_l0); \
+      CYCLES_START(cycles_h0, cycles_l0); \
+      CYCLES_END(cycles, cycles_h0, cycles_l0); \
       for (int x = 1; (x & 0xff) || getns() < t_end; ++x) { \
         if (i >= 0) { \
-          cycles = __rdtsc(); \
+          CYCLES_START(cycles_h0, cycles_l0); \
           for (int y = 0; y < iter; ++y) { \
             NAME (scratch, len, hash); \
           } \
-          cycles = __rdtsc() - cycles; \
+          CYCLES_END(cycles, cycles_h0, cycles_l0); \
         } else if (i == -2) { \
-          cycles = __rdtsc(); \
+          CYCLES_START(cycles_h0, cycles_l0); \
           for (int y = 0; y < iter; ++y) { \
             OpenSSL_EVP_##NAME (ref, scratch, len); \
           } \
-          cycles = __rdtsc() - cycles; \
+          CYCLES_END(cycles, cycles_h0, cycles_l0); \
         } else if (i == -1) { \
-          cycles = __rdtsc(); \
+          CYCLES_START(cycles_h0, cycles_l0); \
           for (int y = 0; y < iter; ++y) { \
             OpenSSL_##NAME (ref, scratch, len); \
           } \
-          cycles = __rdtsc() - cycles; \
+          CYCLES_END(cycles, cycles_h0, cycles_l0); \
         } \
         int fail = 0; \
         if (i >= 0) { \
