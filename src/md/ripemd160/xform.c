@@ -162,6 +162,8 @@ void JOIN(ripemd160,c_impl,xform)(uint32_t *digest, const char *data, uint32_t n
     printf("RND_80R(%08x, %08x, %08x, %08x, %08x)\n", a2, b2, c2, d2, e2);
     */
 
+    __asm__("ripemd160_" STR(c_impl) "_update:\n"); \
+
     t = digest[0];
     digest[0] = digest[1] + c1 + d2;
     digest[1] = digest[2] + d1 + e2;
@@ -176,6 +178,8 @@ void JOIN(ripemd160,c_impl,xform)(uint32_t *digest, const char *data, uint32_t n
         U32H2BE(digest[3]),
         U32H2BE(digest[4])
     );*/
+
+    __asm__("ripemd160_" STR(c_impl) "_next:\n"); \
   }
 }
 #pragma GCC pop_options
