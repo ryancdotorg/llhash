@@ -20,13 +20,12 @@
 
 #define J(x, y, z) H(y, z, x)
 
-#define _COMPARE_generic(x) x
-#if EQUAL(c_impl, generic)
-#define G(x, y, z) G3(x, y, z)
-#define I(x, y, z) I3(x, y, z)
-#else
+#ifdef __BMI2__
 #define G(x, y, z) G3(x, y, z)
 #define I(x, y, z) I2(x, y, z)
+#else
+#define G(x, y, z) G3(x, y, z)
+#define I(x, y, z) I3(x, y, z)
 #endif
 
 //printf("RND_%02d%s(%08x, %08x, %08x, %08x, %08x)\n", R, LR, ROTATE5R(R, A, B, C, D, E));

@@ -178,19 +178,23 @@ gen/md/%/driver.c: gen/md/%/hash.c gen/md/%/hmac.c gen/md/%/ext.c
 # c transform implementations
 obj/md/%/xform/generic.o: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
-	$(COMPILE) -Dc_impl=generic -c $< -o $@
+	$(COMPILE) -Dc_impl=generic \
+	-c $< -o $@
 
-obj/md/%/xform/native.o: src/md/%/xform.c $(MACROS)
+obj/md/%/xform/native.o: src/md/%/xform.c $(MACROS) arch/native.args
 	@mkdir -p $(@D)
-	$(COMPILE) -march=native -mtune=native -Dc_impl=native -c $< -o $@
+	$(COMPILE) -march=native -mtune=native -Dc_impl=native \
+	-c $< -o $@
 
-obj/md/%/xform/generic.S: src/md/%/xform.c $(MACROS)
+obj/md/%/xform/generic.S: src/md/%/xform.c $(MACROS) arch/generic.args
 	@mkdir -p $(@D)
-	$(COMPILE) -Dc_impl=generic -c $< -S -o $@
+	$(COMPILE) -Dc_impl=generic \
+	-c $< -S -o $@
 
-obj/md/%/xform/native.S: src/md/%/xform.c $(MACROS)
+obj/md/%/xform/native.S: src/md/%/xform.c $(MACROS) arch/native.args
 	@mkdir -p $(@D)
-	$(COMPILE) -march=native -mtune=native -Dc_impl=native -c $< -S -o $@
+	$(COMPILE) -march=native -mtune=native -Dc_impl=native \
+	-c $< -S -o $@
 
 # wasm
 wasm/md/%/xform.o: src/md/%/xform.c $(MACROS)
