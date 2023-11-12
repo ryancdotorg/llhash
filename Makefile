@@ -182,7 +182,7 @@ obj/md/%/xform/generic.o: src/md/%/xform.c $(MACROS)
 
 obj/md/%/xform/native.o: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
-	$(COMPILE) -march=native -Dc_impl=native -c $< -o $@
+	$(COMPILE) -march=native -mtune=native -Dc_impl=native -c $< -o $@
 
 obj/md/%/xform/generic.S: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
@@ -190,7 +190,7 @@ obj/md/%/xform/generic.S: src/md/%/xform.c $(MACROS)
 
 obj/md/%/xform/native.S: src/md/%/xform.c $(MACROS)
 	@mkdir -p $(@D)
-	$(COMPILE) -march=native -Dc_impl=native -c $< -S -o $@
+	$(COMPILE) -march=native -mtune=native -Dc_impl=native -c $< -S -o $@
 
 # wasm
 wasm/md/%/xform.o: src/md/%/xform.c $(MACROS)
