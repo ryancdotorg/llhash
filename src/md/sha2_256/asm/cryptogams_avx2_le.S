@@ -137,7 +137,6 @@ ENTRY(sha2_256_cryptogams_avx2_xform_le)
 	jmp	.Loop_avx2
 .align	16
 .Loop_avx2:
-	vmovdqa	K256+512(%rip),%ymm7
 	vmovdqu	-64+0(%rsi),%xmm0
 	vmovdqu	-64+16(%rsi),%xmm1
 	vmovdqu	-64+32(%rsi),%xmm2
