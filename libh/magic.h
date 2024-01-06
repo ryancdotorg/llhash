@@ -4,6 +4,13 @@
 #define _STR_PRAGMA(S) _Pragma(#S)
 #define STR_PRAGMA(S) _STR_PRAGMA(S)
 
+#define UNROLL_FOR(I, BEGIN, END, CODE) { \
+  _STR_PRAGMA(GCC unroll (END-BEGIN)) \
+  for (size_t I = BEGIN; I < END; ++I) { CODE; } \
+}
+
+#define ASSUME(CODE) if (!(CODE)) { __builtin_unreachable(); }
+
 /* arcane macro magic, based in part on tricks from
  * http://jhnet.co.uk/articles/cpp_magic and
  * https://github.com/18sg/uSHET/blob/master/lib/cpp_magic.h and
