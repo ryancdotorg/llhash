@@ -9,15 +9,15 @@
 #pragma GCC optimize ("O3")
 // rely on compiler to provide optimized version
 void _memcpy_impl(void *restrict dst, const void *restrict src, size_t n) {
-    uint8_t *d = dst;
-    const uint8_t *s = src;
-    for (size_t i = 0; i < n; ++i) d[i] = s[i];
+  uint8_t *d = dst;
+  const uint8_t *s = src;
+  for (size_t i = 0; i < n; ++i) d[i] = s[i];
 }
 
 // rely on compiler to provide optimized version
 void _memset_impl(void *restrict dst, uint8_t c, size_t n) {
-    uint8_t *d = dst;
-    for (size_t i = 0; i < n; ++i) d[i] = c;
+  uint8_t *d = dst;
+  for (size_t i = 0; i < n; ++i) d[i] = c;
 }
 
 void _explicit_bzero_impl(void *d, size_t n) {
