@@ -28,9 +28,7 @@
 #define I(x, y, z) I3(x, y, z)
 #endif
 
-//printf("RND_%02d%s(%08x, %08x, %08x, %08x, %08x)\n", R, LR, ROTATE5R(R, A, B, C, D, E));
 #define RND(FN, R, LR, A, B, C, D, E, W, K, S) {    \
-__asm__("ripemd160_" STR(c_impl) "_" STR(PAD02(R)) LR ":\n"); \
   A = ROL32(A + FN(B, C, D) + W + K, S) + E; \
   C = ROL32(C, 10);                          \
 }
@@ -156,29 +154,12 @@ void JOIN(ripemd160,c_impl,xform)(uint32_t *digest, const char *data, uint32_t n
     RMD5L(78, c1, d1, e1, a1, b1, W[15],  5); RMD5R(78, c2, d2, e2, a2, b2, W[ 9], 11);
     RMD5L(79, b1, c1, d1, e1, a1, W[13],  6); RMD5R(79, b2, c2, d2, e2, a2, W[11], 11);
 
-    /*
-    printf("RND_80L(%08x, %08x, %08x, %08x, %08x)\n", a1, b1, c1, d1, e1);
-    printf("RND_80R(%08x, %08x, %08x, %08x, %08x)\n", a2, b2, c2, d2, e2);
-    */
-
-    __asm__("ripemd160_" STR(c_impl) "_update:\n"); \
-
     t = digest[0];
     digest[0] = digest[1] + c1 + d2;
     digest[1] = digest[2] + d1 + e2;
     digest[2] = digest[3] + e1 + a2;
     digest[3] = digest[4] + a1 + b2;
     digest[4] = t + b1 + c2;
-    /*printf(
-        "RMD160(%08x%08x%08x%08x%08x)\n",
-        U32H2BE(digest[0]),
-        U32H2BE(digest[1]),
-        U32H2BE(digest[2]),
-        U32H2BE(digest[3]),
-        U32H2BE(digest[4])
-    );*/
-
-    __asm__("ripemd160_" STR(c_impl) "_next:\n"); \
   }
 }
 #pragma GCC pop_options
