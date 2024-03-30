@@ -91,6 +91,7 @@ void sha256(uint8_t *out, const void *buf, size_t len) {
   sha256iv(out, iv, buf, len);
 }
 
+// based on FIPS 180-4 5.3.6
 int sha256t(uint32_t iv_out[8], unsigned int t) {
   uint32_t iv[8] = {
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
@@ -111,10 +112,13 @@ int sha256t(uint32_t iv_out[8], unsigned int t) {
   }
   for (int i = 0; i < 8; ++i) { iv[i] ^= 0xa5a5a5a5; }
 
-  uint8_t hash[32], buf[16];
-  int ret = snprintf((char *)buf, sizeof(buf), "SHA-256/%u", t);
-  if (ret >= (int)sizeof(buf) || ret < 0) { return -2; }
-  sha256iv(hash, iv, buf, ret);
+  uint8_t hash[32], buf[] = "SHA-256/256";
+  uint8_t *p = buf + 8;
+  if (t > 99) { *p++ = '0' + t / 100; }
+  if (t >  9) { *p++ = '0' + (t / 10) % 10; }
+  *p++ = '0' + t % 10;
+  *p = '\0';
+  sha256iv(hash, iv, buf, p - buf);
   for (int i = 0, j = 0; i < 8; ++i, j += 4) {
     iv_out[i] = ((uint32_t)(hash[0+j]) << 24) | ((uint32_t)(hash[1+j]) << 16) |
                 ((uint32_t)(hash[2+j]) <<  8) | ((uint32_t)(hash[3+j]) <<  0);
@@ -222,6 +226,7 @@ void sha512(uint8_t *out, const void *buf, size_t len) {
   sha512iv(out, iv, buf, len);
 }
 
+// per FIPS 180-4 5.3.6
 int sha512t(uint64_t iv_out[8], unsigned int t) {
   uint64_t iv[8] = {
     0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b,
@@ -243,10 +248,13 @@ int sha512t(uint64_t iv_out[8], unsigned int t) {
   }
   for (int i = 0; i < 8; ++i) { iv[i] ^= 0xa5a5a5a5a5a5a5a5; }
 
-  uint8_t hash[64], buf[16];
-  int ret = snprintf((char *)buf, sizeof(buf), "SHA-512/%u", t);
-  if (ret >= (int)sizeof(buf) || ret < 0) { return -2; }
-  sha512iv(hash, iv, buf, ret);
+  uint8_t hash[64], buf[] = "SHA-512/512";
+  uint8_t *p = buf + 8;
+  if (t > 99) { *p++ = '0' + t / 100; }
+  if (t >  9) { *p++ = '0' + (t / 10) % 10; }
+  *p++ = '0' + t % 10;
+  *p = '\0';
+  sha512iv(hash, iv, buf, p - buf);
   for (int i = 0, j = 0; i < 8; ++i, j += 8) {
     iv_out[i] = ((uint64_t)(hash[0+j]) << 56) | ((uint64_t)(hash[1+j]) << 48) |
                 ((uint64_t)(hash[2+j]) << 40) | ((uint64_t)(hash[3+j]) << 32) |
