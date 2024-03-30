@@ -172,12 +172,18 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
     break; \
   } \
   OpenSSL_##NAME (ref, buf, 0); \
+  OpenSSL_EVP_##NAME (hash, buf, 0); \
   printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
+  int fail = 0; \
+  for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
+  if (fail) { \
+    printf("OpenSSL_EVP_" #NAME "('') = %s - FAIL\n", hex(hexstr, hash, SIZE)); \
+  } \
   for (int i = 0; i < 32; ++i) { \
     int impl = NAME##_Register(1<<i); \
     if (impl >= 0) { \
       NAME (buf, 0, hash); \
-      int fail = 0; \
+      fail = 0; \
       for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
       if (fail) { \
         printf("llhash %s - FAIL - %s\n", rpadf(17, #NAME "[%2d]('')", impl), NAME##_Describe(impl)); \
@@ -268,6 +274,37 @@ printf("OpenSSL_" #NAME "('') = %s\n", hex(hexstr, ref, SIZE)); \
         printf("ref %s\n", hex(hexstr, ref, SIZE)); \
       } \
     } \
+  } \
+} while(0)
+
+#define TEST_HMAC(NAME, N, M, SIZE) do { \
+  int fail; \
+  if (!should(hashes, #NAME)) break; \
+  if (!OpenSSL_has_##NAME ()) break; \
+  OpenSSL_HMAC_##NAME (ref, key, N, buf, M); \
+  HMAC_##NAME (key, N, buf, M, hash); \
+  fail = 0; \
+  for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
+  if (fail) { \
+    printf("All-in-One               HMAC_%s - FAIL\n", rpadf(35, #NAME "(%s[0:%u], %s[0:%u])", kdsc, N, desc, M)); \
+    printf("key (%zd octets) %s\n", N, hex(hexstr, key, N)); \
+    printf("msg (%zd octets) %s\n", M, hex(hexstr, buf, M)); \
+    printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+    printf("ref %s\n", hex(hexstr, ref, SIZE)); \
+  } \
+  HMAC_##NAME##_CTX ctx; \
+  memset(ctx.data, 0xa5, sizeof(ctx.data)); \
+  HMAC_##NAME##_Init(&ctx, key, N); \
+  HMAC_##NAME##_Update(&ctx, buf, M); \
+  HMAC_##NAME##_Final(hash, &ctx); \
+  fail = 0; \
+  for (int j = 0; j < SIZE; ++j) fail |= ref[j] ^ hash[j]; \
+  if (fail) { \
+    printf("Init/Update/Final        HMAC_%s - FAIL\n", rpadf(35, #NAME "(%s[0:%u], %s[0:%u])", kdsc, N, desc, M)); \
+    printf("key (%zd octets) %s\n", N, hex(hexstr, key, N)); \
+    printf("msg (%zd octets) %s\n", M, hex(hexstr, buf, M)); \
+    printf("bad %s\n", hex(hexstr, hash, SIZE)); \
+    printf("ref %s\n", hex(hexstr, ref, SIZE)); \
   } \
 } while(0)
 
@@ -364,9 +401,28 @@ int main(int argc, char *argv[]) {
   printf("\n");
   //*/
 
-  char *desc, hexstr[128*(16)+1];
-  uint8_t scratch[65536], buf[256];
+  char hexstr[256*(32)+4];
+  uint8_t scratch[65536];
   uint8_t ref[64], hash[64];
+
+  char *descs[] = { "0x00", "0xff", "prng" };
+  char *desc, *kdsc;
+
+  const size_t buf_sz = 256;
+  uint8_t bufs[3][buf_sz];
+  uint8_t *buf = bufs[0];
+
+  const size_t key_sz = 129;
+  uint8_t keys[3][key_sz];
+  uint8_t *key = keys[0];
+
+  memset(bufs[0], 0x00, buf_sz);
+  memset(bufs[1], 0xff, buf_sz);
+  rc4_prng(bufs[2], buf_sz, "an arbitrary string");
+
+  memset(keys[0], 0x00, key_sz);
+  memset(keys[1], 0xff, key_sz);
+  rc4_prng(keys[2], key_sz, "hmac key seed");
 
   char *_h[] = {
     "MD4", "MD5",
@@ -385,44 +441,38 @@ int main(int argc, char *argv[]) {
   TEST_EMPTY(SHA2_384, 48);
   TEST_EMPTY(SHA2_512, 64);
 
-  desc = "0x00";
-  memset(buf, 0x00, sizeof(buf));
-  for (size_t n = 0; n < sizeof(buf); ++n) {
-    TEST_DATA(MD4, n, 16);
-    TEST_DATA(MD5, n, 16);
-    TEST_DATA(RIPEMD160, n, 20);
-    TEST_DATA(SHA1, n, 20);
-    TEST_DATA(SHA2_224, n, 28);
-    TEST_DATA(SHA2_256, n, 32);
-    TEST_DATA(SHA2_384, n, 48);
-    TEST_DATA(SHA2_512, n, 64);
-  }
+  for (int msg_id = 0; msg_id < 3; ++msg_id) {
+    buf = bufs[msg_id];
+    desc = descs[msg_id];
 
-  desc = "0xff";
-  memset(buf, 0xff, sizeof(buf));
-  for (size_t n = 0; n < sizeof(buf); ++n) {
-    TEST_DATA(MD4, n, 16);
-    TEST_DATA(MD5, n, 16);
-    TEST_DATA(RIPEMD160, n, 20);
-    TEST_DATA(SHA1, n, 20);
-    TEST_DATA(SHA2_224, n, 28);
-    TEST_DATA(SHA2_256, n, 32);
-    TEST_DATA(SHA2_384, n, 48);
-    TEST_DATA(SHA2_512, n, 64);
-  }
+    for (size_t n = 0; n < buf_sz; ++n) {
+      TEST_DATA(MD4, n, 16);
+      TEST_DATA(MD5, n, 16);
+      TEST_DATA(RIPEMD160, n, 20);
+      TEST_DATA(SHA1, n, 20);
+      TEST_DATA(SHA2_224, n, 28);
+      TEST_DATA(SHA2_256, n, 32);
+      TEST_DATA(SHA2_384, n, 48);
+      TEST_DATA(SHA2_512, n, 64);
+    }
 
-  desc = "prng";
-  rc4_prng(buf, sizeof(buf), "an arbitrary string");
+    for (int key_id = 0; key_id < 3; ++key_id) {
+      key = keys[key_id];
+      kdsc = descs[key_id];
 
-  for (size_t n = 0; n < 4 && n < sizeof(buf); ++n) {
-    TEST_DATA(MD4, n, 16);
-    TEST_DATA(MD5, n, 16);
-    TEST_DATA(RIPEMD160, n, 20);
-    TEST_DATA(SHA1, n, 20);
-    TEST_DATA(SHA2_224, n, 28);
-    TEST_DATA(SHA2_256, n, 32);
-    TEST_DATA(SHA2_384, n, 48);
-    TEST_DATA(SHA2_512, n, 64);
+      for (size_t n = 0; n < key_sz; ++n) {
+        for (size_t m = 0; m < buf_sz; ++m) {
+          TEST_HMAC(MD4, n, m, 16);
+          TEST_HMAC(MD5, n, m, 16);
+          TEST_HMAC(RIPEMD160, n, m, 20);
+          TEST_HMAC(SHA1, n, m, 20);
+          TEST_HMAC(SHA2_224, n, m, 28);
+          TEST_HMAC(SHA2_256, n, m, 32);
+          TEST_HMAC(SHA2_384, n, m, 48);
+          TEST_HMAC(SHA2_512, n, m, 64);
+        }
+      }
+    }
   }
 
   if (!nobench) {
