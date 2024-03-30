@@ -123,6 +123,15 @@ void HASH(Init)(HASH(CTX) *ctx) {
 }
 
 #if HASH_ALIASED
+void ALIAS(Init_IV)(ALIAS(CTX) *ctx, const uintWS_t *iv)
+__attribute__((alias(STR(HASH(Init_IV)))));
+#endif
+void HASH(Init_IV)(HASH(CTX) *ctx, const uintWS_t *iv) {
+  ctx->bytelen = ctx->datalen = 0;
+  llh_memcpy(ctx->state, iv, HASH_STATE_WORDS * HASH_WORD_BYTES);
+}
+
+#if HASH_ALIASED
 void ALIAS(Update)(ALIAS(CTX) *ctx, const uint8_t data[], size_t len)
 __attribute__((alias(STR(HASH(Update)))));
 #endif
