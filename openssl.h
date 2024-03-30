@@ -3,7 +3,12 @@
 #define OPENSSL_HASH(NAME) \
 int OpenSSL_has_##NAME (); \
 void OpenSSL_##NAME (uint8_t hash[], const uint8_t data[], size_t len); \
-void OpenSSL_EVP_##NAME (uint8_t hash[], const uint8_t data[], size_t len);
+void OpenSSL_EVP_##NAME (uint8_t hash[], const uint8_t data[], size_t len); \
+void OpenSSL_HMAC_##NAME ( \
+  uint8_t hash[], \
+  const uint8_t key[], size_t klen, \
+  const uint8_t data[], size_t dlen \
+);
 
 OPENSSL_HASH(MD4)
 OPENSSL_HASH(MD5)

@@ -9,15 +9,19 @@
 #include <openssl/evp.h>
 
 #include "openssl.h"
+#include "macros.h"
 
 static char *libcrypto[] = {
   "libcrypto.so.1.1",
   "libcrypto.so.1.0",
   "libcrypto.so.1",
+  "libcrypto.so.3",
   "libcrypto.so",
   NULL
 };
 
+/* dynmaic function loading macro */
+#define _COMPARE_void(x) x
 #define DLFUNC(NAME, TYPE, ARGS, ARGN) \
 static TYPE _load_##NAME ARGS; \
 static TYPE (*_##NAME)ARGS = _load_##NAME; \
@@ -36,12 +40,50 @@ static TYPE _load_##NAME ARGS { \
     fprintf(stderr, "fatal: can't load function `%s`!\n", #NAME); \
     abort(); \
   } \
-  return _##NAME ARGN; \
+  IF_NOTEQ(TYPE, void)(return) _##NAME ARGN; \
 }
 
 DLFUNC(EVP_Digest, int,
   (const void *a, size_t b, unsigned char *c, unsigned int *d, const EVP_MD *e, ENGINE *f),
   (a, b, c, d, e, f)
+)
+
+DLFUNC(EVP_DigestSignInit, int,
+  (EVP_MD_CTX *a, EVP_PKEY_CTX **b, const EVP_MD *c, ENGINE *d, EVP_PKEY *e),
+  (a, b, c, d, e)
+)
+
+DLFUNC(EVP_DigestUpdate, int,
+  (EVP_MD_CTX *a, const void *b, size_t c),
+  (a, b, c)
+)
+
+DLFUNC(EVP_DigestSignFinal, int,
+  (EVP_MD_CTX *a, unsigned char *b, size_t *c),
+  (a, b, c)
+)
+
+DLFUNC(EVP_DigestSign, int,
+  (EVP_MD_CTX *a, unsigned char *b, size_t *c, const unsigned char *d, size_t e),
+  (a, b, c, d, e)
+)
+
+DLFUNC(EVP_PKEY_new_raw_private_key, EVP_PKEY *,
+  (int a, ENGINE *b, const unsigned char *c, size_t d),
+  (a, b, c, d)
+)
+
+DLFUNC(EVP_MD_CTX_new, EVP_MD_CTX *,
+  (),
+  ()
+)
+DLFUNC(EVP_MD_CTX_free, void,
+  (EVP_MD_CTX *a),
+  (a)
+)
+DLFUNC(EVP_PKEY_free, void,
+  (EVP_PKEY *a),
+  (a)
 )
 
 static const EVP_MD *md_md4, *md_md5, *md_ripemd160, *md_sha1;
@@ -58,6 +100,21 @@ void OpenSSL_##NAME (uint8_t hash[], const uint8_t data[], size_t len) { \
 } \
 int OpenSSL_has_##NAME() { \
   return _has_EVP_##name(); \
+} \
+void OpenSSL_HMAC_##NAME ( \
+  uint8_t hash[], \
+  const uint8_t key[], size_t klen, \
+  const uint8_t data[], size_t dlen \
+) { \
+  /*fprintf(stderr, "%s: %d %zu %zu %zu\n", __func__, 0, hlen, klen, dlen);*/ \
+  size_t hlen = 64; \
+  EVP_MD_CTX *ctx = _EVP_MD_CTX_new(); \
+  EVP_PKEY *pkey = _EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL, key, klen); \
+  _EVP_DigestSignInit(ctx, NULL, md_##name, NULL, pkey); \
+  _EVP_DigestUpdate(ctx, data, dlen); \
+  _EVP_DigestSignFinal(ctx, hash, &hlen); \
+  _EVP_PKEY_free(pkey); \
+  _EVP_MD_CTX_free(ctx); \
 }
 
 OPENSSL_DIGEST(MD4, MD4, md4)
@@ -74,6 +131,7 @@ static __attribute__((constructor)) void getmd() {
   INIT_EVP(md4);
   INIT_EVP(md5);
   INIT_EVP(ripemd160);
+  INIT_EVP(sha1);
   INIT_EVP(sha224);
   INIT_EVP(sha256);
   INIT_EVP(sha384);
