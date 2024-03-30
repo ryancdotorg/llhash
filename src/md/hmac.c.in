@@ -140,7 +140,7 @@ h(endif)
   HMAC(Outer)(ctx->hmac, ctx->state);
 }
 
-inline void HMAC(Final)(uint8_t hash[], HMAC(CTX) *ctx) {
+extern inline void HMAC(Final)(uint8_t hash[], HMAC(CTX) *ctx) {
   HMAC(Semifinal)(ctx);
   HASH(Serialize)(hash, ctx->state);
 }
