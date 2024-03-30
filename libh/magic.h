@@ -4,8 +4,16 @@
 #define _STR_PRAGMA(S) _Pragma(#S)
 #define STR_PRAGMA(S) _STR_PRAGMA(S)
 
+#if defined(__GNUC__) && __GNUC__ > 4
+#define _PRAGMA_UNROLL(N) _STR_PRAGMA(GCC unroll (N))
+#elif defined(__clang__)
+#define _PRAGMA_UNROLL(N) _STR_PRAGMA(clang loop unroll_count(N))
+#else
+#define _PRAGMA_UNROLL(N)
+#endif
+
 #define UNROLL_FOR(I, BEGIN, END, CODE) { \
-  _STR_PRAGMA(GCC unroll (END-BEGIN)) \
+  _PRAGMA_UNROLL(END-BEGIN) \
   for (size_t I = BEGIN; I < END; ++I) { CODE; } \
 }
 
